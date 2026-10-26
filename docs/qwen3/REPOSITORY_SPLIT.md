@@ -79,10 +79,11 @@ absolute output directory instead of requiring a dated directory on one board.
 The process-lifecycle tests use disposable clean Git fixtures, so ordinary local
 edits no longer prevent those tests from reaching the code they exercise.
 
-Historical numerical/compiler stages are not removed based only on naming or lack
-of imports from the warm inference path. The source-build consolidation gap in
-BUILD_STATUS.md remains open. Compiler algorithm and DSP kernel code are unchanged
-by this cleanup; the compiler commit adds only test fixtures.
+Historical numerical/compiler stages were not removed based only on naming or
+lack of imports from the warm inference path. At that initial cleanup step, the
+source-build consolidation gap remained open and the compiler change added only
+test fixtures. See [build status](BUILD_STATUS.md) for the subsequent source-build
+work and its separate compiler changes.
 
 Cleanup validation: 531 host tests passed in both the development tree and an
 offline clone; 161 compiler/SDK-dependent tests skipped. The final runtime source
@@ -104,7 +105,7 @@ Unused helper functions were removed from otherwise retained modules.
 This is separate from numerical/compiler changes. Every remaining top-level
 function in the edited modules was checked against its pre-cleanup AST; the
 shared file-hash function also has the same AST as the removed duplicate. The
-runtime manifest shrank from 49 files to 46. The complete host suite passed 696
+runtime manifest shrank from 49 files to 46. The complete host suite passed 699
 tests with no skips, plus nine IR checks. Final board regression is recorded in
 the source-build qualification, not inferred from this static review.
 

@@ -21,7 +21,12 @@ checksums. The output hash covers logits and all 56 KV tensors. The actual model
 library identities are recorded separately. `index.json` seals the six files.
 
 On ARM, pass a reference to `python3 -m qwen3.verify_build --reference ...` with
-the qualified asset bundle and, when testing a new build, `--libraries ...`.
+the qualified asset bundle and an explicit `--libraries ...` map for q1 and q2.
+The original state runs used an older accepted q1 library. Consequently, even a
+check of the current accepted bundle needs its actual library paths and hashes
+in this map. This changes the expected library identities; it never changes the
+reference input/output hashes. The smaller `reference16.json` already identifies
+the current bundle and can be used without a library override.
 Use a fresh output directory for each case. The comparison honors the original
 generation budget and prefill chunk, including early-EOS requests.
 

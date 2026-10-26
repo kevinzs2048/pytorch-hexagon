@@ -127,9 +127,34 @@ libraries. It compares complete input/output packet hashes, all logits and 56 KV
 tensors, cache positions, generated tokens and termination. The candidate gets
 its own AOT namespace. The qualified bundle is not overwritten or promoted.
 
-The comparison covers the included two-request regression. Compiler/algorithm
-tests and source review remain necessary; this is not a claim that a finite
-prompt list proves every possible floating-point result.
+Repeat the command in a second process with a different output directory under
+the same parent to check AOT cache reuse. With an initially empty candidate
+cache, `execution.json` should report two misses on the first run and two hits
+on the second. The candidate namespace includes both the runtime implementation
+and the selected model-library identities.
+
+The existing state regression is also included in the repository:
+
+```bash
+set -e
+for case_name in tails eos old-long32 prefill1024 decode993 code64; do
+  python3 -m qwen3.verify_build \
+    --bundle /absolute/path/to/qwen3-qcs9075 \
+    --libraries /absolute/path/to/candidate-libraries.json \
+    --reference "qwen3/validation/states/${case_name}.json" \
+    --packet-recording hashes \
+    --output "/absolute/path/to/state-validation/${case_name}"
+done
+```
+
+These six cases preserve the original 304-forward checks for chunk tails, EOS,
+long generation, capacity boundaries and request reset. Hash mode still checks
+every input/output byte, including all KV tensors; it avoids retaining large raw
+KV packets on disk. Reference provenance and the older q1 library identity are
+explained in [the state-reference notes](../../qwen3/validation/states/README.md).
+
+Compiler/algorithm tests and source review remain necessary; a finite prompt
+list does not prove every possible floating-point result.
 
 ## What was replaced
 

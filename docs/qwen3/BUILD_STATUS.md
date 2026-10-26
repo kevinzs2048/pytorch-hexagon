@@ -30,26 +30,69 @@ output still reports `clean_compiler_rebuild_verified: false`, because that bund
 contains the previously accepted binaries. A new source-build result does not
 rewrite that historical bundle's provenance.
 
-Source-built compiler configurations and helpers have passed the controlled
-16-forward comparison with the existing prepared IR, including the reduced
-callers. Both freshly captured ARM graphs have also passed a real torch-mlir
-lowering cache miss and reproduced the prepared IR byte-for-byte. The final
-single-command build and its independent DSP qualification are recorded
-separately; compilation is never treated as numerical acceptance.
+The single-command source build completed in a clean offline Git-bundle clone.
+Both actual ARM graphs took a real torch-mlir cache miss. Their prepared IR and
+all eight model/constant objects matched the preceding development builds
+byte-for-byte. The final model libraries, generated callers and source-built DSP
+helpers then passed the following QCS9075 comparisons:
 
-The unified host verification runs the whole retained test suite and explicit IR
-FileChecks against the newly built tools, rejecting skipped or failed tests. The
-development pass completed 694 tests and nine IR checks without failures/skips.
+| Check | Complete model forwards | Result |
+| --- | ---: | --- |
+| Fresh process and empty candidate AOT cache | 16 | Identical; two AOT misses |
+| Second process reusing the candidate cache | 16 | Identical; two AOT hits |
+| q32 prefill, q1/q2 tails and request reset | 6 | Identical |
+| Native early EOS under the original token budget | 9 | Identical |
+| 32-token continuous generation | 33 | Identical |
+| 1024-position prefill and request reset | 33 | Identical |
+| Decode from a 993-token prompt through the capacity boundary, then reset | 95 | Identical |
+| Two 64-token generation requests | 128 | Identical |
+| **Total** | **336** | **Complete input/output agreement** |
+
+Every comparison checks whole packet hashes, covering logits and all 56 KV
+tensors, positions, request boundaries, generated tokens, stopping and all three
+input checksums. The 64 saved input/output packets from the first two runs were
+also independently read and rehashed. Long state tests retain complete hashes
+rather than raw KV packets. No CPU model forward fallback was used.
+
+The configured host verification passed **699 tests and nine IR checks**, with
+zero failures or skips, in both the development checkout and the offline clone.
+An additional toolchain audit matched 9,002 selected LLVM source/install,
+SDK/Tools, HexKL, compiler, linker and Python files to the existing dependency
+lock. This audit does not constitute an LLVM source rebuild.
+
+Exact source revisions, model hashes and receipt hashes are recorded in
+[the source-build qualification](../../qwen3/validation/unified-source-build.json).
+The compiler/model build ran at application `68ff472`; the cleaned runtime was
+executed at `6701f22`. The retained build functions were checked for AST equality
+across that cleanup. This qualifies the existing Qwen3-0.6B scope, not another
+model, hardware platform or performance result.
 
 ## Retained historical code
 
 Old recipe consumers and diagnostic tools remain available for inspecting prior
-evidence. They are not part of the new source-build dependency path. The removed
-reference-wrapper recipe, its three exclusive templates and the redundant RoPE
-build launcher are recoverable from application revision `9a5ce27`.
+evidence and targeted numerical diagnosis. Some require their historical source
+revision and artifacts. They are outside the new source-build dependency path.
+The removed reference-wrapper recipe, its three exclusive templates and the
+redundant RoPE build launcher are recoverable from application revision `9a5ce27`.
+Nine disconnected runtime modules and unused functions were removed separately;
+their identities and validation are in
+[the cleanup record](../../qwen3/validation/orphan-cleanup.json).
+
+The explicit runtime dependency list decreased from 49 to 46 files. Including
+the new build entry, application/runtime/maintainer Python decreased from 268
+files and 33,174 physical lines to 261 files and 32,700 lines. These counts include
+comments and blank lines, and exclude tests and reference data. The added state
+JSON files preserve existing test inputs and output hashes; they are not runtime
+implementation or a new prompt corpus.
 
 The source rebuild exposed a strict scalar FP32 `sqrt`/division rewrite that
 bypassed the floating-point permission check. Compiler commit `277c108` fixes it
 and adds strict/partially-fast regression cases. Commit `ce317a3` adds the explicit
 source targets and records the restored accepted pass-source versions. These
 changes are separate rollback points.
+
+For recovery, use a separate clone of the application bundle, check out
+`9a5ce27372d495b2857e433bd5da02242f1b107b`, then initialize its pinned compiler
+submodule (`aad5959e00e95ec5ffdec6595260969c6e08174c`). The original accepted model
+and weight files remain available. The offline Git bundles retain the complete
+source history, including removed implementations.

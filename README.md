@@ -15,6 +15,10 @@ a separate repository checkout, not application-owned compiler code. Our local
 fork directory is named `hexagon-mlir-qwen3` for historical reasons; its package
 names retain upstream compatibility. All compiler changes stay in that fork.
 
+For compiler and model source builds, use `python -m qwen3.build`; see the
+[source-build instructions](docs/qwen3/SOURCE_BUILD.md). It produces both runtime
+query domains in one output tree without historical compiler/model object files.
+
 ## Reproduce execution
 
 The application retains one public command: `python -m qwen3`. Obtain this
@@ -25,9 +29,9 @@ policy and exact ARM Python packages; binaries do not belong in Git.
 For the current offline delivery (the new commits have not been pushed):
 
 ```bash
-git clone -b main /path/to/qwen3-hexagon-runtime.bundle qwen3-hexagon-runtime
+git clone -b main /path/to/application-source.bundle qwen3-hexagon-runtime
 cd qwen3-hexagon-runtime
-git config submodule.hexagon-mlir.url /absolute/path/to/hexagon-mlir-compiler.bundle
+git config submodule.hexagon-mlir.url /absolute/path/to/compiler-source.bundle
 git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
 ```
 
@@ -76,9 +80,14 @@ The host command collects all retained application tests, including the numerica
 policy tests. Tests requiring an explicit compiler/SDK skip when those tools are
 not configured; a skipped test is not numerical qualification. Repository
 separation has its historical record in `qwen3/validation/repository-split.json`.
-The cleanup record is `qwen3/validation/code-cleanup.json`: 531 host tests passed
-in both the development tree and an offline clone; 32 final-source board forwards
-matched the reference, including a second process with two AOT cache hits.
+
+The unified source build passed 699 configured host tests and nine IR checks in
+both the development tree and an offline clone. Its two newly built model
+libraries passed 336 complete DSP forwards: cold/warm processes, chunk tails,
+EOS, long generation, capacity boundaries and request reset. All input/output
+hashes, including logits and the full KV cache, matched the original references.
+See [the qualification record](qwen3/validation/unified-source-build.json) and
+[build status](docs/qwen3/BUILD_STATUS.md) for exact scope and source identities.
 [Reproduction](docs/qwen3/REPRODUCE.md) explains bundle export and regression.
 
 Maintainer scripts use a separate entry that supplies paths to child processes:
@@ -90,9 +99,10 @@ python -m qwen3.tools profile_model_memory --help
 ```
 
 The public inference entry imports no Python code from `tools/`. Historical
-build/review tools remain internal: some are still dependencies of the accepted
-compiler recipe and are not portable source-build APIs. Their retention does not
-mean every experiment became a production feature.
+build/review tools remain for reading prior evidence and targeted diagnostics.
+The maintained source-build route is `python -m qwen3.build`; historical recipe
+consumers are outside that route and may require their original source revision
+and artifacts.
 
 The [source-build workflow](docs/qwen3/SOURCE_BUILD.md) builds the compiler profiles,
 numerical tools, DSP helpers and both model domains in one output tree. LLVM and

@@ -1,0 +1,338 @@
+{
+  "schema": 1,
+  "status": "unified_source_build_and_full_output_regression_passed",
+  "recorded_unix": 1793042565.4125803,
+  "build_application_revision": "68ff472c04d748094b52b84bae93248eb5597242",
+  "runtime_code_revision": "6701f22d3026c185521dba6c613663aef146c26d",
+  "compiler_revision": "ce317a3eee27aa569b702b360f691d4e94154121",
+  "runtime_implementation_sha256": "d41c89b69625ca8aef8b588fb09beadc49223715a0830f65d6e7884cf5b4fd86",
+  "build": {
+    "entry": "python -m qwen3.build",
+    "offline_git_bundle_clone": true,
+    "exported_triton_revision": "e44bd1c83c1c3e8deac7c4f02683cfb3cc395c8b",
+    "compiler_products": 22,
+    "historical_compiler_or_model_objects_used": false,
+    "LLVM_rebuilt": false,
+    "pinned_prebuilt_and_source_files_checked": 9002,
+    "compiler_receipt": {
+      "path": ".local/unified-build/final/build.json",
+      "sha256": "978ca3dd07460272394a8cd7ed268535a5d3eba2269810f11ec4a8a5139de933"
+    },
+    "toolchain_audit": {
+      "path": ".local/unified-build/prebuilt-toolchain-audit.json",
+      "sha256": "a9d3f7a28178dda6511c5431b2106551b4d6e96f40000d62ba11d7576cdf1d20"
+    },
+    "models": {
+      "q1": {
+        "library_sha256": "22d6ea1a7e918dc04eb3df67326ac73d7f80cd94ca2bd835f426f4f9b617afcc",
+        "frontend_cache_hit": false,
+        "frontend_invocations": 1,
+        "prepared_IR_sha256": "5cf00906682fa19e223a5d9b11d1ce853531dde3d0a37d00b63ff0f6d3d2127f",
+        "model_and_constant_object_sha256": [
+          "6524d0448a0d8ff13762cf56b18aecfabd1cdf9c25950e2f454b14fbb9cbea6e",
+          "95c79a1afa1e42be3e63eea9faa3d4840d474b439b34120c5a87f1cf2119e19b",
+          "ada1718801d49a393eed2ed52f835afcdae363ca5b72f4a915c7422c38203b82",
+          "556d94c9ad724d6e510ac0ebefdb85fde29264dfe84f9068aebe8685420f9a55"
+        ],
+        "constant_library_sha256": [
+          "0d1b1298eb7339ed0d4324884d0cf1e7727fb63c7f02dc52cae8c4bcd0bf867c",
+          "1700a01446763de1fbee46de08cd8dccb8d35ce3ee93eaab79483e6cb145b6a9",
+          "66be6d41ea56fcec9d82571551460a8c53caf4fa4200ef1d9c87fa956ed83bde"
+        ],
+        "receipt": {
+          "path": ".local/unified-build/final/models/q1/result.json",
+          "sha256": "edab43a52a29dbe9606c7276d8d425f4d5d1300ccb1802ef6f69ff7d07f48c55"
+        }
+      },
+      "q2": {
+        "library_sha256": "2c6d649f8fb62e9b784e16c474cf0df4172f61470be6294af1165c2fa127cd58",
+        "frontend_cache_hit": false,
+        "frontend_invocations": 1,
+        "prepared_IR_sha256": "9c7871cd97bdad6c8081535679af53b2de13a79ec1f25eba19ee37c9c796cec4",
+        "model_and_constant_object_sha256": [
+          "92722133d3a495f9871bca753934349fc5a6790eb2aa03ae134cc0a0cbafa2ea",
+          "95c79a1afa1e42be3e63eea9faa3d4840d474b439b34120c5a87f1cf2119e19b",
+          "ada1718801d49a393eed2ed52f835afcdae363ca5b72f4a915c7422c38203b82",
+          "556d94c9ad724d6e510ac0ebefdb85fde29264dfe84f9068aebe8685420f9a55"
+        ],
+        "constant_library_sha256": [
+          "0d1b1298eb7339ed0d4324884d0cf1e7727fb63c7f02dc52cae8c4bcd0bf867c",
+          "1700a01446763de1fbee46de08cd8dccb8d35ce3ee93eaab79483e6cb145b6a9",
+          "66be6d41ea56fcec9d82571551460a8c53caf4fa4200ef1d9c87fa956ed83bde"
+        ],
+        "receipt": {
+          "path": ".local/unified-build/final/models/q2/result.json",
+          "sha256": "74ee3a0c86a805f5d61c64f4f0d5eb1ad6e1aca5d6d9ce3cc34c81a0e14ca649"
+        }
+      }
+    }
+  },
+  "host_verification": {
+    "development": {
+      "tests": 699,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "IR_checks": 9,
+      "receipt": {
+        "path": ".local/unified-build/maintainer-cleanup-verification/result.json",
+        "sha256": "456c558de680e04fc5590bc2f9fa66b9f23a54713244d27d60538e4720afd443"
+      }
+    },
+    "offline_clone": {
+      "tests": 699,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "IR_checks": 9,
+      "receipt": {
+        "path": ".local/unified-build/offline-verification/result.json",
+        "sha256": "06108768c23783403be66265e0094b5475704eb698a567fe5062a5559f06d7ad"
+      }
+    }
+  },
+  "board": {
+    "platform": "QCS9075",
+    "DSP_calls": 336,
+    "CPU_model_fallback": false,
+    "compared": "complete input/output SHA256 (logits and all 56 KV tensors), positions, request boundaries, generated tokens, native termination and ARM/RPC/DSP input checksums",
+    "runs": [
+      {
+        "case": "final-cold16",
+        "DSP_calls": 16,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 0,
+          "misses": 2,
+          "guard_misses": 0
+        },
+        "reference_sha256": "d13e6ceac6c252b93b4db5b59390a21b86c8e66fd3090d51e379f7c56e04fcc3",
+        "packet_recording": "full",
+        "receipts": {
+          "comparison.json": {
+            "path": ".local/unified-build/validation/final-cold16/comparison.json",
+            "sha256": "1b76adba05dc6d93853015fb8ead59465d07bfeea15537139607c4d6f70386dd"
+          },
+          "execution.json": {
+            "path": ".local/unified-build/validation/final-cold16/execution.json",
+            "sha256": "a11ed576902f98dabb759d2e4df9149957a0aa50ce0bf9b04c350a163282af7d"
+          },
+          "result.json": {
+            "path": ".local/unified-build/validation/final-cold16/result.json",
+            "sha256": "255c8e8a6445f305c238773153dd8af666db85c1b045cb18a7b253c472ca4d55"
+          }
+        }
+      },
+      {
+        "case": "final-warm16",
+        "DSP_calls": 16,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 2,
+          "misses": 0,
+          "guard_misses": 0
+        },
+        "reference_sha256": "d13e6ceac6c252b93b4db5b59390a21b86c8e66fd3090d51e379f7c56e04fcc3",
+        "packet_recording": "full",
+        "receipts": {
+          "comparison.json": {
+            "path": ".local/unified-build/validation/final-warm16/comparison.json",
+            "sha256": "7bdb97e15b09489f707bbb4140ede846cc77342a8194285ac071a6fd4940347d"
+          },
+          "execution.json": {
+            "path": ".local/unified-build/validation/final-warm16/execution.json",
+            "sha256": "35e52e5789e1c07b28a688b28bf06651058375045c08066c1594479ae63b5a8b"
+          },
+          "result.json": {
+            "path": ".local/unified-build/validation/final-warm16/result.json",
+            "sha256": "34b052bd932f125a0325e47795687a08eb4efca8c343b0cfb56e4e96d7b1bc7c"
+          }
+        }
+      },
+      {
+        "case": "final-state-tails",
+        "DSP_calls": 6,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 2,
+          "misses": 0,
+          "guard_misses": 0
+        },
+        "reference_sha256": "228343d8fd8b5fbd107161a0e9499208355c905a8d99fc440d42d5c8a5ef2759",
+        "packet_recording": "hashes",
+        "receipts": {
+          "comparison.json": {
+            "path": ".local/unified-build/validation/final-state-tails/comparison.json",
+            "sha256": "1a8b669db2fca815c530058d49bd93636d1e6f6e73362e6575d5e11d18d9e01a"
+          },
+          "execution.json": {
+            "path": ".local/unified-build/validation/final-state-tails/execution.json",
+            "sha256": "79fd10031e333b802b517ebd2cd481ffe1779f63eeef26e1dda09f37c9f3b5cf"
+          },
+          "result.json": {
+            "path": ".local/unified-build/validation/final-state-tails/result.json",
+            "sha256": "7fe131ba4b391d78e98034322383bad8ac504ca582b762ac7ec99192ce6c206b"
+          }
+        }
+      },
+      {
+        "case": "final-state-eos",
+        "DSP_calls": 9,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 2,
+          "misses": 0,
+          "guard_misses": 0
+        },
+        "reference_sha256": "700a12d8ac0c5c5df57ede91927c2ef2b10e50e1abd1fb780814d0fad5a60513",
+        "packet_recording": "hashes",
+        "receipts": {
+          "comparison.json": {
+            "path": ".local/unified-build/validation/final-state-eos/comparison.json",
+            "sha256": "5493f9e67ed0a3b3a42be3d00814e38e67e26f5c6769bec141c199a200637bfc"
+          },
+          "execution.json": {
+            "path": ".local/unified-build/validation/final-state-eos/execution.json",
+            "sha256": "a877b20951259708a0cdee0fded919e78ed7c3944827a9a60bf5047048428e8e"
+          },
+          "result.json": {
+            "path": ".local/unified-build/validation/final-state-eos/result.json",
+            "sha256": "35e7ab3fb230b4167d44557c31d643fbbe2596f719e889f364a4066878a7291b"
+          }
+        }
+      },
+      {
+        "case": "final-state-old-long32",
+        "DSP_calls": 33,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 2,
+          "misses": 0,
+          "guard_misses": 0
+        },
+        "reference_sha256": "ec3f9b6419b86826a79f903a81de639343609f6ef553ff126d5ee07f157ebe0a",
+        "packet_recording": "hashes",
+        "receipts": {
+          "comparison.json": {
+            "path": ".local/unified-build/validation/final-state-old-long32/comparison.json",
+            "sha256": "87105f9bf9cfbaf07efa0807afa1b8c85e31560c8dccb6b2cfac4da131937f41"
+          },
+          "execution.json": {
+            "path": ".local/unified-build/validation/final-state-old-long32/execution.json",
+            "sha256": "b71de5990f481416771935d5c6abbb426c9d2b37e0d27327752679dace6bd953"
+          },
+          "result.json": {
+            "path": ".local/unified-build/validation/final-state-old-long32/result.json",
+            "sha256": "86c04f000decedc97066b95ffc3ee74b5dd92de477835ac4372433a733f44770"
+          }
+        }
+      },
+      {
+        "case": "final-state-prefill1024",
+        "DSP_calls": 33,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 2,
+          "misses": 0,
+          "guard_misses": 0
+        },
+        "reference_sha256": "7afe8652aebd26691c3abb314162d1407936b309b4b8b5ef3da554e6064fa499",
+        "packet_recording": "hashes",
+        "receipts": {
+          "comparison.json": {
+            "path": ".local/unified-build/validation/final-state-prefill1024/comparison.json",
+            "sha256": "4fefcf85a697d132722c4b605cef19d941593f5c255441d34677bd45a46b7724"
+          },
+          "execution.json": {
+            "path": ".local/unified-build/validation/final-state-prefill1024/execution.json",
+            "sha256": "e05c6dfe047db02296c36c2f598d18966aacf7e0a5c910a48aeb547990e1e801"
+          },
+          "result.json": {
+            "path": ".local/unified-build/validation/final-state-prefill1024/result.json",
+            "sha256": "90aa45d854737b340b515231e494a775660aa7e26146feea9f34007df8d9393b"
+          }
+        }
+      },
+      {
+        "case": "final-state-decode993",
+        "DSP_calls": 95,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 2,
+          "misses": 0,
+          "guard_misses": 0
+        },
+        "reference_sha256": "77be750942f957b82be5894b936d85e9a0379a083c49d43e1c3ef842a8ff95c8",
+        "packet_recording": "hashes",
+        "receipts": {
+          "comparison.json": {
+            "path": ".local/unified-build/validation/final-state-decode993/comparison.json",
+            "sha256": "84d532614abec66f9234a45d728759a60390e8e3b3621a658142fde1b7875f7c"
+          },
+          "execution.json": {
+            "path": ".local/unified-build/validation/final-state-decode993/execution.json",
+            "sha256": "528157d2bdb1417d97987643e86d8c6142a2ee503a74dbfedabe1b50acba77e6"
+          },
+          "result.json": {
+            "path": ".local/unified-build/validation/final-state-decode993/result.json",
+            "sha256": "3ebe82bdcdb96c24ca877079552cf64d0f4928ec46955464315338afa70b34cc"
+          }
+        }
+      },
+      {
+        "case": "final-state-code64",
+        "DSP_calls": 128,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 2,
+          "misses": 0,
+          "guard_misses": 0
+        },
+        "reference_sha256": "12e544e9d240b5998a654c5b2b9d7fc450e8f8139e32dd90ee5d4a3f8ac02fab",
+        "packet_recording": "hashes",
+        "receipts": {
+          "comparison.json": {
+            "path": ".local/unified-build/validation/final-state-code64/comparison.json",
+            "sha256": "14df59eb60ca026cdb156767691b73c46c63ec7523cb20357068555660db1dd5"
+          },
+          "execution.json": {
+            "path": ".local/unified-build/validation/final-state-code64/execution.json",
+            "sha256": "7a26f08550d32a69de629e2541713f6eb0ac88e753ab48507ceb9df034985be6"
+          },
+          "result.json": {
+            "path": ".local/unified-build/validation/final-state-code64/result.json",
+            "sha256": "c8c450f885e96846c524bba8e807d123147e6e20dfcb0df08db5f3cc52765b4f"
+          }
+        }
+      }
+    ],
+    "independent_saved_packet_audit": {
+      "packets": 64,
+      "path": ".local/unified-build/validation/final-raw-packet-audit.json",
+      "sha256": "8a64ff07cd287829f0b6062de961ec897e7eebe33cc1b0195ac04cf06140c5d1"
+    }
+  },
+  "cleanup": {
+    "details": "qwen3/validation/orphan-cleanup.json",
+    "application_Python_files_before": 268,
+    "application_Python_files_after": 261,
+    "application_Python_lines_before": 33174,
+    "application_Python_lines_after": 32700,
+    "count_scope": "qwen3/ and tools/ .py physical lines, including comments/blanks; tests and reference fixtures excluded"
+  },
+  "rollback": {
+    "application_revision": "9a5ce27372d495b2857e433bd5da02242f1b107b",
+    "compiler_revision": "aad5959e00e95ec5ffdec6595260969c6e08174c",
+    "accepted_bundle_sha256": "7b0a97f487690da6563d3b7abe105302195155f636d927fef795c61940a3a794",
+    "accepted_model_and_weight_files_replaced": false
+  },
+  "post_cleanup_verification": {
+    "status": "pending"
+  },
+  "limits": [
+    "Qwen3-0.6B, batch1, W8A8 linear layers, FP32 intermediates/KV, capacity1024, q1 and q2..32",
+    "LLVM/MLIR and Qualcomm SDK remain explicit prebuilt toolchain dependencies",
+    "Compiler build ran at68ff472; subsequent cleanup retained active function ASTs and generated code; runtime was qualified at6701f22",
+    "No new model, platform, language-quality or performance qualification"
+  ]
+}
