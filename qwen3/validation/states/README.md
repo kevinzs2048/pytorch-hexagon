@@ -25,5 +25,11 @@ the qualified asset bundle and, when testing a new build, `--libraries ...`.
 Use a fresh output directory for each case. The comparison honors the original
 generation budget and prefill chunk, including early-EOS requests.
 
+For long sequences, add `--packet-recording hashes` to avoid retaining hundreds
+of large KV packets. The native runner still hashes every byte of every input
+and output, and the same comparison runs. `full` (the default) also saves raw
+packets for diagnosis. A mismatch requires investigation before qualification;
+hash equality is never replaced by token-only comparison.
+
 These are state-transition checks, not an exhaustive prompt corpus or a language
 quality benchmark. They supplement the compiler/operator tests and source review.

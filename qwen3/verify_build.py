@@ -70,6 +70,8 @@ def main():
                         help='Optional JSON mapping q1/q2 to candidate path and SHA256; otherwise use the bundle')
     parser.add_argument('--reference', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--packet-recording', choices=('full', 'hashes'), default='full',
+                        help='Both compare complete packet hashes; full also retains the raw bytes')
     parser.add_argument('--capture-output', type=Path,
                         help='Fresh existing directory for the actual AOT build inputs')
     args = parser.parse_args()
@@ -88,7 +90,6 @@ def main():
         args.cache_dir = args.output.parent / (args.output.name+'-capture-cache')
         if args.cache_dir.exists():
             parser.error('Capture export needs a fresh AOT cache so both compiler callbacks execute')
-    args.packet_recording = 'full'
     prepare = (lambda catalog: stage_candidates(catalog, libraries)) if args.libraries else None
     generate(args, prepare_candidate=prepare)
     actual = json.loads((args.output/'result.json').read_text())
