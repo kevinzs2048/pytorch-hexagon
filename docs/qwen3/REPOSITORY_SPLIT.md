@@ -83,3 +83,11 @@ Historical numerical/compiler stages are not removed based only on naming or lac
 of imports from the warm inference path. The source-build consolidation gap in
 BUILD_STATUS.md remains open. Compiler algorithm and DSP kernel code are unchanged
 by this cleanup; the compiler commit adds only test fixtures.
+
+Cleanup validation: 531 host tests passed in both the development tree and an
+offline clone; 161 compiler/SDK-dependent tests skipped. The final runtime source
+passed 16 forwards in a fresh process/cache and 16 more in a second process using
+the same cache. Every input/output hash (logits and full KV), position, token and
+checksum matched the included reference. AOT counts were two misses on the first
+run and two hits on the second. See `qwen3/validation/code-cleanup.json` for source
+identities and evidence hashes. This does not qualify a clean compiler rebuild.

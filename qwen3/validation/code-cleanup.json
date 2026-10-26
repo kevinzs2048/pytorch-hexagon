@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "status": "runtime_cleanup_verified",
+  "application_code_revision": "6b3848816650bf28a1aac397fc6894e0392a5327",
+  "compiler_revision": "aad5959e00e95ec5ffdec6595260969c6e08174c",
+  "implementation_sha256": "046852a486705b73744a9f8d46ba1bd468a703e31501ce18be9a5434cb823c9c",
+  "host_tests": {
+    "passed": 531,
+    "skipped": 161,
+    "warnings": 38,
+    "offline_clone_same_result": true,
+    "python": "/home/kevin/miniconda3/envs/main/bin/python",
+    "logs": {
+      "cleanup-tests.log": {
+        "path": ".local/code-review-20261026/cleanup-tests.log",
+        "sha256": "4b648f20a3c9e50c25e2b8e1808e518c1dfd287a1aa20a5740bef888c35604c1"
+      },
+      "offline-tests.log": {
+        "path": ".local/code-review-20261026/offline-tests.log",
+        "sha256": "25c99f355f4b46c4bb240917f094d933ee58b48af1d829750570a68cedcc49de"
+      }
+    },
+    "skipped_scope": "Tests requiring explicitly configured numerical policy/compiler SDK executables"
+  },
+  "runtime_layout": {
+    "execution_source_files": 49,
+    "execution_Python_files_under_tools": 0,
+    "runtime_helpers_moved_byte_identically": 8,
+    "validation_functions_extracted_with_identical_AST": 5,
+    "tests_moved_into_test_tree": 7
+  },
+  "board": {
+    "platform": "QCS9075",
+    "python": "/usr/bin/python3",
+    "PYTHONPATH": "unset",
+    "final_source_forwards": 32,
+    "runs": [
+      {
+        "case": "final-cold16",
+        "DSP_calls": 16,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 0,
+          "misses": 2,
+          "guard_misses": 0
+        },
+        "comparison": {
+          "status": "identical",
+          "forwards": 16,
+          "compared": "all input/output packet hashes (logits + all KV), positions, tokens, FNV",
+          "reference_sha256": "d13e6ceac6c252b93b4db5b59390a21b86c8e66fd3090d51e379f7c56e04fcc3",
+          "candidate_sha256": "abcf9c1522be56e0a1737f40b69ab90f80655525298db4bc6e6b391a8bef1588"
+        },
+        "evidence": {
+          "result.json": {
+            "path": ".local/code-review-20261026/final-cold16/result.json",
+            "sha256": "abcf9c1522be56e0a1737f40b69ab90f80655525298db4bc6e6b391a8bef1588"
+          },
+          "execution.json": {
+            "path": ".local/code-review-20261026/final-cold16/execution.json",
+            "sha256": "6c51f496bc41441cd88c8347453a3981746402bb245b3d76790fdbaba8550c62"
+          },
+          "comparison.json": {
+            "path": ".local/code-review-20261026/final-cold16/comparison.json",
+            "sha256": "80c66d94c5c7de10c35e452c4122612b42e2019a9f5dc03cfcf1519d4f4ab253"
+          }
+        }
+      },
+      {
+        "case": "final-warm16",
+        "DSP_calls": 16,
+        "AOT_protocol": {
+          "captures": 2,
+          "hits": 2,
+          "misses": 0,
+          "guard_misses": 0
+        },
+        "comparison": {
+          "status": "identical",
+          "forwards": 16,
+          "compared": "all input/output packet hashes (logits + all KV), positions, tokens, FNV",
+          "reference_sha256": "d13e6ceac6c252b93b4db5b59390a21b86c8e66fd3090d51e379f7c56e04fcc3",
+          "candidate_sha256": "0c78108f1f9eb9634e5fbac76ed9d02ada8a9fe7f292728564a3b89a87b6ad50"
+        },
+        "evidence": {
+          "result.json": {
+            "path": ".local/code-review-20261026/final-warm16/result.json",
+            "sha256": "0c78108f1f9eb9634e5fbac76ed9d02ada8a9fe7f292728564a3b89a87b6ad50"
+          },
+          "execution.json": {
+            "path": ".local/code-review-20261026/final-warm16/execution.json",
+            "sha256": "6fca607ce11ef12fcfcf35e9e7482d218e739f1a49d810c766adc690c9f687a1"
+          },
+          "comparison.json": {
+            "path": ".local/code-review-20261026/final-warm16/comparison.json",
+            "sha256": "72413de9929881bd6d3dccd0192f5674fe2e82c490f8e052153ec5c46a6c0fa1"
+          }
+        }
+      }
+    ],
+    "CPU_model_fallback": false,
+    "new_model_compilations": 0
+  },
+  "removed": {
+    "recoverable_from_application_revision": "5e3f49c48ee0355534a22aad98963827cc5c1d88",
+    "items": [
+      "Unused validate_closed_probe function requiring an absent historical device auditor",
+      "Orphan test_runtime_dependencies.py for an absent historical admission API"
+    ]
+  },
+  "review_resolution": {
+    "R1": "Compiler-source path corrected; full source build not qualified",
+    "R2": "Profiler compiler-source path corrected; new profiling session not claimed",
+    "R3": "Numerical fixtures recovered; profile range test corrected; full retained suite collected",
+    "R4": "Shared runtime checks extracted; fresh native import process loads no maintainer Python code",
+    "R5": "Explicit execution dependency manifest with import-coverage and cache invalidation regressions",
+    "R6": "Maintainer entry propagates repository paths; direct build help and four maintainer help entries tested",
+    "R7": "Diagnostic output path parameterized; original kernel/module checks retained"
+  },
+  "limitations": [
+    "Clean full compiler/model source rebuild remains unqualified",
+    "Accepted historical 98-input build/acceptance chain is retained pending replacement",
+    "Compiler algorithm and DSP kernel code unchanged; compiler commit restores fixtures only",
+    "No new model accuracy, prompt coverage or performance claim"
+  ]
+}

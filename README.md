@@ -75,6 +75,9 @@ The host command collects all retained application tests, including the numerica
 policy tests. Tests requiring an explicit compiler/SDK skip when those tools are
 not configured; a skipped test is not numerical qualification. Repository
 separation has its historical record in `qwen3/validation/repository-split.json`.
+The cleanup record is `qwen3/validation/code-cleanup.json`: 531 host tests passed
+in both the development tree and an offline clone; 32 final-source board forwards
+matched the reference, including a second process with two AOT cache hits.
 [Reproduction](docs/qwen3/REPRODUCE.md) explains bundle export and regression.
 
 Maintainer scripts use a separate entry that supplies paths to child processes:
