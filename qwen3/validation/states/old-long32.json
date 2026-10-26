@@ -1,0 +1,763 @@
+{
+  "status": "ARM_native_dynamic_compiler_handoff_generate_completed",
+  "DSP_calls": 33,
+  "process_exit_code": 0,
+  "CPU_model_fallback": false,
+  "native_generate": true,
+  "generation_options": {
+    "max_new_tokens": 32,
+    "prefill_chunk_size": 8,
+    "do_sample": false,
+    "native_eos_token_ids": [
+      151645,
+      151643
+    ],
+    "generation_config_sha256": "2325da0f15bb848e018c5ae071b7943332e9f871d6b60e2ed22ca97d4cb993d2",
+    "specialize_python_floats": true,
+    "native_cache_capacity": 1024
+  },
+  "provenance": {
+    "source_name": "packet-hash-state-old-long32-v2",
+    "native_sha256": "bac7395451af76c9d2b7f4b5d31b1ade3e8753c1aa6439735332686ddc338078",
+    "acceptance_sha256": "663c1a7d7d85624cb1c130a4246e7dbb3223acce58b91598efe7025861a3f2b2",
+    "oracle_acceptance_sha256": "347ebd105d4d34c1db1d6d9f7fa6aa12465279cb3ca14c8317da2eff20127776",
+    "oracle_native_sha256": "3890e777de7c6a00696840dc87022a025e9aa0795dad6ffd43c0cd997dfb0a53",
+    "full_input_output_model_token_FNV_equality": true
+  },
+  "requests": [
+    {
+      "prompt_ids": [
+        785,
+        6722,
+        315,
+        9625,
+        374,
+        12095,
+        13,
+        576,
+        6722,
+        315,
+        9856,
+        374,
+        19846,
+        13
+      ],
+      "generated_ids": [
+        576,
+        6722,
+        315,
+        15344,
+        374,
+        21718,
+        13,
+        576,
+        6722,
+        315,
+        6323,
+        374,
+        26194,
+        13,
+        576,
+        6722,
+        315,
+        4882,
+        11862,
+        374,
+        50189,
+        13,
+        576,
+        6722,
+        315,
+        5616,
+        374,
+        26549,
+        13,
+        576,
+        6722,
+        315
+      ],
+      "terminal_observation": {
+        "last_token_is_native_eos": false,
+        "reached_requested_token_limit": true,
+        "generated_tokens": 32
+      }
+    }
+  ],
+  "captures": [
+    {
+      "contract": {
+        "variables": {
+          "query": [
+            2,
+            32
+          ]
+        }
+      },
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17"
+    },
+    {
+      "contract": {
+        "variables": {
+          "query": [
+            1,
+            1
+          ]
+        }
+      },
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7"
+    }
+  ],
+  "forwards": [
+    {
+      "step": 0,
+      "query": 8,
+      "request_index": 0,
+      "cache_positions": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "input_token_ids": [
+        785,
+        6722,
+        315,
+        9625,
+        374,
+        12095,
+        13,
+        576
+      ],
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17",
+      "input_sha256": "1a911c909fcfcd687d184f8286853b95ac15e918f1b3b7f9aeaf5fce1fb479db",
+      "output_sha256": "aa816bc1feba7165c8ad87ce6dc086ffba6ed9910c2842a6fbf94204dafa91fb",
+      "invoke": {
+        "AP_input_fnv1a32": 1114608045,
+        "DSP_input_fnv1a32": 1114608045,
+        "RPC_input_fnv1a32": 1114608045
+      }
+    },
+    {
+      "step": 1,
+      "query": 6,
+      "request_index": 0,
+      "cache_positions": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "input_token_ids": [
+        6722,
+        315,
+        9856,
+        374,
+        19846,
+        13
+      ],
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17",
+      "input_sha256": "355d49ec8d3992f74901d97995578207f5106c42cece63ab4195ba855370b44c",
+      "output_sha256": "c0d2fee7ea3ac0e90fe2b7fd97b5b3850740a3241069990c9a72f698b18a1e78",
+      "invoke": {
+        "AP_input_fnv1a32": 2472667291,
+        "DSP_input_fnv1a32": 2472667291,
+        "RPC_input_fnv1a32": 2472667291
+      }
+    },
+    {
+      "step": 2,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        14
+      ],
+      "input_token_ids": [
+        576
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "1c28c664d89a470ad5a51b5bc5cfc196cd2b8e574aa617df2e02ff80b770680b",
+      "output_sha256": "9aeed55f046c684259835ca667766d104cf9ab689aaef292d341e9e48942f752",
+      "invoke": {
+        "AP_input_fnv1a32": 3182410789,
+        "DSP_input_fnv1a32": 3182410789,
+        "RPC_input_fnv1a32": 3182410789
+      }
+    },
+    {
+      "step": 3,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        15
+      ],
+      "input_token_ids": [
+        6722
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "ad4bf7f5a878a51d8c6ab41afe8936caa8b079b97c6729e84ecc779b7c9cb278",
+      "output_sha256": "c3eced5a5a81565603723bc9ff487d3bfb8d6abd1296b766d14a2292a994095a",
+      "invoke": {
+        "AP_input_fnv1a32": 3047966406,
+        "DSP_input_fnv1a32": 3047966406,
+        "RPC_input_fnv1a32": 3047966406
+      }
+    },
+    {
+      "step": 4,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        16
+      ],
+      "input_token_ids": [
+        315
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "ce495e567ce71c059ece3914be40f47bf4e1d90f7338c7f68e6262e6e6bf162e",
+      "output_sha256": "e3bba953b51d6498afe27549b98d1b26b85bfd29f8b8f8950b52a9c161857afc",
+      "invoke": {
+        "AP_input_fnv1a32": 4024101215,
+        "DSP_input_fnv1a32": 4024101215,
+        "RPC_input_fnv1a32": 4024101215
+      }
+    },
+    {
+      "step": 5,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        17
+      ],
+      "input_token_ids": [
+        15344
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "2244dfc58eeb5d4a545718434ee66aa0fceea7ed52134e93a15084f25ddd25f7",
+      "output_sha256": "b4417e84b927a342a518b4dc02345c15bb539c7e98581eadf3bae482e213d086",
+      "invoke": {
+        "AP_input_fnv1a32": 912720285,
+        "DSP_input_fnv1a32": 912720285,
+        "RPC_input_fnv1a32": 912720285
+      }
+    },
+    {
+      "step": 6,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        18
+      ],
+      "input_token_ids": [
+        374
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "03ab43355d9793e5a88be58768c27ffdd063c7c9da455f9a30bced1ea16e0a52",
+      "output_sha256": "0bcc30ca8a20ccdbe52d4a1fd1fd37c3b7a63f944fc33cbf0d5ad927fb397ada",
+      "invoke": {
+        "AP_input_fnv1a32": 2103437628,
+        "DSP_input_fnv1a32": 2103437628,
+        "RPC_input_fnv1a32": 2103437628
+      }
+    },
+    {
+      "step": 7,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        19
+      ],
+      "input_token_ids": [
+        21718
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "4f425a8f3ccacff72129a3d13a380994e3ba0a0164ac72a8bc9f950ab6e40308",
+      "output_sha256": "e24a664a851b062a15a7b9f40139f1a38dd00cd8afa5939a15751789031dd10e",
+      "invoke": {
+        "AP_input_fnv1a32": 3537075736,
+        "DSP_input_fnv1a32": 3537075736,
+        "RPC_input_fnv1a32": 3537075736
+      }
+    },
+    {
+      "step": 8,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        20
+      ],
+      "input_token_ids": [
+        13
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "c7c3ef8fafde36071e5a4ce548a201ecc19da55178eeed2f57a2263882d226f2",
+      "output_sha256": "01f716d54b3030e64b3845e0241d7a3414b8d944da1920eecdaae2b3e6dc5692",
+      "invoke": {
+        "AP_input_fnv1a32": 4238028731,
+        "DSP_input_fnv1a32": 4238028731,
+        "RPC_input_fnv1a32": 4238028731
+      }
+    },
+    {
+      "step": 9,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        21
+      ],
+      "input_token_ids": [
+        576
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "b7471900eccee19a86be989332cacab464e2b448aefc31c0e6ed6ff21e90cec3",
+      "output_sha256": "cd0a265ba7e25d263a0c021e53bc53976a82f223c442fcf90ccde1ed2091d575",
+      "invoke": {
+        "AP_input_fnv1a32": 3175412957,
+        "DSP_input_fnv1a32": 3175412957,
+        "RPC_input_fnv1a32": 3175412957
+      }
+    },
+    {
+      "step": 10,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        22
+      ],
+      "input_token_ids": [
+        6722
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "1bfe51daecea813e524ccc6cc14c92e10cd062250c1dc0e6c49c066d90f60cbd",
+      "output_sha256": "9136dd4227cd4350e32588070af8cf71d1b311754319339f384f1928742ea7ce",
+      "invoke": {
+        "AP_input_fnv1a32": 1564882807,
+        "DSP_input_fnv1a32": 1564882807,
+        "RPC_input_fnv1a32": 1564882807
+      }
+    },
+    {
+      "step": 11,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        23
+      ],
+      "input_token_ids": [
+        315
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "aa0cb61e5f2c29ff8fb3cac78fbc987eedb9da9eb5488350b311633a505455b6",
+      "output_sha256": "d04f519b8c5163e466f72879637e0d6503cfb74fe08430929d2b16f38ff8d7f7",
+      "invoke": {
+        "AP_input_fnv1a32": 2174048309,
+        "DSP_input_fnv1a32": 2174048309,
+        "RPC_input_fnv1a32": 2174048309
+      }
+    },
+    {
+      "step": 12,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        24
+      ],
+      "input_token_ids": [
+        6323
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "9e07da35cd112ad6fc2ca268151c2bbc21c78de8857dc15094db55338713bcec",
+      "output_sha256": "8037cdd7b93f78da6567a4a8b5a8917c17b44fdd460d8a965f16de6fe42e190b",
+      "invoke": {
+        "AP_input_fnv1a32": 3218061681,
+        "DSP_input_fnv1a32": 3218061681,
+        "RPC_input_fnv1a32": 3218061681
+      }
+    },
+    {
+      "step": 13,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        25
+      ],
+      "input_token_ids": [
+        374
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "b93315fd3ed034a29ff024136aa45cce296eeacf562b11f0dc7b3a522c4456e1",
+      "output_sha256": "300cf8f59904464f979b060003291a2378e136187ddaccb80eba0e3e12b25c6b",
+      "invoke": {
+        "AP_input_fnv1a32": 2129818958,
+        "DSP_input_fnv1a32": 2129818958,
+        "RPC_input_fnv1a32": 2129818958
+      }
+    },
+    {
+      "step": 14,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        26
+      ],
+      "input_token_ids": [
+        26194
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "ac762b2a72bd0e50e347ef7ad54d66640ab94487bb1dcfa782ef4c98c8f6ece4",
+      "output_sha256": "2db9ea1a962b0f11d8a439dc258b0a630471c74cfce95780c32ab414c54e8115",
+      "invoke": {
+        "AP_input_fnv1a32": 2144758311,
+        "DSP_input_fnv1a32": 2144758311,
+        "RPC_input_fnv1a32": 2144758311
+      }
+    },
+    {
+      "step": 15,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        27
+      ],
+      "input_token_ids": [
+        13
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "2dc2b2a359fa63ed8768e59e2f1e7dc633fc277ed489d165212ffe161c709f13",
+      "output_sha256": "8a19853eb17b7d412806cdba62b14af4c23301321b70c95502bb005cd5925643",
+      "invoke": {
+        "AP_input_fnv1a32": 2809468971,
+        "DSP_input_fnv1a32": 2809468971,
+        "RPC_input_fnv1a32": 2809468971
+      }
+    },
+    {
+      "step": 16,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        28
+      ],
+      "input_token_ids": [
+        576
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "cad463e20fe7bb77081a47b4478d8096ab4b7403c8827c16bff119980577708d",
+      "output_sha256": "f5b9c0cad477bcc874f591c5eb6f5cfdffed8e5b99500927a8a5a023b62d8ba7",
+      "invoke": {
+        "AP_input_fnv1a32": 3841243457,
+        "DSP_input_fnv1a32": 3841243457,
+        "RPC_input_fnv1a32": 3841243457
+      }
+    },
+    {
+      "step": 17,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        29
+      ],
+      "input_token_ids": [
+        6722
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "efe8b87cbd1c633a633ebf03bec8205e64484911fc4b5dc63c869be53342a1b6",
+      "output_sha256": "28ac07272d31076d36dccc7af8df191680390d78be608e1740aa37aa9fe680a1",
+      "invoke": {
+        "AP_input_fnv1a32": 3400203668,
+        "DSP_input_fnv1a32": 3400203668,
+        "RPC_input_fnv1a32": 3400203668
+      }
+    },
+    {
+      "step": 18,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        30
+      ],
+      "input_token_ids": [
+        315
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "3d43759386a3c07f83858904c1e2827befe87068eb70322c173025bd51daf335",
+      "output_sha256": "0cf69ca46d023773d3848e341654001c7d7ca495922730d74e9ec6011a7e56b6",
+      "invoke": {
+        "AP_input_fnv1a32": 3860162270,
+        "DSP_input_fnv1a32": 3860162270,
+        "RPC_input_fnv1a32": 3860162270
+      }
+    },
+    {
+      "step": 19,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        31
+      ],
+      "input_token_ids": [
+        4882
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "0d4a64572624c3fd4a8118d299713d14f4455470addad20c818bc130671afca2",
+      "output_sha256": "f1d64405eb231799dc4e827c116e378e54e7e0d6e7026b73a0eb9e76752b8d42",
+      "invoke": {
+        "AP_input_fnv1a32": 1008086392,
+        "DSP_input_fnv1a32": 1008086392,
+        "RPC_input_fnv1a32": 1008086392
+      }
+    },
+    {
+      "step": 20,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        32
+      ],
+      "input_token_ids": [
+        11862
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "ec00d84fe23dc73a8a48ef0fe0e3b665c40a92525b740f765f427449c9cac3c4",
+      "output_sha256": "77b8f863e2418233bd63ba6964cb4ca6bafde7ea3cb2ded643960c00cdf58f7e",
+      "invoke": {
+        "AP_input_fnv1a32": 4257882212,
+        "DSP_input_fnv1a32": 4257882212,
+        "RPC_input_fnv1a32": 4257882212
+      }
+    },
+    {
+      "step": 21,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        33
+      ],
+      "input_token_ids": [
+        374
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "df091a0bccc5fac75d02160117765d079828663c1c191b5404f2911c3f3f8c6b",
+      "output_sha256": "f2752db2743afdc435a98772affba8fb11977bc7df4683eeb2d72c7ac6730dc7",
+      "invoke": {
+        "AP_input_fnv1a32": 1476148712,
+        "DSP_input_fnv1a32": 1476148712,
+        "RPC_input_fnv1a32": 1476148712
+      }
+    },
+    {
+      "step": 22,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        34
+      ],
+      "input_token_ids": [
+        50189
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "e05cc3d1ddc33070efe2dac2189c2098960c07b1e40f53b4806a930a48d7b497",
+      "output_sha256": "630be7d7627f73988166d5be2a1f28b41d54fc4fd32636dbc33f0e426e66f299",
+      "invoke": {
+        "AP_input_fnv1a32": 3966079071,
+        "DSP_input_fnv1a32": 3966079071,
+        "RPC_input_fnv1a32": 3966079071
+      }
+    },
+    {
+      "step": 23,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        35
+      ],
+      "input_token_ids": [
+        13
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "4385688ae69ea513d2ab1db004e66fe8f1b3f1bf731528fc52a56a094a148016",
+      "output_sha256": "555975ff20b14fdf363465371665ce8dc5b4cbfbb2346dc992f65a25b6da5fd1",
+      "invoke": {
+        "AP_input_fnv1a32": 1067387746,
+        "DSP_input_fnv1a32": 1067387746,
+        "RPC_input_fnv1a32": 1067387746
+      }
+    },
+    {
+      "step": 24,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        36
+      ],
+      "input_token_ids": [
+        576
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "f5f90a081b68f12a7294bbe8a7f3bd7b04864c595e59475f4918c1600e2895e1",
+      "output_sha256": "ad1821a8898c4165b870af95632b1fe71e1b3be1f710f7b29354fc3dba22279b",
+      "invoke": {
+        "AP_input_fnv1a32": 4071171484,
+        "DSP_input_fnv1a32": 4071171484,
+        "RPC_input_fnv1a32": 4071171484
+      }
+    },
+    {
+      "step": 25,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        37
+      ],
+      "input_token_ids": [
+        6722
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "f781209fd3dad90ee25bbc24ac7fbbd6032e029f95b15978cdd3f57f47aca04d",
+      "output_sha256": "c8b2d26ed0e0b78ac23996c1265f8882c9db1c444a21ab9f9852c229a68abec6",
+      "invoke": {
+        "AP_input_fnv1a32": 3286356041,
+        "DSP_input_fnv1a32": 3286356041,
+        "RPC_input_fnv1a32": 3286356041
+      }
+    },
+    {
+      "step": 26,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        38
+      ],
+      "input_token_ids": [
+        315
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "de5b056c999cff2b7f5213659e9e116d26b151782ccd1800050149709e9d4487",
+      "output_sha256": "d89b53480ff090afc9fab523f886a1aa23c49e12b6d56f872209cf3305f5725b",
+      "invoke": {
+        "AP_input_fnv1a32": 1134248927,
+        "DSP_input_fnv1a32": 1134248927,
+        "RPC_input_fnv1a32": 1134248927
+      }
+    },
+    {
+      "step": 27,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        39
+      ],
+      "input_token_ids": [
+        5616
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "86f9e1a5bf59773bce0314965d8928009356f7e5b369aeff704047c0ece0c595",
+      "output_sha256": "8ac7758753190e9c586f9b8d35fd9991b7d13d818835af78933578bf77a39c7b",
+      "invoke": {
+        "AP_input_fnv1a32": 2181822750,
+        "DSP_input_fnv1a32": 2181822750,
+        "RPC_input_fnv1a32": 2181822750
+      }
+    },
+    {
+      "step": 28,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        40
+      ],
+      "input_token_ids": [
+        374
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "141a75b89e2a4186a0f7b731689ba8ff39b42d267517607e155e4ccd7f3576cf",
+      "output_sha256": "f78ec0fb3e38cd3966ce44e4601ae1e03121483958c0b64e8824ae573a9a0bc0",
+      "invoke": {
+        "AP_input_fnv1a32": 528594761,
+        "DSP_input_fnv1a32": 528594761,
+        "RPC_input_fnv1a32": 528594761
+      }
+    },
+    {
+      "step": 29,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        41
+      ],
+      "input_token_ids": [
+        26549
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "98c378203f991b4d9ae396351c8599d2af2488b0e03fca530f0e1a2912eacfb7",
+      "output_sha256": "636033d1d15f0031233e68355673cd10f278a0f00f1d915cf29541b7364dfddb",
+      "invoke": {
+        "AP_input_fnv1a32": 1176442145,
+        "DSP_input_fnv1a32": 1176442145,
+        "RPC_input_fnv1a32": 1176442145
+      }
+    },
+    {
+      "step": 30,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        42
+      ],
+      "input_token_ids": [
+        13
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "3674886b09b59aa6d3db96b1f760da4d02cbc3ae4232ebe95493af2703fdfdc2",
+      "output_sha256": "e3b1730ac141bacd89f8294ed716fa6fa07cd9ac38bd049a3081fb7cc12864ba",
+      "invoke": {
+        "AP_input_fnv1a32": 4290823385,
+        "DSP_input_fnv1a32": 4290823385,
+        "RPC_input_fnv1a32": 4290823385
+      }
+    },
+    {
+      "step": 31,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        43
+      ],
+      "input_token_ids": [
+        576
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "c56bbb4c2b5ea48b4ded75c72eb882133dd9c73e3eb1eb44d1af7f4370d1942a",
+      "output_sha256": "bbe9abe319553201a693c7b1bdf716e06451be03f19eda4711acaf6c30358086",
+      "invoke": {
+        "AP_input_fnv1a32": 2706035807,
+        "DSP_input_fnv1a32": 2706035807,
+        "RPC_input_fnv1a32": 2706035807
+      }
+    },
+    {
+      "step": 32,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        44
+      ],
+      "input_token_ids": [
+        6722
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "8fc696c0a93afc5b2be7260f2a63fc1bfc6da6e4d2a1550d93abd99ad47a91d6",
+      "output_sha256": "dd84de78c6205a12a66b6516dfc950d0f7a8d938a4acde614127eb35cc7bfe2e",
+      "invoke": {
+        "AP_input_fnv1a32": 765648846,
+        "DSP_input_fnv1a32": 765648846,
+        "RPC_input_fnv1a32": 765648846
+      }
+    }
+  ]
+}

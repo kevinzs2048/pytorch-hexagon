@@ -1,0 +1,36 @@
+{
+  "scope": "Existing accepted state transitions, not an exhaustive prompt corpus",
+  "DSP_calls": 304,
+  "cases": [
+    {
+      "case": "tails",
+      "DSP_calls": 6,
+      "reference_sha256": "228343d8fd8b5fbd107161a0e9499208355c905a8d99fc440d42d5c8a5ef2759"
+    },
+    {
+      "case": "eos",
+      "DSP_calls": 9,
+      "reference_sha256": "700a12d8ac0c5c5df57ede91927c2ef2b10e50e1abd1fb780814d0fad5a60513"
+    },
+    {
+      "case": "old-long32",
+      "DSP_calls": 33,
+      "reference_sha256": "ec3f9b6419b86826a79f903a81de639343609f6ef553ff126d5ee07f157ebe0a"
+    },
+    {
+      "case": "prefill1024",
+      "DSP_calls": 33,
+      "reference_sha256": "7afe8652aebd26691c3abb314162d1407936b309b4b8b5ef3da554e6064fa499"
+    },
+    {
+      "case": "decode993",
+      "DSP_calls": 95,
+      "reference_sha256": "77be750942f957b82be5894b936d85e9a0379a083c49d43e1c3ef842a8ff95c8"
+    },
+    {
+      "case": "code64",
+      "DSP_calls": 128,
+      "reference_sha256": "12e544e9d240b5998a654c5b2b9d7fc450e8f8139e32dd90ee5d4a3f8ac02fab"
+    }
+  ]
+}

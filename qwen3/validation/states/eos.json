@@ -1,0 +1,355 @@
+{
+  "status": "ARM_native_dynamic_compiler_handoff_generate_completed",
+  "DSP_calls": 9,
+  "process_exit_code": 0,
+  "CPU_model_fallback": false,
+  "native_generate": true,
+  "generation_options": {
+    "max_new_tokens": 32,
+    "prefill_chunk_size": 8,
+    "do_sample": false,
+    "native_eos_token_ids": [
+      151645,
+      151643
+    ],
+    "generation_config_sha256": "2325da0f15bb848e018c5ae071b7943332e9f871d6b60e2ed22ca97d4cb993d2",
+    "specialize_python_floats": true,
+    "native_cache_capacity": 1024
+  },
+  "provenance": {
+    "source_name": "packet-hash-state-eos-v2",
+    "native_sha256": "c10cad23060927c55a95d476be8d0253a54d9707ff9249c43a014d28d8a9db6c",
+    "acceptance_sha256": "9211ca359032c85cf2922ae74a6df3c029bd5ffac63e2fe7cc5f7bbd509a0b9e",
+    "oracle_acceptance_sha256": "8fa6b62a88fa4662ecfffef45833b6ddf2e67ded27c1120bb6efa5725f1c9868",
+    "oracle_native_sha256": "802955698d80375f7f866e0e975f1338a0b061b09f62ef546cfae2e71189a352",
+    "full_input_output_model_token_FNV_equality": true
+  },
+  "requests": [
+    {
+      "prompt_ids": [
+        151644,
+        872,
+        198,
+        91680,
+        104787,
+        46944,
+        18600,
+        5122,
+        52801,
+        1773,
+        151645,
+        198,
+        151644,
+        77091,
+        198,
+        151667,
+        271,
+        151668,
+        271
+      ],
+      "generated_ids": [
+        52801,
+        1773,
+        151645
+      ],
+      "terminal_observation": {
+        "last_token_is_native_eos": true,
+        "reached_requested_token_limit": false,
+        "generated_tokens": 3
+      }
+    },
+    {
+      "prompt_ids": [
+        151644,
+        872,
+        198,
+        5598,
+        1172,
+        279,
+        7546,
+        220,
+        22,
+        13,
+        151645,
+        198,
+        151644,
+        77091,
+        198,
+        151667,
+        271,
+        151668,
+        271
+      ],
+      "generated_ids": [
+        22,
+        151645
+      ],
+      "terminal_observation": {
+        "last_token_is_native_eos": true,
+        "reached_requested_token_limit": false,
+        "generated_tokens": 2
+      }
+    }
+  ],
+  "captures": [
+    {
+      "contract": {
+        "variables": {
+          "query": [
+            2,
+            32
+          ]
+        }
+      },
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17"
+    },
+    {
+      "contract": {
+        "variables": {
+          "query": [
+            1,
+            1
+          ]
+        }
+      },
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7"
+    }
+  ],
+  "forwards": [
+    {
+      "step": 0,
+      "query": 8,
+      "request_index": 0,
+      "cache_positions": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "input_token_ids": [
+        151644,
+        872,
+        198,
+        91680,
+        104787,
+        46944,
+        18600,
+        5122
+      ],
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17",
+      "input_sha256": "f24da8455fe1c89e8712fd18c3bb50791eaba06ed3ce9d1945e6f6a23a5e3e51",
+      "output_sha256": "fe39c10ca869e5553d410957bd31dd05ef792eddccecb79b2484fe3ef70a1230",
+      "invoke": {
+        "AP_input_fnv1a32": 1530504251,
+        "DSP_input_fnv1a32": 1530504251,
+        "RPC_input_fnv1a32": 1530504251
+      }
+    },
+    {
+      "step": 1,
+      "query": 8,
+      "request_index": 0,
+      "cache_positions": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "input_token_ids": [
+        52801,
+        1773,
+        151645,
+        198,
+        151644,
+        77091,
+        198,
+        151667
+      ],
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17",
+      "input_sha256": "23599d09cff8d3bbfb2d463dbab6e3c9d7bc368ec3a371b3b4989fffe36a04f7",
+      "output_sha256": "1a17bdff5d51abc60d6f205f50d6067c4d5c104e2e2d9f55572fddb2bc35f6f7",
+      "invoke": {
+        "AP_input_fnv1a32": 4217337309,
+        "DSP_input_fnv1a32": 4217337309,
+        "RPC_input_fnv1a32": 4217337309
+      }
+    },
+    {
+      "step": 2,
+      "query": 3,
+      "request_index": 0,
+      "cache_positions": [
+        16,
+        17,
+        18
+      ],
+      "input_token_ids": [
+        271,
+        151668,
+        271
+      ],
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17",
+      "input_sha256": "ed29082d9fd7779f2c335b61c2debe9ec9714f509cb2ad1a490783d959af1a86",
+      "output_sha256": "13c21fc94acd88ba18a7eaa8e1c4046cba873f4c83274fd2a8c74f8f23858324",
+      "invoke": {
+        "AP_input_fnv1a32": 3066774998,
+        "DSP_input_fnv1a32": 3066774998,
+        "RPC_input_fnv1a32": 3066774998
+      }
+    },
+    {
+      "step": 3,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        19
+      ],
+      "input_token_ids": [
+        52801
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "d083032478b0f3f81b04af774272226b69afc8bd981137f9aaac1e849deb13de",
+      "output_sha256": "4083e6210e0abace14977473287195c3a15fbe636f4b428dc7498f69f7bb5f01",
+      "invoke": {
+        "AP_input_fnv1a32": 2899640395,
+        "DSP_input_fnv1a32": 2899640395,
+        "RPC_input_fnv1a32": 2899640395
+      }
+    },
+    {
+      "step": 4,
+      "query": 1,
+      "request_index": 0,
+      "cache_positions": [
+        20
+      ],
+      "input_token_ids": [
+        1773
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "681d50a514ba3c677f73ad45801adcaf93e798ace26903724a62e0d895fdba76",
+      "output_sha256": "fa1ebfd1255bc5f09b9b644efe42ab2b2af215b0fca50f7123f0bccb9b4ed895",
+      "invoke": {
+        "AP_input_fnv1a32": 3547998517,
+        "DSP_input_fnv1a32": 3547998517,
+        "RPC_input_fnv1a32": 3547998517
+      }
+    },
+    {
+      "step": 5,
+      "query": 8,
+      "request_index": 1,
+      "cache_positions": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "input_token_ids": [
+        151644,
+        872,
+        198,
+        5598,
+        1172,
+        279,
+        7546,
+        220
+      ],
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17",
+      "input_sha256": "31f0fcfeef519f62cdf1b3a906d39e7f6f88d8836f273f63551e13b91a3b62f7",
+      "output_sha256": "586ee94d3ca1238e49d6713bb90537d11a88c75f1e57932108c01b68c02b080d",
+      "invoke": {
+        "AP_input_fnv1a32": 778054942,
+        "DSP_input_fnv1a32": 778054942,
+        "RPC_input_fnv1a32": 778054942
+      }
+    },
+    {
+      "step": 6,
+      "query": 8,
+      "request_index": 1,
+      "cache_positions": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "input_token_ids": [
+        22,
+        13,
+        151645,
+        198,
+        151644,
+        77091,
+        198,
+        151667
+      ],
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17",
+      "input_sha256": "5bdcde77c2717053f3442425c28ed776bab5fb9ec454ffc54b2ac258f5f84745",
+      "output_sha256": "8278ff7ad80ccab5d7632af4d1561ec7e6293b84d542518a986bede2d82e8525",
+      "invoke": {
+        "AP_input_fnv1a32": 2505734565,
+        "DSP_input_fnv1a32": 2505734565,
+        "RPC_input_fnv1a32": 2505734565
+      }
+    },
+    {
+      "step": 7,
+      "query": 3,
+      "request_index": 1,
+      "cache_positions": [
+        16,
+        17,
+        18
+      ],
+      "input_token_ids": [
+        271,
+        151668,
+        271
+      ],
+      "DSO_sha256": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17",
+      "input_sha256": "f30e4836e45b0656ea2ca97c9a46aece9ef852615b690f333a91a368e9cc92f6",
+      "output_sha256": "b89ff834635202994826406f63cfd8806fd9a0c68653f49f6c7f651ae73f8948",
+      "invoke": {
+        "AP_input_fnv1a32": 2261389264,
+        "DSP_input_fnv1a32": 2261389264,
+        "RPC_input_fnv1a32": 2261389264
+      }
+    },
+    {
+      "step": 8,
+      "query": 1,
+      "request_index": 1,
+      "cache_positions": [
+        19
+      ],
+      "input_token_ids": [
+        22
+      ],
+      "DSO_sha256": "ef0945a6489cee90c62dc858c8df5ed4b83a4a91e9161644add84c31ae6688d7",
+      "input_sha256": "9217e97aa32fbdb160247d17e8ab7d8968d825bb2dc28047cecb356215fb47d6",
+      "output_sha256": "3c645905ebb1c9e99f8594f211a788595f47c847f11fc6f3e120de733cc03d5e",
+      "invoke": {
+        "AP_input_fnv1a32": 2303819736,
+        "DSP_input_fnv1a32": 2303819736,
+        "RPC_input_fnv1a32": 2303819736
+      }
+    }
+  ]
+}
