@@ -139,7 +139,7 @@ def prepare(root, prepared):
     (prepared / "proofs").mkdir()
     (prepared / "buffer_stream").symlink_to(root / "runtime/buffer_stream")
     (prepared / "rfsa/libhexagon_buffer_runner_skel.so").symlink_to(root / "runtime/libhexagon_buffer_runner_skel.so")
-    from tools.qwen3.split_constant_load_segments import patches, verify, MAX_READ_BYTES
+    from qwen3.runtime.support.split_constant_load_segments import patches, verify, MAX_READ_BYTES
     # Original constant files live in the bundle; bounded ELF views are generated
     # here and independently byte-checked by the unchanged native staging code.
     control = Path(str(prepared) + "-control")

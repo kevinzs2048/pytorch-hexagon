@@ -1374,7 +1374,7 @@
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/capture_configuration.py",
+      "path": "qwen3/runtime/support/capture_configuration.py",
       "origin": "runtime-feb45fd",
       "original_path": "tools/qwen3/capture_configuration.py",
       "sha256": "5ed20286f13b9a500b4f002094bde695bd01bede1d9c9908e66bef4bf05be1cf",
@@ -1458,7 +1458,7 @@
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/exact_parameter_bytes.py",
+      "path": "qwen3/runtime/support/exact_parameter_bytes.py",
       "origin": "runtime-feb45fd",
       "original_path": "tools/qwen3/exact_parameter_bytes.py",
       "sha256": "be1f18e9d07a31c8473861ab301e1213cfd53e999f5342ca3e251862d37183d7",
@@ -1479,7 +1479,7 @@
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/generation_timing.py",
+      "path": "qwen3/runtime/support/generation_timing.py",
       "origin": "runtime-feb45fd",
       "original_path": "tools/qwen3/generation_timing.py",
       "sha256": "4a4d5efb9eb96df19990c67570348b3934a17236f4ef87a41b7b34a767b4389a",
@@ -1514,7 +1514,7 @@
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/guarded_module_constants.py",
+      "path": "qwen3/runtime/support/guarded_module_constants.py",
       "origin": "runtime-feb45fd",
       "original_path": "tools/qwen3/guarded_module_constants.py",
       "sha256": "0333266df664bc19c37bc8a2ba3ae5672ad68c8972e0e7092c1afb2ebe6af4b9",
@@ -1577,7 +1577,7 @@
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/joined_input_packet.py",
+      "path": "qwen3/runtime/support/joined_input_packet.py",
       "origin": "runtime-feb45fd",
       "original_path": "tools/qwen3/joined_input_packet.py",
       "sha256": "d458ce15532bdcb92a0cef685f9fc2003bfde42324b029eb4a7365cad55739af",
@@ -1619,7 +1619,7 @@
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/native_aot_output.py",
+      "path": "qwen3/runtime/support/native_aot_output.py",
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/native_aot_output.py",
       "sha256": "e4114f5781113e03fd530eaeacdaefd4e6ea27f23981425383745c45eeae56f6",
@@ -3012,14 +3012,14 @@
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/split_constant_load_segments.py",
+      "path": "qwen3/runtime/support/split_constant_load_segments.py",
       "origin": "runtime-feb45fd",
       "original_path": "tools/qwen3/split_constant_load_segments.py",
       "sha256": "1ec4902e70a1ac7323731494114bf59c9f57bc02550c238a261fa6fc0300bb26",
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/startup_timing.py",
+      "path": "qwen3/runtime/support/startup_timing.py",
       "origin": "runtime-feb45fd",
       "original_path": "tools/qwen3/startup_timing.py",
       "sha256": "ac3915105c767b99e0a87f94424689cd51d6a74be17163c87c5c2daff0ee1ca5",
@@ -3047,49 +3047,49 @@
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/test_constant_load_segments.py",
+      "path": "test/python/qwen3/test_constant_load_segments.py",
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/test_constant_load_segments.py",
       "sha256": "9c29ce5e6d1ee1a5682753a20aa262d78e83450cb99cc97db6cfbb662a1d25d0",
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/test_exact_parameter_bytes.py",
+      "path": "test/python/qwen3/test_exact_parameter_bytes.py",
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/test_exact_parameter_bytes.py",
       "sha256": "678ca92f2da59e9bf56535de25d20283e5f15aad7f622ddcaa96cf3ee141877c",
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/test_guarded_module_constants.py",
+      "path": "test/python/qwen3/test_guarded_module_constants.py",
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/test_guarded_module_constants.py",
       "sha256": "d09e0522a3dbe4ccc2e02c170918858f7f6e93ba9c6e5ad513b30f440abd00f2",
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/test_joined_input_packet.py",
+      "path": "test/python/qwen3/test_joined_input_packet.py",
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/test_joined_input_packet.py",
       "sha256": "d92ca198e43065623c3acd9d0939217c32e4eb8b210d2781662a6348dc85d9a9",
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/test_native_aot_generation_args.py",
+      "path": "test/python/qwen3/test_native_aot_generation_args.py",
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/test_native_aot_generation_args.py",
       "sha256": "15182c62e31429b8cc697ad6d745cecb01746f706fa7ebc19ac32107b0e78ad2",
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/test_native_aot_generation_protocol.py",
+      "path": "test/python/qwen3/test_native_aot_generation_protocol.py",
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/test_native_aot_generation_protocol.py",
       "sha256": "93a15f6df8619b1cf06d7db4eef3cd1ba30f61410505f08651ddb9084fad40fc",
       "owner": "application"
     },
     {
-      "path": "tools/qwen3/test_native_aot_output.py",
+      "path": "test/python/qwen3/test_native_aot_output.py",
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/test_native_aot_output.py",
       "sha256": "e7602c0244146c939d110c0f153e8d7b0bf7c28a5a560801a327b22043b8802c",
@@ -3100,7 +3100,9 @@
       "origin": "delivery-7ec9936",
       "original_path": "tools/qwen3/test_runtime_dependencies.py",
       "sha256": "8a6006d4f72763449ae531da28201352e623f00b1e8ae79178bd5c868b73ed7e",
-      "owner": "application"
+      "owner": "application",
+      "archived_at": "5e3f49c48ee0355534a22aad98963827cc5c1d88",
+      "status": "removed_orphan_test_of_absent_historical_API"
     },
     {
       "path": "tools/qwen3/trace_fastrpc_mapping_arm.py",

@@ -4,6 +4,8 @@ The immutable native entry owns model loading, all parameter guards, the
 compiler, DSP callbacks and generation. A request may capture q1, q2..32, or
 both. This entry never runs a CPU reference or declares new-prompt equality.
 """
+from qwen3.runtime_checks import require_original_guard_configuration, require_generation_protocol
+
 import argparse
 import hashlib
 import json
@@ -13,49 +15,6 @@ import runpy
 import signal
 import sys
 import time
-
-
-def require_original_guard_configuration(settings):
-    for key in ('bypass_autograd_cache_key', 'unsafe_skip_cache_dynamic_shape_guards',
-                'caching_precompile'):
-        if settings.get(key) is not False:
-            raise ValueError('Original full guards required: ' + key)
-
-
-def require_generation_protocol(native, events, counters, *, compiler_mode='original_live_handoff'):
-    statuses = {'original_live_handoff': 'ARM_native_dynamic_compiler_handoff_generate_completed',
-                'original_warm_catalog': 'ARM_native_dynamic_warm_generate_completed'}
-    if compiler_mode not in statuses:
-        raise ValueError('Explicit original compiler mode required')
-    if (native['status'] != statuses[compiler_mode]
-            or native['process_exit_code'] != 0
-            or native['CPU_model_fallback'] is not False
-            or native['native_generate'] is not True
-            or type(native['DSP_calls']) is not int or native['DSP_calls'] <= 0
-            or len(native['forwards']) != native['DSP_calls']
-            or native['frontend_invocations'] != 0
-            or native['machine_code_compilations'] != 0):
-        raise ValueError('Complete original native generation and warm compiler required')
-    captures = native['captures']
-    if (not 1 <= len(captures) <= 2 or len(events) != len(captures)
-            or [e['graph'] for e in events] != [c['graph'] for c in captures]
-            or any(e['stage'] not in ('original_native_compiler_on_AOT_miss',
-                'original_native_compiler_on_AOT_hit_rebind') for e in events)
-            or any(e.get('current_model_rebound') is not True for e in events
-                   if e['stage'].endswith('hit_rebind'))):
-        raise ValueError('Every actual original capture needs a current native binding')
-    hits = sum(e['stage'].endswith('hit_rebind') for e in events)
-    misses = len(events) - hits
-    expected = dict(total=len(events), autograd_cache_hit=hits,
-        autograd_cache_miss=misses, autograd_cache_saved=misses,
-        autograd_cache_bypass=0)
-    if (any(type(counters.get(k, 0)) is not int or counters.get(k, 0) != v
-            for k, v in expected.items())
-            or type(counters.get('autograd_cache_guard_miss', 0)) is not int
-            or counters.get('autograd_cache_guard_miss', 0) < 0):
-        raise ValueError('Actual framework hit/miss/save counts and no bypass required')
-    return dict(captures=len(events), hits=hits, misses=misses,
-        guard_misses=counters.get('autograd_cache_guard_miss', 0))
 
 
 def require_artifact_catalog(proof, catalog, catalog_sha, manifest):
@@ -127,7 +86,7 @@ def main():
     import torch._dynamo.backends.common as common
     import torch._functorch.config as config
     from torch._dynamo.utils import counters
-    from native_aot_output import native_cache_scope, namespace_digest
+    from qwen3.runtime.support.native_aot_output import native_cache_scope, namespace_digest
     from tools.qwen3.run_integer_regressions import validate_parameter_mode, validate_float_policy
     def settings():
         return dict(bundled_autograd_cache=config.bundled_autograd_cache,

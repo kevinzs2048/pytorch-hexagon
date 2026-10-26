@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+import shutil
 
 import pytest
 
@@ -23,6 +24,17 @@ def state(pid):
 
 @pytest.fixture
 def owned_controller(tmp_path):
+    # The scheduler requires committed source. Exercise the current files in a
+    # disposable clean repository, independent of edits in the developer tree.
+    checkout = tmp_path/'scheduler'
+    scripts = checkout/'tools/qwen3'
+    scripts.mkdir(parents=True)
+    for name in ('build.py', 'run_cold_boundary_probes.py'):
+        shutil.copyfile(ROOT/'tools/qwen3'/name, scripts/name)
+    for command in (['init', '-q'], ['add', 'tools'],
+                    ['-c', 'user.name=Qwen test', '-c', 'user.email=test@example.invalid',
+                     '-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Test fixture']):
+        subprocess.run(['git', '-C', str(checkout), *command], check=True, capture_output=True)
     run = tmp_path/'run'
     run.mkdir()
     (run/'cold').mkdir()
@@ -56,7 +68,7 @@ time.sleep(20)
     config.write_text(json.dumps(dict(python=sys.executable, board={'ssh_target':'invalid-unused-board'})))
     plan.write_text(json.dumps(dict(status='staged_NOT_executed')))
     output = tmp_path/'probe-result'
-    argv = [sys.executable, str(SCHEDULER), '--config', str(config), '--controller-process', str(process_path),
+    argv = [sys.executable, str(scripts/SCHEDULER.name), '--config', str(config), '--controller-process', str(process_path),
         '--controller-command', str(command_path), '--controller-run', str(run), '--cold-child-pid', str(child),
         '--plan', str(plan), '--deadline-unix', str(int(time.time()+20)), '--output', str(output)]
     try:

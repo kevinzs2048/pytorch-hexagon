@@ -84,7 +84,7 @@ def main():
             or any(Path('/proc', str(pid)).exists() for pid in producer['active_processes'].values())):
         raise ValueError('Actual current-model warm generation and normal source-bound owner required')
     manifest = producer['manifest']
-    if (manifest['adapter_sha256'] != sha(Path(__file__).with_name('native_aot_output.py'))
+    if (manifest['adapter_sha256'] != sha((Path(__file__).resolve().parents[2]/'qwen3/runtime/support/native_aot_output.py'))
             or manifest['numerical_revision'] != model['source_revision']
             or manifest['recipe_sha256'] != index['machine_recipe']['sha256']):
         raise ValueError('Actual current numerical model and unchanged adapter and recipe required')

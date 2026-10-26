@@ -139,9 +139,9 @@ def main():
         expected=sha(Path(base['source_root'])/'qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py')
         actual=subprocess.check_output(ssh+[shlex.join(['sha256sum',str(diagnostic)])],text=True).split()[0]
         if actual!=expected:raise ValueError('Maintained diagnostic native runner source changed')
-        split_source=Path(__file__).with_name('split_constant_load_segments.py')
+        split_source=(Path(__file__).resolve().parents[2]/'qwen3/runtime/support/split_constant_load_segments.py')
         expected_files={'qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py':expected,
-            'tools/qwen3/split_constant_load_segments.py':sha(split_source)}
+            'qwen3/runtime/support/split_constant_load_segments.py':sha(split_source)}
         # A candidate oracle already deployed this committed runner. An older
         # baseline may differ only in this runner and the byte-proof verifier.
         if loader_policy and expected==oracle['source_sha256']:
@@ -166,10 +166,10 @@ def main():
             # This oracle already executed the joined serializer. Reuse its
             # exact deployed bytes; do not redeploy unrelated tooling against
             # the numerical revision or borrow another serializer's receipt.
-            packer=source/'tools/qwen3/joined_input_packet.py'
+            packer=source/'qwen3/runtime/support/joined_input_packet.py'
             expected=oracle['input_packing_source_sha256']
             actual=subprocess.check_output(ssh+[shlex.join(['sha256sum',str(packer)])],text=True).split()[0]
-            if actual!=expected or sha(Path(__file__).with_name('joined_input_packet.py'))!=expected:
+            if actual!=expected or sha((Path(__file__).resolve().parents[2]/'qwen3/runtime/support/joined_input_packet.py'))!=expected:
                 raise ValueError('The accepted joined serializer source changed')
             input_packing=dict(status='already_accepted_joined_deployment_reused',
                 original_source=str(source),deployment=str(source),packer_sha256=expected,

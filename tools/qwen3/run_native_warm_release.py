@@ -121,7 +121,7 @@ def main():
             framework = read(HERE/'board-framework.lock.json')
             # The actual coordinator verifies the pinned board framework first;
             # namespace platform fields are overwritten from the actual ARM process.
-            manifest = dict(adapter_sha256=sha(HERE/'native_aot_output.py'),
+            manifest = dict(adapter_sha256=sha(ROOT/'qwen3/runtime/support/native_aot_output.py'),
                 native_source_sha256=native['source_sha256'], numerical_revision=model['source_revision'],
                 recipe_sha256=index['machine_recipe']['sha256'], runtime_catalog_sha256=index['runtime_catalog']['sha256'],
                 model_parameter_sha256=context['historical_parameter_sha256'],

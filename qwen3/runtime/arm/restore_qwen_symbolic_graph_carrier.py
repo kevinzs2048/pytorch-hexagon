@@ -46,7 +46,7 @@ def restore_carrier(producer, expected_sha, *, trusted_local=False):
             or record['CPU_model_forward'] is not False):
         raise ValueError('Original pinned non-executed Qwen capture required')
     rows = record['immutable_inputs']
-    from tools.qwen3.guarded_module_constants import validate_capture_constants
+    from qwen3.runtime.support.guarded_module_constants import validate_capture_constants
     expected_bindings=validate_capture_constants(record)
     if record.get('guarded_module_constants') is not None and not live:
         raise ValueError('Native constant convention requires an actual live producer')

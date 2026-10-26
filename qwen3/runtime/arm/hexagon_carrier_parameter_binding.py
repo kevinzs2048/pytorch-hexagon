@@ -19,7 +19,7 @@ class CarrierParameterBinding(DynamicParameterBinding):
             raise ValueError('Native model module required')
         declaration=record.get('guarded_module_constants')
         if declaration is not None:
-            from tools.qwen3.guarded_module_constants import GuardedModuleConstants,validate_capture_constants
+            from qwen3.runtime.support.guarded_module_constants import GuardedModuleConstants,validate_capture_constants
             validate_capture_constants(record)
             self.guarded_constants=GuardedModuleConstants(model,declaration['records'])
             self.cache_constants_signature=self.guarded_constants.signature

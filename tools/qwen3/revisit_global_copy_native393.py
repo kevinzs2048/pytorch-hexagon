@@ -61,7 +61,7 @@ def require_same_native_callback(original, candidate):
     expected = original.replace('    decode_outputs = unpack_torch_outputs\n',
         "    decode_outputs = unpack_torch_outputs\n    pack_inputs = pack_torch_request\n"
         "    if args.input_packer == 'joined':\n"
-        "        from tools.qwen3.joined_input_packet import pack_torch_request_joined\n"
+        "        from qwen3.runtime.support.joined_input_packet import pack_torch_request_joined\n"
         "        pack_inputs = pack_torch_request_joined\n")
     expected = expected.replace('packet, layout, dimensions = pack_torch_request(contract, bound)',
                                 'packet, layout, dimensions = pack_inputs(contract, bound)')
@@ -72,7 +72,7 @@ def require_same_native_callback(original, candidate):
     expected = expected.replace('        arm_forward_timing=dict(',
         "        input_packer=args.input_packer,\n"
         "        input_packing_source_sha256=(sha(Path(__file__).resolve().parents[3]/\n"
-        "            'tools/qwen3/joined_input_packet.py') if args.input_packer == 'joined' else\n"
+        "            'qwen3/runtime/support/joined_input_packet.py') if args.input_packer == 'joined' else\n"
         "            sha(Path(__file__).resolve().parents[3]/\n"
         "                'qcom_hexagon_backend/backend/hexagon_dynamic_buffer_io.py')),\n"
         "        arm_forward_timing=dict(")

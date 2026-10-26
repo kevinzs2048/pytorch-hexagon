@@ -15,7 +15,7 @@ import time
 
 from build import ROOT, entry, sha, write
 sys.path.insert(0, str(ROOT))
-from joined_input_packet import pack_torch_request_joined
+from qwen3.runtime.support.joined_input_packet import pack_torch_request_joined
 
 
 def main():
@@ -37,7 +37,7 @@ def main():
     own=compiler_root()/'qcom_hexagon_backend/backend/hexagon_dynamic_buffer_io.py'
     if sha(original)!=sha(own):
         raise ValueError('Frozen original layout, validation and wrapper generator must be unchanged')
-    candidate=ROOT/'tools/qwen3/joined_input_packet.py'
+    candidate=ROOT/'qwen3/runtime/support/joined_input_packet.py'
     if arm:
         if (not a.source_revision or not re.fullmatch('[0-9a-f]{40}',a.source_revision)
                 or sha(candidate)!=a.candidate_sha256 or sha(original)!=a.original_sha256):

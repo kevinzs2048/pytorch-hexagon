@@ -33,3 +33,17 @@ Remaining clean-build work:
 `clean_compiler_rebuild_verified: false`. The portable execution bundle does not
 require a compiler host during inference. This preserves the existing compiled
 route and makes its deployment reproducible without claiming a new build result.
+
+## Maintainer entry after application cleanup
+
+Use `python -m qwen3.tools build --config ... --output ...` and
+`python -m qwen3.tools verify --config ... --build ... --output ...` from the
+application root. The launcher supplies the application, compiler and helper
+paths to Python subprocesses. `python tools/qwen3/build.py --help` also works
+without a private PYTHONPATH.
+
+The q2-tail builder and memory profiler now resolve native sources through the
+compiler dependency. Verification resolves tests under `test/python/torch-mlir`.
+These fixes remove broken paths; they do not replace the historical 98-input
+accepted recipe with a newly qualified clean-build pipeline. Keep its evidence
+and source dependencies until that replacement has been built and compared.

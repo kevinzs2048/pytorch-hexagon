@@ -60,7 +60,7 @@ def admit(index, baseline, state_suite, abba):
         raise ValueError('Complete independent original cache state304 and paired native64 required')
     indexed_files(suite,refs);indexed_files(paired,refs)
     manifest=paired['backend_namespace']
-    if (manifest['adapter_sha256']!=sha(Path(__file__).with_name('native_aot_output.py'))
+    if (manifest['adapter_sha256']!=sha((Path(__file__).resolve().parents[2]/'qwen3/runtime/support/native_aot_output.py'))
             or manifest['numerical_revision']!=model['source_revision']
             or manifest['recipe_sha256']!=index['machine_recipe']['sha256']
             or manifest['runtime_catalog_sha256']!=index['runtime_catalog']['sha256']):
@@ -169,7 +169,7 @@ def main():
         require_artifact_catalog(artifact,catalog,artifact['catalog']['sha256'],manifest)
     a.output.mkdir();deploy=Path(board['observations'])/(a.name+'-aot-wrapper-sources')
     subprocess.run(ssh+[shlex.join(['mkdir',str(deploy)])],check=True)
-    adapter=Path(__file__).with_name('native_aot_output.py');wrapper=Path(__file__).with_name('run_native_aot_generate_arm.py')
+    adapter=(Path(__file__).resolve().parents[2]/'qwen3/runtime/support/native_aot_output.py');wrapper=Path(__file__).with_name('run_native_aot_generate_arm.py')
     deployed=[]
     for source in (adapter,wrapper):
         target=deploy/source.name

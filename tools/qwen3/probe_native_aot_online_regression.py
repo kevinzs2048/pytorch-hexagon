@@ -60,7 +60,7 @@ def main():
     ssh=['ssh','-o','BatchMode=yes','-o','ConnectTimeout=5',board['ssh_target']]
     if subprocess.run(ssh+['pgrep -x buffer_stream'],capture_output=True).returncode!=1:
         raise ValueError('No concurrent DSP owner permitted')
-    adapter=Path(__file__).with_name('native_aot_output.py');wrapper=Path(__file__).with_name('run_native_aot_observed_arm.py')
+    adapter=(Path(__file__).resolve().parents[2]/'qwen3/runtime/support/native_aot_output.py');wrapper=Path(__file__).with_name('run_native_aot_observed_arm.py')
     delegate=a.online_source/'tools/qwen3/run_online_regression.py'
     native=a.online_source/'qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py'
     observer=a.online_source/'tools/qwen3/run_online_packet_trace_arm.py'

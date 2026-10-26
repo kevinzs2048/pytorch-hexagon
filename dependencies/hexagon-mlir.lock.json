@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "repository": "git@github.com:kevinzs2048/hexagon-mlir.git",
-  "revision": "e593bd292fa4136ef142187c7c4337cfc73ad1e5",
+  "revision": "aad5959e00e95ec5ffdec6595260969c6e08174c",
   "checkout": "third_party/hexagon-mlir",
   "files": {
     ".github/ISSUE_TEMPLATE/bug_report.md": "f741dba3345bde10b928cff4ba97d36d9f4ae23e61295fa484639f34ef16858f",
@@ -574,6 +574,8 @@
     "test/python/process_lwp.py": "40568bd1108a23edd551a2b8a7f5d0ec8009f0a1f9033965edeffcf575ded0e8",
     "test/python/torch-mlir/__init__.py": "7bfc0c2e280bb7364b54fe730f61067df0bcd5e4138f3a876bb8d016714ae2be",
     "test/python/torch-mlir/gpt2lmheadmodel.py": "5ec37d2e17963522283ca0fdc6bca4b2b16c0783d10ae73e494b3480e7c801a5",
+    "test/python/torch-mlir/qwen3_qk_bufferization.mlir": "5a66f79bd5db7728e2b8c89c1838380fcc09523d9633740f901c93fb17bbfb67",
+    "test/python/torch-mlir/qwen_silu_fixture.py": "3d6bf1ad6366be3d8b5dec460dbf0e23b8d57803b3e3b493d57b46173eb2a041",
     "test/python/torch-mlir/test_add_matmul_softmax.py": "e72d72c8039751e6ed390f28d219ea6b3832affc5421ff4c2ed4f07535b05f0e",
     "test/python/torch-mlir/test_concat_linear_torch.py": "ff99c4b5d2618a17af98a7e8d83968dda8a20caea53e94949bb58b56f91c984e",
     "test/python/torch-mlir/test_gelu_torch.py": "ea8b3bb15b27c4bd29b2c31ce62cf7a9901e8924b458a72ca0b971640334534e",

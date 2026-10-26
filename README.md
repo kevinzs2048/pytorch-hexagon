@@ -52,6 +52,9 @@ capacity 1024, reusable q1 and q2–32 execution domains. There is no CPU forwar
 - `qwen3/cli.py`, `qwen3/bundle.py`: public entry, portable assets and checks.
 - `qwen3/compiler_dependency.py`: explicit compiler dependency resolution.
 - `qwen3/runtime/arm/`: graph capture, Qwen3 adaptation, native generation and KV integration.
+- `qwen3/runtime/support/`: AOT cache, byte guards, input packing, timing and constant-loader support.
+- `qwen3/runtime_checks.py`: shared generation and full-output validation; no experiment launchers.
+- `qwen3/runtime-sources.json`: explicit execution-source dependency set for cache invalidation.
 - `tools/qwen3/`: application build/deployment/regression orchestration (Python).
 - `test/`, `qwen3/validation/`: tests and included reference hashes.
 - `dependencies/`: compiler lock and application-side Transformers patch.
@@ -68,10 +71,24 @@ compiler scatter lowering and bufferization belong there.
 python -m qwen3 test
 ```
 
-The earlier portable execution entry passed 107 host tests and complete tensor-hash
-comparisons on the board. Repository separation has its own validation record in
-`qwen3/validation/repository-split.json`. Do not infer new acceptance from an older
-report alone. [Reproduction](docs/qwen3/REPRODUCE.md) explains bundle export and regression.
+The host command collects all retained application tests, including the numerical
+policy tests. Tests requiring an explicit compiler/SDK skip when those tools are
+not configured; a skipped test is not numerical qualification. Repository
+separation has its historical record in `qwen3/validation/repository-split.json`.
+[Reproduction](docs/qwen3/REPRODUCE.md) explains bundle export and regression.
+
+Maintainer scripts use a separate entry that supplies paths to child processes:
+
+```bash
+python -m qwen3.tools build --help
+python -m qwen3.tools verify --help
+python -m qwen3.tools profile_model_memory --help
+```
+
+The public inference entry imports no Python code from `tools/`. Historical
+build/review tools remain internal: some are still dependencies of the accepted
+compiler recipe and are not portable source-build APIs. Their retention does not
+mean every experiment became a production feature.
 
 A **clean full compiler rebuild remains unqualified**. Execution with the accepted
 compiled assets and rebuilding those assets from source are different tasks. See

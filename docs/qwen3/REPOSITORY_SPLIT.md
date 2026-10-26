@@ -11,7 +11,7 @@ This split supersedes that layout.
 
 The compiler lives in its own Git repository and is consumed as the
 `third_party/hexagon-mlir` submodule. The application locks commit
-`e593bd292fa4136ef142187c7c4337cfc73ad1e5` and hashes all 751 ordinary tracked
+`aad5959e00e95ec5ffdec6595260969c6e08174c` and hashes all 753 ordinary tracked
 compiler files. There are no application-owned copies of `qcom_hexagon_backend/`,
 compiler policy C++ or DSP kernel sources. Application build orchestration resolves
 those files through `qwen3/compiler_dependency.py`.
@@ -43,7 +43,7 @@ historical evidence review. Further cleanup must trace those uses explicitly.
 The maintained host command includes the audit/lifecycle tests affected by this
 cleanup. The fresh board regression uses the independent application source,
 separately pinned compiler source, unchanged accepted assets, system Python and
-an unset PYTHONPATH. All 169 host tests passed. All 16 board forwards matched every reference input/
+an unset PYTHONPATH. At the initial split, all 169 host tests passed. All 16 board forwards matched every reference input/
 output hash (logits and full KV), position, token and checksum. The completed
 record is `qwen3/validation/repository-split.json`.
 
@@ -51,3 +51,35 @@ This is a source-ownership/import-path refactor. The two compiled model librarie
 weights, numerical policies and generated packet values are not intentionally
 changed. A clean full compiler/model rebuild is still unqualified; packaging and
 repository separation do not close that existing build gap.
+
+## Follow-up cleanup — 2026-10-27
+
+Eight execution helpers moved from `tools/qwen3` to `qwen3/runtime/support`;
+seven tests moved into `test/python/qwen3`. Shared checks live in
+`qwen3/runtime_checks.py`, so inference no longer imports historical regression,
+performance or release launchers. Existing internal callers reuse those checks.
+The runtime cache uses `qwen3/runtime-sources.json`; unrelated tool/test edits no
+longer change its identity. A regression checks that local imports remain covered.
+
+The missing QK MLIR fixture and pure SiLU IR generator were recovered from frozen
+runtime revision `feb45fd` and placed in the compiler repository. The old SiLU
+inspection launcher was not restored merely to supply its fixture function.
+
+Removed code is recoverable from application commit `5e3f49c`:
+
+- `hexagon_native1024_closed_probe.validate_closed_probe`: no callers in the
+  retained source; it depended on an absent historical device auditor. The used
+  `validate_closed_record` remains.
+- `tools/qwen3/test_runtime_dependencies.py`: orphan tests for an absent historical
+  `runtime_dependencies` module with no retained production callers. Current
+  bundle integrity, missing/corrupt assets and runtime guards remain tested.
+
+The FastRPC tracing tool retains its kernel/module checks but accepts a supplied
+absolute output directory instead of requiring a dated directory on one board.
+The process-lifecycle tests use disposable clean Git fixtures, so ordinary local
+edits no longer prevent those tests from reaching the code they exercise.
+
+Historical numerical/compiler stages are not removed based only on naming or lack
+of imports from the warm inference path. The source-build consolidation gap in
+BUILD_STATUS.md remains open. Compiler algorithm and DSP kernel code are unchanged
+by this cleanup; the compiler commit adds only test fixtures.

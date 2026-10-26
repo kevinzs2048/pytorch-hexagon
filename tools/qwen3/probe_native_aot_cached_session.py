@@ -57,7 +57,7 @@ def main():
         'import json,platform;print(json.dumps(dict(python_version=platform.python_version(),architecture=platform.machine())))'])],text=True))
     if actual_platform['architecture']!='aarch64':raise ValueError('Actual ARM platform required')
     manifest.update(actual_platform)
-    adapter=Path(__file__).with_name('native_aot_output.py');wrapper=Path(__file__).with_name('run_native_aot_cached_arm.py')
+    adapter=(Path(__file__).resolve().parents[2]/'qwen3/runtime/support/native_aot_output.py');wrapper=Path(__file__).with_name('run_native_aot_cached_arm.py')
     if manifest['adapter_sha256']!=sha(adapter):raise ValueError('Exact experimental adapter template required')
     deploy=Path(board['observations'])/(args.name+'-aot-wrapper-sources')
     subprocess.run(ssh+[shlex.join(['mkdir',str(deploy)])],check=True)

@@ -28,7 +28,7 @@ def main():
     import torch._dynamo.backends.common as common
     import torch._functorch.config as config
     from torch._dynamo.utils import counters
-    from native_aot_output import native_cache_scope,namespace_digest
+    from qwen3.runtime.support.native_aot_output import native_cache_scope,namespace_digest
     original=common.aot_autograd;old_argv=sys.argv;events=[];before=dict(counters['aot_autograd'])
     def settings():
         return dict(bundled_autograd_cache=config.bundled_autograd_cache,

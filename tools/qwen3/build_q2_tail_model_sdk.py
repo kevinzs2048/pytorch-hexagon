@@ -62,7 +62,7 @@ def main():
         raise ValueError('Actual independently passed target256 with gain and the same all28 preflight required')
     for key,name in [('dispatch','buffer_reuse/DynamicQKRegisterDispatch.cpp'),
             ('identical_tail','buffer_reuse/DynamicQKIdenticalTail.inc'),('integer_guard','runtime/profile/q2_qk_positive_zero_extent.c')]:
-        if not same_pinned_source(preflight[key],HERE/name):
+        if not same_pinned_source(preflight[key],compiler_tools()/name):
             raise ValueError('Model SDK must contain the exact target-tested pass and integer guard')
     checked(base['candidate']);checked(model['primary'])
     old=next(row for row in base['commands']if '-c'in row['argv'])

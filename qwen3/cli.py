@@ -19,7 +19,7 @@ from .compiler_dependency import activate, compiler_root
 
 def runtime_paths():
     activate()
-    sys.path[:0] = [str(ROOT / "qwen3/runtime/arm"), str(ROOT / "tools/qwen3"), str(ROOT)]
+    sys.path[:0] = [str(ROOT / "qwen3/runtime/arm"), str(ROOT)]
 
 
 def doctor(bundle, *, execution=False):
@@ -65,10 +65,14 @@ def doctor(bundle, *, execution=False):
 
 
 def implementation_digest():
-    digest = hashlib.sha256()
-    for directory in ("qwen3", "tools/qwen3", "third_party/hexagon-mlir/qcom_hexagon_backend/backend"):
-        for path in sorted((ROOT / directory).rglob("*.py")):
-            digest.update(str(path.relative_to(ROOT)).encode() + b"\0" + path.read_bytes())
+    # Only the explicit execution dependency set invalidates AOT adapters.
+    manifest_path = ROOT / "qwen3/runtime-sources.json"
+    manifest = json.loads(manifest_path.read_text())
+    digest = hashlib.sha256(manifest_path.read_bytes())
+    from .bundle import inside
+    for name in manifest["files"]:
+        path = inside(ROOT, name)
+        digest.update(name.encode() + b"\0" + path.read_bytes())
     return digest.hexdigest()
 
 
@@ -95,7 +99,7 @@ def generate(args):
         native = ROOT / "qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py"
         namespace = dict(manifest["namespace"], runtime_catalog_sha256=sha(bundle / "catalog.json"))
         namespace["native_source_sha256"] = sha(native)
-        namespace["adapter_sha256"] = sha(ROOT / "tools/qwen3/native_aot_output.py")
+        namespace["adapter_sha256"] = sha(ROOT / "qwen3/runtime/support/native_aot_output.py")
         # A source change invalidates cached adapters even if model libraries stay identical.
         namespace["recipe_sha256"] = hashlib.sha256(
             (namespace["recipe_sha256"] + implementation_digest()).encode()).hexdigest()
@@ -117,9 +121,9 @@ def generate(args):
             argv += ["--chat-template"]
         import torch
         from torch._dynamo.utils import counters
-        from native_aot_output import native_cache_scope
-        from run_native_aot_generate_arm import require_generation_protocol, require_original_guard_configuration
-        from run_integer_regressions import validate_float_policy, validate_parameter_mode
+        from qwen3.runtime.support.native_aot_output import native_cache_scope
+        from .runtime_checks import require_generation_protocol, require_original_guard_configuration
+        from .runtime_checks import validate_float_policy, validate_parameter_mode
         before = dict(counters["aot_autograd"])
         import torch._functorch.config as aot_config
         require_original_guard_configuration(dict(
@@ -159,7 +163,7 @@ def generate(args):
 def compare(reference, candidate):
     """Compare all packed logits/KV bytes, request state, tokens and DSP checksums."""
     runtime_paths()
-    from run_integer_regressions import compare_integer
+    from .runtime_checks import compare_integer
     old, new = [json.loads(Path(p).read_text()) for p in (reference, candidate)]
     for result in (old, new):
         if (result.get("process_exit_code") != 0 or result.get("CPU_model_fallback") is not False
@@ -229,14 +233,7 @@ def main():
         elif args.command == "test":
             env = dict(os.environ, PYTHONPATH=os.pathsep.join(str(ROOT / p) for p in
                        ("qwen3/runtime/arm", "tools/qwen3", ".", "third_party/hexagon-mlir")))
-            tests = ["test/python/qwen3", "test/python/torch-mlir/test_qwen_generation_budget.py",
-                     "test/python/torch-mlir/test_qwen_query_shape_scope.py",
-                     "test/python/torch-mlir/test_arm_dynamic_warm_audit.py",
-                     "test/python/torch-mlir/test_hexagon_library_lifecycle.py"]
-            tests += ["tools/qwen3/" + name for name in (
-                "test_native_aot_output.py", "test_native_aot_generation_protocol.py",
-                "test_joined_input_packet.py", "test_exact_parameter_bytes.py",
-                "test_constant_load_segments.py")]
+            tests = ["test/python/qwen3", "test/python/torch-mlir"]
             raise SystemExit(subprocess.call([sys.executable, "-m", "pytest", "-q", *tests], cwd=ROOT, env=env))
         else:
             if not 1 <= args.chunk_size <= 32 or args.max_new_tokens < 1:

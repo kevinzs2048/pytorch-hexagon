@@ -7,10 +7,9 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'qwen3/runtime/arm'))
 from hexagon_dynamo_parameters import spec
 from hexagon_dynamic_module_constants import dynamic_tensor_digest
-from exact_parameter_bytes import ExactParameterBytePool,raw_view
+from qwen3.runtime.support.exact_parameter_bytes import ExactParameterBytePool,raw_view
 
 
 def binding(value):

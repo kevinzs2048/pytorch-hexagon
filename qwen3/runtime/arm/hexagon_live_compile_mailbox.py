@@ -58,7 +58,7 @@ def publish_capture(directory, model, dynamo_graph, dynamo_inputs, graph, exampl
     from hexagon_captured_linalg_cache import captured_identity
     from hexagon_module_scalar_binding import binding_content_signature
     if guarded_constants is not None:
-        from tools.qwen3.guarded_module_constants import GuardedModuleConstants
+        from qwen3.runtime.support.guarded_module_constants import GuardedModuleConstants
         if not isinstance(guarded_constants,GuardedModuleConstants):
             raise ValueError('Native module constant guard required')
         guarded_constants.check()
@@ -81,7 +81,7 @@ def publish_capture(directory, model, dynamo_graph, dynamo_inputs, graph, exampl
         prior_session_DSP_calls=prior_dsp_calls, CPU_model_forward=False,
         request_graph_executed=False, stable_public_interchange=False)
     if guarded_constants is not None:
-        from tools.qwen3 import guarded_module_constants as constants
+        from qwen3.runtime.support import guarded_module_constants as constants
         record['guarded_module_constants']=dict(schema=constants.SCHEMA,
             source_sha256=sha(constants.__file__),records=guarded_constants.records,
             sha256=guarded_constants.signature)

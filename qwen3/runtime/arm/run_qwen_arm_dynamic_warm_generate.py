@@ -177,7 +177,7 @@ def stage(catalog, workdir, *, include_code=True, constant_load_split_proofs=Non
             raise ValueError('Actual DSP constant library changed')
         source=control/name
         if constant_load_split_proofs:
-            from tools.qwen3.split_constant_load_segments import verified_proof
+            from qwen3.runtime.support.split_constant_load_segments import verified_proof
             proof_path=constant_load_split_proofs/('proof-const'+str(index)+'.json')
             proof=json.loads(proof_path.read_text());candidate=Path(proof['candidate']['path'])
             if (candidate.parent.parent!=Path('/dev/shm')
@@ -204,7 +204,7 @@ def stage(catalog, workdir, *, include_code=True, constant_load_split_proofs=Non
 def run(args, catalog, requests, record, save):
     bootstrap=None
     if args.startup_timing:
-        from tools.qwen3.startup_timing import BootstrapTimer,CaptureTimer
+        from qwen3.runtime.support.startup_timing import BootstrapTimer,CaptureTimer
         bootstrap=BootstrapTimer()
         record['startup_timing']=dict(clock='perf_counter_ns',captures=[],
             scope='ARM_bootstrap_and_actual_capture_callback',
@@ -227,7 +227,7 @@ def run(args, catalog, requests, record, save):
     decode_outputs = unpack_torch_outputs
     pack_inputs = pack_torch_request
     if args.input_packer == 'joined':
-        from tools.qwen3.joined_input_packet import pack_torch_request_joined
+        from qwen3.runtime.support.joined_input_packet import pack_torch_request_joined
         pack_inputs = pack_torch_request_joined
     if args.output_decoder == 'owned-once':
         from qcom_hexagon_backend.backend.hexagon_dynamic_tensor_runtime import unpack_owned_torch_outputs
@@ -235,7 +235,7 @@ def run(args, catalog, requests, record, save):
     torch.set_num_threads(2)
     parameter_pool=None
     if args.parameter_check=='exact-bytes':
-        from tools.qwen3.exact_parameter_bytes import ExactParameterBytePool
+        from qwen3.runtime.support.exact_parameter_bytes import ExactParameterBytePool
         parameter_pool=ExactParameterBytePool()
     record['parameter_validation']=dict(mode=args.parameter_check,
         all_logical_parameter_bytes_checked_each_forward=True,version_only_check=False,
@@ -328,7 +328,7 @@ def run(args, catalog, requests, record, save):
                     if capture_timer is not None:capture_timer.mark('identify_live_graph')
                     constants_guard=None
                     if args.specialize_floats:
-                        from tools.qwen3.guarded_module_constants import GuardedModuleConstants
+                        from qwen3.runtime.support.guarded_module_constants import GuardedModuleConstants
                         constants_guard=GuardedModuleConstants(model)
                         record['parameter_validation']['guarded_python_float_constants']=dict(
                             count=len(constants_guard.records),FP64_bytes_per_constant=8,
@@ -474,10 +474,10 @@ def run(args, catalog, requests, record, save):
                     timing = None
                     timing_options = {}
                     from hexagon_qwen_shape_policy import compiled_query_scope
-                    from tools.qwen3.capture_configuration import capture_configuration
+                    from qwen3.runtime.support.capture_configuration import capture_configuration
                     with compiled_query_scope(model), torch.no_grad(), capture_configuration(specialize_floats=args.specialize_floats):
                         if args.generation_timing:
-                            from tools.qwen3.generation_timing import NativeGenerationTimer
+                            from qwen3.runtime.support.generation_timing import NativeGenerationTimer
                             timing = NativeGenerationTimer()
                             timing_options['streamer'] = timing
                         if args.startup_timing:generate_started_ns=time.perf_counter_ns()
@@ -603,7 +603,7 @@ def main():
         output_decoder=args.output_decoder,
         input_packer=args.input_packer,
         input_packing_source_sha256=(sha(Path(__file__).resolve().parents[3]/
-            'tools/qwen3/joined_input_packet.py') if args.input_packer == 'joined' else
+            'qwen3/runtime/support/joined_input_packet.py') if args.input_packer == 'joined' else
             sha(compiler_root()/
                 'qcom_hexagon_backend/backend/hexagon_dynamic_buffer_io.py')),
         arm_forward_timing=dict(schema='arm_local_forward_stage_timing_v1',

@@ -37,7 +37,8 @@ def main():
     scripts = ROOT/'qwen3/runtime/arm'
     sums = str(a.build/'policy/qwen-policy-sums-opt')
     first = str(a.build/'policy/qwen-policy-first-opt')
-    env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', PYTHONPATH=str(scripts)+':'+str(ROOT),
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1',
+        PYTHONPATH=os.pathsep.join(map(str,(scripts,ROOT/'tools/qwen3',ROOT,compiler_root()))),
         LD_LIBRARY_PATH=':'.join(c['library_path']), QWEN_MATMUL_SCHEDULE_OPT=sums,
         QWEN_SINGLETON_SUM_OPT=sums, QWEN_SINGLETON_ATTENTION_OPT=first,
         QWEN_HEXAGON_LOWERING_OPT=c['lowering_opt'])
@@ -45,7 +46,7 @@ def main():
     try:
         for name, files in [('policy', POLICY), ('framework', FRAMEWORK)]:
             command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
-                       '--junitxml='+str(a.output/(name+'.xml')), *[str(scripts/f) for f in files]]
+                       '--junitxml='+str(a.output/(name+'.xml')), *[str(ROOT/'test/python/torch-mlir'/f) for f in files]]
             with (a.output/(name+'.log')).open('xb') as log:
                 subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
             suite = ET.parse(a.output/(name+'.xml')).getroot()

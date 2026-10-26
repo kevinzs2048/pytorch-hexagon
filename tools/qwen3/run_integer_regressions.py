@@ -3,6 +3,8 @@
 Changed model library identity is allowed only when bound to the accepted cold
 candidate. Complete buffers, tokens and checksums still have to be identical.
 """
+from qwen3.runtime_checks import compare_integer, validate_parameter_mode, validate_float_policy
+
 import argparse
 import json
 from pathlib import Path
@@ -38,58 +40,6 @@ def candidate_libraries(cold):
     if set(libraries)!={(1,1),(2,32)}:
         raise ValueError('Cold candidate did not actually execute both query categories')
     return base,libraries
-
-
-def compare_integer(baseline,candidate,libraries):
-    for run in (baseline,candidate):
-        if len(run['forwards'])!=run['DSP_calls']:
-            raise ValueError('Complete actual forward list required')
-    if ([(r['prompt_ids'],r['generated_ids'],r['terminal_observation']) for r in baseline['requests']]
-            !=[(r['prompt_ids'],r['generated_ids'],r['terminal_observation']) for r in candidate['requests']]):
-        raise ValueError('Prompt, selected tokens or termination changed')
-    if len(baseline['forwards'])!=len(candidate['forwards']):
-        raise ValueError('Different actual forward count')
-    for old,new in zip(baseline['forwards'],candidate['forwards'],strict=True):
-        for key in ('query','request_index','cache_positions','input_sha256','output_sha256'):
-            if old[key]!=new[key]:
-                raise ValueError('Changed complete model input/output or state: '+key)
-        bounds=(1,1) if new['query']==1 else (2,32)
-        if type(new['query']) is not int or not 1<=new['query']<=32 or new['DSO_sha256']!=libraries[bounds]:
-            raise ValueError('Actual library is not bound to accepted cold candidate')
-        for key in ('AP_input_fnv1a32','DSP_input_fnv1a32','RPC_input_fnv1a32'):
-            if old['invoke'][key]!=new['invoke'][key]:
-                raise ValueError('Input checksum changed: '+key)
-    return True
-
-
-def validate_parameter_mode(native,mode):
-    if mode=='sha256':
-        if native.get('parameter_validation',{}).get('mode','sha256')!='sha256':
-            raise ValueError('Actual parameter checker differs from requested SHA mode')
-        return
-    validation=native.get('parameter_validation',{})
-    if (mode!='exact-bytes' or validation.get('mode')!=mode
-            or validation.get('all_logical_parameter_bytes_checked_each_forward') is not True
-            or validation.get('version_only_check') is not False
-            or validation.get('initial_compiler_SHA_pins_preserved') is not True
-            or type(validation.get('owned_immutable_snapshot_bytes')) is not int
-            or validation['owned_immutable_snapshot_bytes']<=0):
-        raise ValueError('Actual exact-byte parameter validation evidence required')
-
-
-def validate_float_policy(native,specialize):
-    actual=native.get('generation_options',{}).get('specialize_python_floats',False)
-    if type(actual) is not bool or actual is not specialize:
-        raise ValueError('Actual native float capture policy differs from requested mode')
-    if specialize:
-        validation=native.get('parameter_validation',{})
-        ledger=validation.get('guarded_python_float_constants',{})
-        if (ledger.get('count')!=142 or ledger.get('FP64_bytes_per_constant')!=8
-                or ledger.get('owner_identity_and_all_bytes_checked_each_forward') is not True
-                or type(validation.get('guarded_python_float_forwards_checked')) is not int
-                or validation['guarded_python_float_forwards_checked']!=native['DSP_calls']
-                or type(ledger.get('ledger_sha256')) is not str or len(ledger['ledger_sha256'])!=64):
-            raise ValueError('Actual original module float byte guards missing')
 
 
 def main():

@@ -13,9 +13,8 @@ import sys
 import pytest
 import torch
 
-sys.path.insert(0,'/home/kevin/hexagon/qwen3-dynamic-qk-column-tile-performance/qwen3/runtime/arm')
-from native_aot_output import native_cache_scope,namespace_digest,NativeAOTOutput
-import native_aot_output
+from qwen3.runtime.support.native_aot_output import native_cache_scope,namespace_digest,NativeAOTOutput
+from qwen3.runtime.support import native_aot_output
 
 
 def manifest():

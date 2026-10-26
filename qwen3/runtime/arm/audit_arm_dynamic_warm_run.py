@@ -115,7 +115,7 @@ def audit_rebuilt_artifacts(compiled, producer, capture):
     parameters = hashlib.sha256(canonical(producer['immutable_inputs'])).hexdigest()
     front, code = frontend['request'], machine['request']
     if producer.get('guarded_module_constants') is not None:
-        from tools.qwen3.guarded_module_constants import validate_capture_constants
+        from qwen3.runtime.support.guarded_module_constants import validate_capture_constants
         validate_capture_constants(producer)
         if front.get('guarded_module_constants_sha256')!=producer['guarded_module_constants']['sha256']:
             raise ValueError('Native module constants differ from actual compiler cache identity')
@@ -156,7 +156,7 @@ def audit_compile_handoff(current, mailbox, *, rebuilt=False):
         response = json.loads((folder/'response.json').read_text())
         compiled = json.loads(result_path.read_text())
         if current.get('generation_options',{}).get('specialize_python_floats') is True:
-            from tools.qwen3.guarded_module_constants import validate_capture_constants
+            from qwen3.runtime.support.guarded_module_constants import validate_capture_constants
             validate_capture_constants(producer)
             declaration=producer.get('guarded_module_constants')
             validation=current.get('parameter_validation',{})

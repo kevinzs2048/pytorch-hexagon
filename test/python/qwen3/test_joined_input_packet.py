@@ -6,9 +6,8 @@ from pathlib import Path
 import pytest
 import torch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from qcom_hexagon_backend.backend.hexagon_dynamic_buffer_io import pack_torch_request
-from joined_input_packet import pack_torch_request_joined
+from qwen3.runtime.support.joined_input_packet import pack_torch_request_joined
 
 
 def fixture(q=3):

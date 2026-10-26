@@ -2,7 +2,7 @@ import struct
 from pathlib import Path
 import pytest
 
-from split_constant_load_segments import EHDR,PHDR,SHDR,headers,patches,verify
+from qwen3.runtime.support.split_constant_load_segments import EHDR,PHDR,SHDR,headers,patches,verify
 
 
 def fixture(path):

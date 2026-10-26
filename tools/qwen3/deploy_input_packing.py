@@ -8,8 +8,8 @@ from build import ROOT, entry, sha
 
 ALLOWED = {
     'qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py',
-    'tools/qwen3/joined_input_packet.py',
-    'tools/qwen3/test_joined_input_packet.py',
+    'qwen3/runtime/support/joined_input_packet.py',
+    'test/python/qwen3/test_joined_input_packet.py',
     'tools/qwen3/deploy_input_packing.py',
     'tools/qwen3/probe_joined_input_packet.py',
     'tools/qwen3/run_online_regression.py',
@@ -50,7 +50,7 @@ def reuse_committed_packer(config, original_source, native_sha256):
     the benchmark still verifies every complete input/output against its oracle.
     """
     native = ROOT/'qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py'
-    packer = ROOT/'tools/qwen3/joined_input_packet.py'
+    packer = ROOT/'qwen3/runtime/support/joined_input_packet.py'
     if subprocess.check_output(['git','-C',str(ROOT),'status','--porcelain'],text=True).strip():
         raise ValueError('Committed packer source required')
     if sha(native) != native_sha256:
@@ -61,7 +61,7 @@ def reuse_committed_packer(config, original_source, native_sha256):
     verified = {}
     for relative, expected in (
             ('qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py', native_sha256),
-            ('tools/qwen3/joined_input_packet.py', sha(packer))):
+            ('qwen3/runtime/support/joined_input_packet.py', sha(packer))):
         actual = subprocess.check_output(ssh+[shlex.join(['sha256sum',str(original_source/relative)])],text=True).split()[0]
         if actual != expected:
             raise ValueError('The unchanged numerical deployment has a different packer source: '+relative)
@@ -100,6 +100,6 @@ def deploy(config, base_revision, original_source, destination):
     return dict(status='committed_host_input_packer_deployed_all_other_sources_identical_NOT_model_acceptance',
         source_root=str(ROOT),source_revision=revision,base_revision=base_revision,
         original_source=str(original_source),deployment=str(destination),comparison=proof,
-        packer_source=entry(ROOT/'tools/qwen3/joined_input_packet.py'),
+        packer_source=entry(ROOT/'qwen3/runtime/support/joined_input_packet.py'),
         native_source=entry(ROOT/'qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py'),
         DSP_calls=0,new_primary_model_codegen=0,model_inference_acceptance=False)

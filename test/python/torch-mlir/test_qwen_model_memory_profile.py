@@ -120,4 +120,4 @@ def test_profile_parser_rejects_partial_or_fabricated_coverage():
     assert parsed['totals']['10']['calls']==197 and parsed['totals']['5']['calls']==0
     with pytest.raises(ValueError):module.parse_profile(bytes(extended))
     with pytest.raises(ValueError):module.parse_profile(bytes(data),tuple(range(1,13)),(10,))
-    with pytest.raises(ValueError):module.parse_profile(bytes(data),(1,2,3,13))
+    with pytest.raises(ValueError):module.parse_profile(bytes(data),(1,2,3,17))

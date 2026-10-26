@@ -46,8 +46,8 @@ def main():
     if (os.geteuid()!=0 or platform.machine()!='aarch64'
             or platform.release()!='6.8.12-4-qc2509'
             or not a.output.is_absolute() or a.output.is_symlink()
-            or a.output.parent!=Path('/mnt/nvme/qwen3-work/qwen3-performance/loader-repeat-20261008')):
-        p.error('Pinned actual ARM kernel, root and scoped diagnostic output required')
+            or not a.output.parent.is_dir()):
+        p.error('Pinned actual ARM kernel, root and absolute diagnostic output with an existing parent required')
     module=Path('/lib/modules',platform.release(),'kernel/drivers/misc/fastrpc.ko.xz')
     if sha(module)!=MODULE_SHA:raise ValueError('Actual FastRPC module bytes changed')
     def save(name,value):(a.output/name).write_text(json.dumps(value,indent=2)+'\n')

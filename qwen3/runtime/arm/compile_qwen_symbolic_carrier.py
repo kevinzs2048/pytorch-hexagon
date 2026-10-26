@@ -91,7 +91,7 @@ def main():
         catalog = json.loads(args.catalog.read_text())
         selected_content=producer['binding_content_sha256']
         if producer.get('guarded_module_constants') is not None:
-            from tools.qwen3.guarded_module_constants import selected_model_content_signature
+            from qwen3.runtime.support.guarded_module_constants import selected_model_content_signature
             selected_content=selected_model_content_signature(producer['immutable_inputs'],
                 producer['guarded_module_constants']['records'])
         if {entry['binding_content_sha256'] for entry in catalog['entries']} != {selected_content}:

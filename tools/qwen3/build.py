@@ -4,7 +4,6 @@
 The LLVM/Hexagon SDK and immutable model constants are external dependencies.
 No policy object, generated caller or compiled graph is imported from an old run.
 """
-from qwen3.compiler_dependency import compiler_tools
 import argparse
 import hashlib
 import json
@@ -16,6 +15,9 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+# Also support the existing direct build command and its Python subprocesses.
+sys.path.insert(0, str(ROOT))
+from qwen3.compiler_dependency import compiler_tools
 
 
 def sha(path):
@@ -106,7 +108,8 @@ def main():
         return
     output = args.output.absolute()
     output.mkdir(parents=True, exist_ok=False)
-    env = dict(os.environ, LD_LIBRARY_PATH=':'.join(config['library_path']))
+    env = dict(os.environ, LD_LIBRARY_PATH=':'.join(config['library_path']),
+               PYTHONPATH=os.pathsep.join([str(ROOT), os.environ.get('PYTHONPATH', '')]))
     commands = [
         [config['cmake'], '-S', str(compiler_tools()/'policy'), '-B', str(output/'policy'), '-G', 'Ninja',
          '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_C_COMPILER='+config['host_clang'],
