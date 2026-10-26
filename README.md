@@ -86,6 +86,8 @@ both the development tree and an offline clone. Its two newly built model
 libraries passed 336 complete DSP forwards: cold/warm processes, chunk tails,
 EOS, long generation, capacity boundaries and request reset. All input/output
 hashes, including logits and the full KV cache, matched the original references.
+After temporary artifacts were removed, 16 further DSP forwards and the complete
+host/IR checks passed again (352 final-source forwards in total).
 See [the qualification record](qwen3/validation/unified-source-build.json) and
 [build status](docs/qwen3/BUILD_STATUS.md) for exact scope and source identities.
 [Reproduction](docs/qwen3/REPRODUCE.md) explains bundle export and regression.

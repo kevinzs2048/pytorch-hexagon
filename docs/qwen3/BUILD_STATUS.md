@@ -60,6 +60,14 @@ An additional toolchain audit matched 9,002 selected LLVM source/install,
 SDK/Tools, HexKL, compiler, linker and Python files to the existing dependency
 lock. This audit does not constitute an LLVM source rebuild.
 
+After committing the qualification and removing development build copies, old
+board deployments and obsolete AOT namespaces, verification was repeated:
+699 tests and nine IR checks passed, both current-source graph/weight restores
+validated the original frontend cache artifacts, and a new board process passed
+16 more complete forwards with two AOT hits. The total for the final source-built
+models is **352 forwards**. No additional model code was compiled during this
+post-cleanup repeat.
+
 Exact source revisions, model hashes and receipt hashes are recorded in
 [the source-build qualification](../../qwen3/validation/unified-source-build.json).
 The compiler/model build ran at application `68ff472`; the cleaned runtime was
@@ -84,6 +92,23 @@ files and 33,174 physical lines to 261 files and 32,700 lines. These counts incl
 comments and blank lines, and exclude tests and reference data. The added state
 JSON files preserve existing test inputs and output hashes; they are not runtime
 implementation or a new prompt corpus.
+
+Generated-data cleanup removed 22.65 GB of host file contents and freed 0.55 GB
+of allocated board storage. One canonical build, original captures, verification
+receipts and selected raw baseline/candidate packets remain. The 120 retained
+development records/logs are in a verified 1.2 MB archive. Local locations:
+
+- `.local/unified-build/final/`: compiler/model products and build receipts.
+- `.local/unified-build/inputs/`: actual captured build inputs.
+- `.local/unified-build/validation/`: board/restore receipts and development evidence.
+- `.local/unified-build/application-source.bundle` and `compiler-source.bundle`:
+  complete offline source histories.
+- `.local/unified-build/toolchain.json`: this machine's explicit configuration.
+
+The canonical build keeps useful IR, objects and frontend cache data for further
+compiler work. Its `work/` development predecessor and duplicate source-transfer
+archives were removed. Cleanup inventories are retained locally and identified
+by hash in the qualification record.
 
 The source rebuild exposed a strict scalar FP32 `sqrt`/division rewrite that
 bypassed the floating-point permission check. Compiler commit `277c108` fixes it

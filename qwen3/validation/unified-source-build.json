@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "unified_source_build_and_full_output_regression_passed",
+  "status": "unified_source_build_cleanup_and_regression_complete",
   "recorded_unix": 1793042565.4125803,
   "build_application_revision": "68ff472c04d748094b52b84bae93248eb5597242",
   "runtime_code_revision": "6701f22d3026c185521dba6c613663aef146c26d",
@@ -318,7 +318,30 @@
     "application_Python_files_after": 261,
     "application_Python_lines_before": 33174,
     "application_Python_lines_after": 32700,
-    "count_scope": "qwen3/ and tools/ .py physical lines, including comments/blanks; tests and reference fixtures excluded"
+    "count_scope": "qwen3/ and tools/ .py physical lines, including comments/blanks; tests and reference fixtures excluded",
+    "generated_artifacts": {
+      "host_removed_logical_bytes": 22653416761,
+      "board_removed_allocated_bytes": 551919616,
+      "development_evidence_archive": {
+        "path": ".local/unified-build/validation/development-evidence.tar.gz",
+        "sha256": "0d0c2a79cde37f3bd8feadd330e7ddd0a4f6cbd55e1e7b1dfefa776611642910"
+      },
+      "host_receipt": {
+        "path": ".local/unified-build/cleanup.json",
+        "sha256": "dd9507df9b34a569c19eaa9ca9845e271346ee733293d8cf2df2c99d3a47187c"
+      },
+      "board_receipt": {
+        "path": ".local/unified-build/board-cleanup.json",
+        "sha256": "d95b2e2d75181173b02603bd8aa58e06ec37f9a177b026abe03394c29db4e11b"
+      },
+      "retained": [
+        "one canonical compiler/model build",
+        "original build captures",
+        "qualified baseline and candidate evidence",
+        "offline Git bundles",
+        "current candidate AOT cache"
+      ]
+    }
   },
   "rollback": {
     "application_revision": "9a5ce27372d495b2857e433bd5da02242f1b107b",
@@ -327,12 +350,75 @@
     "accepted_model_and_weight_files_replaced": false
   },
   "post_cleanup_verification": {
-    "status": "pending"
+    "status": "passed",
+    "application_revision": "233f484a6a519354dcac17a10057063dd7ce9147",
+    "no_executable_Python_changes_since_runtime_revision": true,
+    "pinned_Triton_export_rechecked": true,
+    "compiler_and_runtime_product_seals_rechecked": true,
+    "host": {
+      "tests": 699,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "IR_checks": 9,
+      "receipt": {
+        "path": ".local/unified-build/post-cleanup-host/result.json",
+        "sha256": "20122c041b7a3b2d72b5d76da2d0ac986924f951b05463a4f10d6281748eb1a8"
+      }
+    },
+    "frontends": {
+      "q1": {
+        "capture_restored": true,
+        "weights_bound": true,
+        "same_frontend_artifacts_verified": true,
+        "frontend_invocations": 0,
+        "receipt": {
+          "path": ".local/unified-build/validation/post-cleanup-frontends/q1/result.json",
+          "sha256": "b58d347c3a150afb7d2b3e259886472f254bd77bd877f6bdd917be825e78bf06"
+        }
+      },
+      "q2": {
+        "capture_restored": true,
+        "weights_bound": true,
+        "same_frontend_artifacts_verified": true,
+        "frontend_invocations": 0,
+        "receipt": {
+          "path": ".local/unified-build/validation/post-cleanup-frontends/q2/result.json",
+          "sha256": "8ac2399eeb41bd7dd409a70f7c86f9f3547d8424f31718cc3e06961a9dffc0ce"
+        }
+      }
+    },
+    "board": {
+      "DSP_calls": 16,
+      "AOT_protocol": {
+        "captures": 2,
+        "hits": 2,
+        "misses": 0,
+        "guard_misses": 0
+      },
+      "compared": "complete input/output SHA256 (logits and all 56 KV tensors), positions, request boundaries, generated tokens, native termination and ARM/RPC/DSP input checksums",
+      "receipts": {
+        "result.json": {
+          "path": ".local/unified-build/validation/post-cleanup16/result.json",
+          "sha256": "fea1c4501fc8314a7ea7c831bdf22e80608c4853f1287b5dc7b2747b7d859f05"
+        },
+        "execution.json": {
+          "path": ".local/unified-build/validation/post-cleanup16/execution.json",
+          "sha256": "94e8884f124372161602ebbc437df42fbf574590b233149736e5f46560614b4e"
+        },
+        "comparison.json": {
+          "path": ".local/unified-build/validation/post-cleanup16/comparison.json",
+          "sha256": "ffe766739f79f26bc93279a2b5ba533f7e53c3059422da2d3bab42dacbbae83c"
+        }
+      }
+    }
   },
   "limits": [
     "Qwen3-0.6B, batch1, W8A8 linear layers, FP32 intermediates/KV, capacity1024, q1 and q2..32",
     "LLVM/MLIR and Qualcomm SDK remain explicit prebuilt toolchain dependencies",
     "Compiler build ran at68ff472; subsequent cleanup retained active function ASTs and generated code; runtime was qualified at6701f22",
     "No new model, platform, language-quality or performance qualification"
-  ]
+  ],
+  "completed_unix": 1793043535.3786228,
+  "total_final_source_DSP_forwards": 352
 }

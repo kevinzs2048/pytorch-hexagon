@@ -131,7 +131,7 @@
     "result_sha256": "456c558de680e04fc5590bc2f9fa66b9f23a54713244d27d60538e4720afd443"
   },
   "board_validation": {
-    "status": "336_complete_forwards_identical",
+    "status": "352_complete_forwards_identical_including_post_cleanup_repeat",
     "qualification": "qwen3/validation/unified-source-build.json",
     "runtime_code_revision": "6701f22d3026c185521dba6c613663aef146c26d",
     "implementation_sha256": "d41c89b69625ca8aef8b588fb09beadc49223715a0830f65d6e7884cf5b4fd86"
