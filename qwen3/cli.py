@@ -76,7 +76,7 @@ def implementation_digest():
     return digest.hexdigest()
 
 
-def generate(args):
+def generate(args, *, prepare_candidate=None):
     doctor(args.bundle, execution=True)
     runtime_paths()
     output = args.output.absolute()
@@ -96,8 +96,14 @@ def generate(args):
         signal.signal(s, interrupted)
     try:
         manifest, catalog = prepare(bundle, prepared)
+        candidate_identity = None
+        if prepare_candidate is not None:
+            candidate_identity = prepare_candidate(catalog)
         native = ROOT / "qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py"
         namespace = dict(manifest["namespace"], runtime_catalog_sha256=sha(bundle / "catalog.json"))
+        if candidate_identity is not None:
+            namespace["runtime_catalog_sha256"] = hashlib.sha256(
+                (namespace["runtime_catalog_sha256"] + json.dumps(candidate_identity, sort_keys=True)).encode()).hexdigest()
         namespace["native_source_sha256"] = sha(native)
         namespace["adapter_sha256"] = sha(ROOT / "qwen3/runtime/support/native_aot_output.py")
         # A source change invalidates cached adapters even if model libraries stay identical.
@@ -119,6 +125,8 @@ def generate(args):
             argv += ["--prompts-json", args.prompts_json if args.prompts_json is not None else json.dumps([args.prompt])]
         if args.chat_template:
             argv += ["--chat-template"]
+        if getattr(args, 'capture_output', None) is not None:
+            argv += ['--capture-output', str(args.capture_output.resolve())]
         import torch
         from torch._dynamo.utils import counters
         from qwen3.runtime.support.native_aot_output import native_cache_scope
@@ -147,7 +155,8 @@ def generate(args):
             raise ValueError("Actual guarded module constants differ from the release namespace")
         write(output / "execution.json", dict(status="completed", bundle_sha256=sha(bundle / "bundle.json"),
               implementation_sha256=implementation_digest(), namespace=namespace, AOT_protocol=protocol,
-              DSP_calls=result["DSP_calls"], events=events, compiler_rebuilt=False))
+              DSP_calls=result["DSP_calls"], events=events, compiler_rebuilt=False,
+              candidate_libraries=candidate_identity))
         for request in result["requests"]:
             print(request.get("generated_text", request["generated_ids"]), flush=True)
         print("Results: " + str(output), flush=True)

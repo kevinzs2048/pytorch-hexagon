@@ -334,6 +334,15 @@ def run(args, catalog, requests, record, save):
                             count=len(constants_guard.records),FP64_bytes_per_constant=8,
                             ledger_sha256=constants_guard.signature,
                             owner_identity_and_all_bytes_checked_each_forward=True)
+                    if args.capture_output:
+                        from hexagon_live_compile_mailbox import publish_capture
+                        capture_dir = args.capture_output/f"capture-{len(record['captures']):02d}"
+                        capture_sha = publish_capture(capture_dir, model, dynamo_graph,
+                            dynamo_inputs, aten, examples, binding,
+                            prior_dsp_calls=record['DSP_calls'], guarded_constants=constants_guard)
+                        record.setdefault('exported_captures', []).append(
+                            dict(path=str(capture_dir), producer_sha256=capture_sha))
+                        save()
                     if args.compiler_mailbox:
                         from hexagon_live_compile_mailbox import (
                             publish_capture, wait_for_compilation, checked_library_path)
@@ -545,6 +554,8 @@ def main():
                         help='Opt-in fewer host copies; both decoders return independently owned CPU tensors')
     parser.add_argument('--compiler-mailbox', type=Path,
                         help='Optional fresh trusted shared directory; request compilation for EVERY capture')
+    parser.add_argument('--capture-output', type=Path,
+                        help='Export actual AOT graphs for a source build while using the selected DSP libraries')
     parser.add_argument('--generation-timing', action='store_true',
                         help='Observe native selected-token streamer times including capture and AOT writeback')
     parser.add_argument('--input-packer', choices=('established', 'joined'), default='established',
@@ -572,6 +583,10 @@ def main():
     args.tokenizer = None
     if args.compiler_machine_cache and not args.compiler_mailbox:
         parser.error('Legacy machine cache requires compiler mailbox')
+    if args.capture_output and (args.compiler_mailbox or not args.capture_output.is_absolute()
+            or args.capture_output.is_symlink() or not args.capture_output.is_dir()
+            or any(args.capture_output.iterdir())):
+        parser.error('Capture export requires a fresh existing directory and cannot use a compiler mailbox')
     if args.compiler_mailbox and (not args.compiler_mailbox.is_absolute()
             or args.compiler_mailbox.is_symlink() or not args.compiler_mailbox.is_dir()
             or any(args.compiler_mailbox.iterdir())):

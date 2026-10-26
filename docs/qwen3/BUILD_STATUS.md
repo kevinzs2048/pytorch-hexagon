@@ -1,49 +1,55 @@
 # Compiler source and build status
 
-The application and the compiler have separate repositories. This application
-pins the compiler under `third_party/hexagon-mlir`; compiler sources, DSP kernels
-and LLVM patches are owned by that fork. No historical experiment worktree is
-required by the portable execution entry.
+The application and compiler remain separate repositories. The application pins
+the compiler at `third_party/hexagon-mlir`; compiler passes, DSP kernels and LLVM
+patches belong to that fork.
 
-| Component | Source in this repository | Status |
-| --- | --- | --- |
-| Hexagon-MLIR | `qcom_hexagon_backend/` (in the compiler repository) | Complete retained development source, including previously uncommitted scan/scatter lowering and codegen changes |
-| Numerical policy optimizers | `tools/qwen3/policy/` (in the compiler repository) | Accepted source imported; `tools/qwen3/build.py` builds the policy stages against a configured LLVM installation |
-| DSP helper kernels | `tools/qwen3/runtime/` (in the compiler repository) | Retained source, including quantized linear/attention/copy helpers |
-| Captured graph compilation | `qwen3/runtime/arm/compile_qwen_symbolic_carrier.py`, `tools/qwen3/native_compile_session_worker.py` | Source collected; original build recipes still need clean-build consolidation |
-| LLVM/MLIR | `dependencies/sources.lock.json`, `dependencies/patches/llvm-local.patch` (in the compiler repository) | Base `064f02d`, complete current local diff and new regression files preserved |
-| torch-mlir | lock and importer patch in the compiler repository | Pinned Python release `20260908.870`; upgrades need separate validation |
-| Transformers | prefill-position patch under `dependencies/`; exact files in execution bundle | Native generation semantics retained; not a replacement generation implementation |
+The supported build entry is now `python -m qwen3.build`. See
+[source-build instructions](SOURCE_BUILD.md) for configuration, captures, build
+outputs and the DSP comparison command. `python -m qwen3.tools build` is an alias
+for the same implementation.
 
-The accepted model libraries were built using patched `libtriton.so` SHA256
-`4043395bddd404bcb8370f98fe068a3ddf2a481f10e1e11847a355d965f034ce`,
-Hexagon SDK 6.5.0.0 and Tools 19.0.02. Public main's newer SDK/framework versions
-are a different configuration and are not silently substituted.
+| Component | Current source-build route |
+| --- | --- |
+| Triton + Hexagon-MLIR plugin | Pinned Triton Git export and the selected compiler checkout; CMake/Ninja |
+| q1 and q2–32 compiler configurations | Explicit `qwen-compiler-q1` / `qwen-compiler-q2` source targets; no copied historical compiler objects |
+| Numerical policy tools | Four source-built optimizers in `build/policy` |
+| DSP helpers | Explicit production targets in `build/runtime`, including INT8, RoPE, attention guards and copy helpers |
+| PyTorch → torch-mlir | Actual ARM AOT captures, locally verified immutable weights and a checked frontend cache |
+| Model objects, callers and constants | Generated and linked in `build/models/q1` and `build/models/q2` |
+| LLVM/MLIR and Qualcomm SDK | Explicit prebuilt toolchain dependencies; LLVM is not rebuilt by this command |
 
-Remaining clean-build work:
+The pinned toolchain remains SDK 6.5.0.0 and Hexagon Tools 19.0.02. A newer public
+SDK, LLVM or framework release is a separate configuration and is not silently
+substituted.
 
-1. Recreate the external compiler build from the pinned source and local patches;
-   the historical standalone lowering binary/build directory is missing.
-2. Replace the historical multi-stage recipe's external intermediate paths with
-   one generated build directory; rebuild model constants and both graph domains.
-3. Run the compiler tests and same-input full-output/KV comparisons on the newly
-   built libraries before promoting a new source-built release.
+## Validation boundaries
 
-`python -m qwen3 doctor` validates execution assets; it explicitly reports
-`clean_compiler_rebuild_verified: false`. The portable execution bundle does not
-require a compiler host during inference. This preserves the existing compiled
-route and makes its deployment reproducible without claiming a new build result.
+The existing execution bundle remains the numerical reference. Its `doctor`
+output still reports `clean_compiler_rebuild_verified: false`, because that bundle
+contains the previously accepted binaries. A new source-build result does not
+rewrite that historical bundle's provenance.
 
-## Maintainer entry after application cleanup
+Source-built compiler configurations and helpers have passed the controlled
+16-forward comparison with the existing prepared IR, including the reduced
+callers. Both freshly captured ARM graphs have also passed a real torch-mlir
+lowering cache miss and reproduced the prepared IR byte-for-byte. The final
+single-command build and its independent DSP qualification are recorded
+separately; compilation is never treated as numerical acceptance.
 
-Use `python -m qwen3.tools build --config ... --output ...` and
-`python -m qwen3.tools verify --config ... --build ... --output ...` from the
-application root. The launcher supplies the application, compiler and helper
-paths to Python subprocesses. `python tools/qwen3/build.py --help` also works
-without a private PYTHONPATH.
+The unified host verification runs the whole retained test suite and explicit IR
+FileChecks against the newly built tools, rejecting skipped or failed tests. The
+development pass completed 694 tests and nine IR checks without failures/skips.
 
-The q2-tail builder and memory profiler now resolve native sources through the
-compiler dependency. Verification resolves tests under `test/python/torch-mlir`.
-These fixes remove broken paths; they do not replace the historical 98-input
-accepted recipe with a newly qualified clean-build pipeline. Keep its evidence
-and source dependencies until that replacement has been built and compared.
+## Retained historical code
+
+Old recipe consumers and diagnostic tools remain available for inspecting prior
+evidence. They are not part of the new source-build dependency path. The removed
+reference-wrapper recipe, its three exclusive templates and the redundant RoPE
+build launcher are recoverable from application revision `9a5ce27`.
+
+The source rebuild exposed a strict scalar FP32 `sqrt`/division rewrite that
+bypassed the floating-point permission check. Compiler commit `277c108` fixes it
+and adds strict/partially-fast regression cases. Commit `ce317a3` adds the explicit
+source targets and records the restored accepted pass-source versions. These
+changes are separate rollback points.

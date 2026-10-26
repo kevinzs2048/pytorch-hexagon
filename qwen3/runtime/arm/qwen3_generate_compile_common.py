@@ -11,7 +11,7 @@ def tensor_bytes(tensor):
     return tensor.detach().contiguous().view(torch.uint8).numpy().tobytes()
 
 
-def load_model(context_path):
+def load_model(context_path, *, hf=None):
     import torch
     from transformers import Qwen3ForCausalLM, AutoTokenizer
     from torchao.quantization import quantize_, Int8DynamicActivationInt8WeightConfig
@@ -19,13 +19,19 @@ def load_model(context_path):
     if {k: importlib.metadata.version(k) for k in context['versions']} != context['versions']:
         raise ValueError('Pinned framework versions differ')
     checkpoint = context['checkpoint']
-    if sha(checkpoint['path']) != checkpoint['sha256']:
+    checkpoint_path = Path(checkpoint['path']) if hf is None else Path(hf)/'model.safetensors'
+    if sha(checkpoint_path) != checkpoint['sha256']:
         raise ValueError('Checkpoint bytes differ')
     torch.set_num_threads(8)
-    directory = str(Path(checkpoint['path']).parent)
+    directory = str(checkpoint_path.parent)
     model = Qwen3ForCausalLM.from_pretrained(directory, local_files_only=True,
         dtype=torch.float32, attn_implementation='eager').eval().requires_grad_(False)
-    if json.loads(json.dumps(model.config.to_dict())) != context['model_config']:
+    actual_config = json.loads(json.dumps(model.config.to_dict()))
+    expected_config = dict(context['model_config'])
+    if hf is not None:
+        actual_config.pop('_name_or_path', None)
+        expected_config.pop('_name_or_path', None)
+    if actual_config != expected_config:
         raise ValueError('Native model configuration differs')
     digest = hashlib.sha256()
     for name, value in model.named_parameters():

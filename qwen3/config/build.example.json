@@ -1,0 +1,16 @@
+{
+  "python": "/absolute/path/to/python",
+  "host_clang": "/absolute/path/to/host-clang",
+  "host_clangxx": "/absolute/path/to/host-clang++",
+  "llvm_source": "/absolute/path/to/pinned-llvm-source",
+  "llvm_build": "/absolute/path/to/pinned-llvm-build",
+  "triton_source": "/absolute/path/to/triton-git-checkout",
+  "hexagon_tools": "/absolute/path/to/Hexagon_Tools",
+  "hexagon_sdk": "/absolute/path/to/Hexagon_SDK",
+  "hexkl": "/absolute/path/to/hexkl_addon",
+  "lld": "/absolute/path/to/ld.lld",
+  "library_path": [
+    "/absolute/path/to/required-host-libraries"
+  ],
+  "cmake": "cmake"
+}

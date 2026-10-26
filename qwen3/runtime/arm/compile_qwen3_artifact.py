@@ -73,6 +73,8 @@ def main():
     parser.add_argument("--emit", choices=("llvmir", "obj"), default="obj")
     parser.add_argument("--libtriton", type=Path)
     parser.add_argument("--triton-python", type=Path)
+    parser.add_argument("--backend-source", type=Path,
+                        help="Compiler source root supplying options; use the explicit extension without an installed Triton package")
     parser.add_argument("--option", action="append", default=[])
     parser.add_argument("--options-from", type=Path,
                         help="Replay all options from an existing compilation JSON; explicit --option overrides apply last")
@@ -86,13 +88,15 @@ def main():
     destination_path = args.output if args.output is not None else args.output_bundle
     if destination_path.exists() or (metadata_path is not None and metadata_path.exists()):
         parser.error("Choose a new output path; existing artifacts are preserved")
+    if args.backend_source and (not args.libtriton or args.triton_python):
+        parser.error("backend-source requires libtriton and cannot use triton-python")
     if args.triton_python:
         sys.path.insert(0, str(args.triton_python.resolve()))
     selected_identity = selected_digest = None
     if args.libtriton:
         selected_identity = file_identity(args.libtriton)
         selected_digest = digest(args.libtriton)
-        load_extension(args.libtriton)
+        selected_extension = load_extension(args.libtriton)
         if file_identity(args.libtriton) != selected_identity:
             raise RuntimeError("Extension changed while it was being loaded; retry after the build")
     if args.progress:
@@ -102,9 +106,19 @@ def main():
     if args.codegen_timing:
         os.environ["HEXAGON_CODEGEN_TIMING"] = "true"
 
-    from triton._C import libtriton
-    from triton._C.libtriton import ir, qcom_hexagon_backend as backend
-    from triton.backends.qcom_hexagon_backend.hexagon_options import HexagonOptions
+    if args.backend_source:
+        libtriton = selected_extension
+        ir, backend = libtriton.ir, libtriton.qcom_hexagon_backend
+        options_path = args.backend_source / "qcom_hexagon_backend/backend/hexagon_options.py"
+        spec = importlib.util.spec_from_file_location("qwen_build_options", options_path)
+        options_module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = options_module
+        spec.loader.exec_module(options_module)
+        HexagonOptions = options_module.HexagonOptions
+    else:
+        from triton._C import libtriton
+        from triton._C.libtriton import ir, qcom_hexagon_backend as backend
+        from triton.backends.qcom_hexagon_backend.hexagon_options import HexagonOptions
 
     try:
         options, option_source = resolve_options(
@@ -131,6 +145,8 @@ def main():
     }
     print(json.dumps(metadata, indent=2), flush=True)
     context = ir.context()
+    if options.get("lowerConstantsInSeparateSharedObjects") == "True":
+        context.disable_multithreading()
     backend.load_dialects(context)
     parse_started = time.monotonic()
     module = backend.parse_mlir_module_from_file(str(args.input), context)

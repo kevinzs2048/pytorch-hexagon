@@ -6,6 +6,7 @@ pinned Git submodule dependency, not application source.
 
 - [Reproduce execution](REPRODUCE.md)
 - [Compiler build status](BUILD_STATUS.md)
+- [Build from source](SOURCE_BUILD.md)
 - [Repository separation](REPOSITORY_SPLIT.md)
 - [Operator timings](OPERATOR_TIMINGS.md)
 - [KV integration](KV_CACHE_EXTENSION.md)

@@ -1,0 +1,15 @@
+{
+  "context": "/absolute/path/to/assets/context.json",
+  "hf": "/absolute/path/to/assets/hf",
+  "catalog": "/absolute/path/to/assets/catalog.json",
+  "producers": {
+    "q1": {
+      "path": "/absolute/path/to/captures/q1/result.json",
+      "sha256": "<SHA256 of that result.json>"
+    },
+    "q2": {
+      "path": "/absolute/path/to/captures/q2/result.json",
+      "sha256": "<SHA256 of that result.json>"
+    }
+  }
+}

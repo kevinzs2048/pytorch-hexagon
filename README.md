@@ -55,6 +55,7 @@ capacity 1024, reusable q1 and q2–32 execution domains. There is no CPU forwar
 - `qwen3/runtime/support/`: AOT cache, byte guards, input packing, timing and constant-loader support.
 - `qwen3/runtime_checks.py`: shared generation and full-output validation; no experiment launchers.
 - `qwen3/runtime-sources.json`: explicit execution-source dependency set for cache invalidation.
+- `qwen3/build.py`, `qwen3/build_model.py`: unified compiler and model source build.
 - `tools/qwen3/`: application build/deployment/regression orchestration (Python).
 - `test/`, `qwen3/validation/`: tests and included reference hashes.
 - `dependencies/`: compiler lock and application-side Transformers patch.
@@ -83,7 +84,7 @@ matched the reference, including a second process with two AOT cache hits.
 Maintainer scripts use a separate entry that supplies paths to child processes:
 
 ```bash
-python -m qwen3.tools build --help
+python -m qwen3.build --help
 python -m qwen3.tools verify --help
 python -m qwen3.tools profile_model_memory --help
 ```
@@ -93,10 +94,11 @@ build/review tools remain internal: some are still dependencies of the accepted
 compiler recipe and are not portable source-build APIs. Their retention does not
 mean every experiment became a production feature.
 
-A **clean full compiler rebuild remains unqualified**. Execution with the accepted
-compiled assets and rebuilding those assets from source are different tasks. See
-[build status](docs/qwen3/BUILD_STATUS.md). The split does not introduce a new model,
-numerical algorithm or performance claim.
+The [source-build workflow](docs/qwen3/SOURCE_BUILD.md) builds the compiler profiles,
+numerical tools, DSP helpers and both model domains in one output tree. LLVM and
+the Qualcomm SDK remain explicit prebuilt dependencies. A build and a DSP
+numerical qualification have separate receipts; see
+[build status](docs/qwen3/BUILD_STATUS.md). Existing execution assets remain intact.
 
 The previous combined tree is preserved at compiler-history commit
 `1db3dae9ff09ba17c307c800777c443136050537`. Source origin records and original
