@@ -1,7 +1,6 @@
 """Sealed main/constant object bundles for the existing multi-module backend."""
 import hashlib
 import json
-import re
 from pathlib import Path
 
 
@@ -58,50 +57,3 @@ def load_bundle(directory):
     if record.get("output_bytes") != sum(item["bytes"] for item in items):
         raise ValueError("Bundle total byte count is inconsistent")
     return record, paths
-
-
-def load_constant_libraries(directory, compilation, linker_sha256):
-    """Reuse data DSOs only when graph, ordered constant objects and linker match.
-
-    A previous numerical failure does not invalidate immutable constant files.
-    No accuracy result is reused; the new main object and wrapper still run.
-    The selected directory must itself contain the original linked libraries.
-    """
-    directory = Path(directory)
-    metadata = directory / "result.json"
-    raw = metadata.read_bytes()
-    previous = json.loads(raw)
-    source = previous.get("compilation", {})
-    if source.get("input_sha256") != compilation.get("input_sha256"):
-        raise ValueError("Constant-library source belongs to another graph")
-    if previous.get("linker_sha256") != linker_sha256:
-        raise ValueError("Constant-library linker differs")
-    expected = compilation.get("objects", [])[1:]
-    recorded = source.get("objects", [])[1:]
-    if not expected or len(recorded) != len(expected):
-        raise ValueError("Constant-object count differs")
-    for actual, wanted in zip(recorded, expected):
-        if actual.get("role") != "constants" or wanted.get("role") != "constants" or \
-                any(actual.get(key) != wanted.get(key) for key in ("sha256", "bytes")):
-            raise ValueError("Constant-object bytes or order differ")
-    libraries = previous.get("constant_libraries", [])
-    if len(libraries) != len(expected):
-        raise ValueError("Linked constant-library count differs")
-    paths = []
-    for item in libraries:
-        name = item.get("file", "")
-        if not isinstance(name, str) or re.fullmatch(r"lib[A-Za-z0-9_.-]+\.so", name) is None:
-            raise ValueError("Invalid constant-library basename")
-        path = directory / name
-        if path in paths or path.is_symlink() or not path.is_file():
-            raise ValueError("Constant libraries must be unique regular nonsymlink files")
-        if type(item.get("bytes")) is not int or path.stat().st_size != item["bytes"] or \
-                digest(path) != item.get("sha256"):
-            raise ValueError("Linked constant-library bytes drifted")
-        with path.open("rb") as stream:
-            if stream.read(4) != b"\x7fELF":
-                raise ValueError("Constant library is not ELF")
-        paths.append(path.resolve())
-    return paths, {"source_result": str(metadata.resolve()),
-                   "source_result_sha256": hashlib.sha256(raw).hexdigest(),
-                   "scope": "immutable constant DSOs only; no numerical result reused"}

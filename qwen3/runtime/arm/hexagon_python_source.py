@@ -2,7 +2,7 @@
 import importlib.util
 from pathlib import Path
 import sys
-from hexagon_generate_reuse import sha
+from qwen3.bundle import sha
 
 
 def configure_triton_python(directory):

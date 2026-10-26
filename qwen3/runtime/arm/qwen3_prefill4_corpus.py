@@ -1,5 +1,17 @@
 """Short framework-integration cases, not a language quality benchmark."""
-from qwen3_capacity128_validation_profiles import Case
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class Case:
+    text: str
+    prompt_tokens: int
+    max_new_tokens: int
+    min_new_tokens: int | None = None
+    required_last_position: int | None = None
+
+    def extra_generation_kwargs(self):
+        return {} if self.min_new_tokens is None else {'min_new_tokens': self.min_new_tokens}
 
 NAME='native-prefill4-short-all-tails-repeat-v1'
 CASES=(Case('Say hello.',15,16),Case('Hello.',14,16),

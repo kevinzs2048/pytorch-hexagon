@@ -3,22 +3,6 @@
 PyTorch owns generation, stopping and cache.reset(). These checks only bound
 the experiment and verify positions emitted by native framework calls.
 """
-import json
-
-
-def additional_prompts(encoded, *, generic, max_new_tokens, capacity=1024, vocab=151936):
-    if encoded is None:
-        return []
-    if not generic:
-        raise ValueError('Sequential requests require the explicit generic prompt entry')
-    prompts = json.loads(encoded)
-    if (type(prompts) is not list or not 1 <= len(prompts) <= 8
-            or any(type(ids) is not list or not ids
-                   or len(ids)+max_new_tokens > capacity
-                   or any(type(token) is not int or not 0 <= token < vocab for token in ids)
-                   for ids in prompts)):
-        raise ValueError('Bounded nonempty sequential prompts required')
-    return prompts
 
 
 def verify_request(forwards, prompt_ids, generated_ids):

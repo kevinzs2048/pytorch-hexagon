@@ -29,18 +29,3 @@ def integration_plan(reference):
     if cursor!=56 or shapes!={1,2,3,4}:raise ValueError('All four complete model shapes required')
     return dict(reference=reference,selected=list(range(4)),expected_calls=reference['reference'],count=56,
         force_length=False,pending_status='ARM_prefill4_native_generate_56_DSP_passed_pending_independent_audit')
-
-
-def archive_budget(plan):
-    from hexagon_prefill1024_layout_candidate import Prefill1024LayoutCandidate
-    from hexagon_new_reset_archive import LIMIT
-    calls=plan['expected_calls'];total=0
-    for call in calls:
-        layout=Prefill1024LayoutCandidate(query_tokens=call['query_tokens'])
-        # Reset originals are losslessly compressed with a hard upper bound.
-        total+=(LIMIT if call['positions'][0]==0 else layout.reuse_packet_bytes)+layout.response_bytes
-    maximum=Prefill1024LayoutCandidate(query_tokens=8)
-    return dict(retained_packet_upper_bound=total,reserve_bytes=1024**3,
-        temporary_packet_headroom=2*maximum.full_packet_bytes+maximum.response_bytes,
-        metadata_headroom=64*1024**2,
-        minimum_before_run=total+1024**3+2*maximum.full_packet_bytes+maximum.response_bytes+64*1024**2)

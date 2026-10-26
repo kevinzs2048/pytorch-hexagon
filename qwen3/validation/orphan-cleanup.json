@@ -1,0 +1,120 @@
+{
+  "baseline": "68ff472",
+  "review": "Repository-wide imports, identifier uses and filename/subprocess references checked; retained implementations AST-identical; shared SHA function AST-identical",
+  "runtime_manifest_before": 49,
+  "runtime_manifest_after": 46,
+  "changes": [
+    {
+      "path": "qwen3/runtime/arm/hexagon_buffer_binding.py",
+      "removed_functions": [
+        "buffer_entry_suffix",
+        "validate_buffer_binding"
+      ],
+      "original_sha256": "e5122e565f09741ec3720c71a6d1a32d1a1e90aaef0b12d5aaa100ebc94f6696"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen_native_request_sequence.py",
+      "removed_functions": [
+        "additional_prompts"
+      ],
+      "original_sha256": "6f89efdf4a125591eea1e62a3b0fd4998562821f050bcd8b2d7e8f45d21f3369"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_generate_compile_common.py",
+      "removed_functions": [
+        "native_cache",
+        "validate_request"
+      ],
+      "original_sha256": "5381d53b7b6f107b18a16e31f1fd562246914b438c3ee2aa3132f29d24bb1c6e"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_native1024_cache_binding.py",
+      "removed_functions": [
+        "load_native1024_cache_binding",
+        "read_bound"
+      ],
+      "original_sha256": "7554c5a60c51d68340e2e16c0ddb746a132493fcfe1a6ec8439119d23f5f4f9e"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_object_bundle.py",
+      "removed_functions": [
+        "load_constant_libraries"
+      ],
+      "original_sha256": "b794fb447953b4560d6bc688430eb60c2cd24b56a09af8a847de0d024d71abac"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_native_silu.py",
+      "removed_functions": [
+        "lower_native_silu_for_hexagon"
+      ],
+      "original_sha256": "9d003857175867a7444fac6bdb17c52cefdfecd64075718698b9372e7553c629"
+    },
+    {
+      "path": "qwen3/runtime/arm/streamed_mlir_interchange.py",
+      "removed_functions": [
+        "stream_mlir_text"
+      ],
+      "original_sha256": "ccbe1ff66acf9321cc994993d0a246da291bbf60e2bda45ca39c7227f4515e69"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_arm_prefill_plan.py",
+      "removed_functions": [
+        "archive_budget"
+      ],
+      "original_sha256": "bf114008e270d513898f34997225de966f18cbc1f2fd65c0e3ffae7011f9f103"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_generate_reuse.py",
+      "removed_file": true,
+      "original_sha256": "7d0595d7a6ee90352f72763a523e63ded0b63966ff25814d98207fc4ef78a3a6"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_archived_graph.py",
+      "removed_file": true,
+      "original_sha256": "12cd2388b1e5ac3b6bd0d54a68331a6406322a805ce82fb9c815ef320b698d13"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_wrapper_relink.py",
+      "removed_file": true,
+      "original_sha256": "a3ea2b7c7df9e9dcd8805f9fc27d3fa38d6e7dbb2f27a7d3bfb980661015cb3a"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_new_reset_archive.py",
+      "removed_file": true,
+      "original_sha256": "7533d8ac22cbff37ce63213656403ad375ad380772a07c4e72ab866b68666d00"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_dynamic_aot_bridge.py",
+      "removed_file": true,
+      "original_sha256": "17d00ec30b1123d1d1b1d374088796bd79d74b7929d883c7ca626293209d3c2e"
+    },
+    {
+      "path": "qwen3/runtime/arm/utils.py",
+      "removed_file": true,
+      "original_sha256": "3f6e9ef849a9f82da4505325e08b09e5ce0a976162263fbd22c7044193db3c2e"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_capacity128_validation_profiles.py",
+      "removed_file": true,
+      "original_sha256": "329fe5f673ee15a3002f3eeaa268e00ccaa94245d7bcce08c5616581347cf912"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_capacity128_generate_common.py",
+      "removed_file": true,
+      "original_sha256": "969d73455bb38b5ddc7828aedeb4f10307747389bbc05363ee26e548e9d30176"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_long_decode_corpus.py",
+      "removed_file": true,
+      "original_sha256": "848bdb808edcd4c7fc78204a9a7463254a9dd2ce34c05c64728fa799e5583497"
+    }
+  ],
+  "host_validation": {
+    "tests": 696,
+    "skipped": 0,
+    "failures": 0,
+    "IR_checks": 9,
+    "result_sha256": "08afc7424fd488624198c4b607ae7427067ede79469b7006a1d6d70c100b9963"
+  },
+  "board_validation": "pending final source-built library regression"
+}

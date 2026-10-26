@@ -10,11 +10,6 @@ import subprocess
 import threading
 
 
-def stream_mlir_text(operation, command, *, archive_path, log_path, timeout=600):
-    result = stream_mlir_pipeline(operation, [command], archive_path=archive_path,
-                                  log_path=log_path, timeout=timeout)
-    result['command'] = result.pop('commands')[0]
-    return result
 
 
 def stream_mlir_pipeline(operation, commands, *, archive_path, log_path, timeout=600):

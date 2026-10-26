@@ -3,7 +3,7 @@ import hashlib
 import importlib.metadata
 import json
 from pathlib import Path
-from hexagon_generate_reuse import sha
+from qwen3.bundle import sha
 
 
 def tensor_bytes(tensor):
@@ -43,19 +43,8 @@ def load_model(context_path, *, hf=None):
     return model, tokenizer, context
 
 
-def native_cache(model):
-    import torch
-    from transformers.cache_utils import StaticCache
-    cache = StaticCache(config=model.config, max_cache_len=64)
-    cache.early_initialization(1, 8, 128, torch.float32, torch.device('cpu'))
-    return cache
 
 
-def validate_request(token_ids, max_new_tokens):
-    if (type(max_new_tokens) is not int or max_new_tokens <= 0 or not token_ids
-            or any(type(t) is not int or not 0 <= t < 151936 for t in token_ids)
-            or len(token_ids) + max_new_tokens > 64):
-        raise ValueError('Batch-one unpadded request must fit the 64-token native cache')
 
 
 def generation_options(backend=None, *, max_new_tokens=8):

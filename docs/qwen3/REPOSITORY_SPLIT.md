@@ -91,3 +91,24 @@ the same cache. Every input/output hash (logits and full KV), position, token an
 checksum matched the included reference. AOT counts were two misses on the first
 run and two hits on the second. See `qwen3/validation/code-cleanup.json` for source
 identities and evidence hashes. This does not qualify a clean compiler rebuild.
+
+## Orphan implementation cleanup
+
+After the source-build path was established, repository-wide imports, identifier
+uses and subprocess/filename references were checked again. The old standalone
+static-model reuse chain, its archive/relink helpers, the unused q1 scalar bridge,
+an unused tutorial utility copy and disconnected capacity-128 corpus modules
+were removed. The still-used case dataclass moved unchanged into its only caller.
+Unused helper functions were removed from otherwise retained modules.
+
+This is separate from numerical/compiler changes. Every remaining top-level
+function in the edited modules was checked against its pre-cleanup AST; the
+shared file-hash function also has the same AST as the removed duplicate. The
+runtime manifest shrank from 49 files to 46. The complete host suite passed 696
+tests with no skips, plus nine IR checks. Final board regression is recorded in
+the source-build qualification, not inferred from this static review.
+
+The removal list and original file identities are in
+`qwen3/validation/orphan-cleanup.json`; recover the old code from application
+commit `68ff472` if historical investigation needs it. Active native generation,
+KV lifecycle, numerical policy passes and DSP helper implementations remain.
