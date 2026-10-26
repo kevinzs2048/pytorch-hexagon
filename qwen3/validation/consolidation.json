@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "status": "portable_execution_regression_passed",
+  "archive_revision": "4c174dce80553f6cd781222c73817271edfa0370",
+  "runtime_source_revision": "feb45fd85274d395117f6ba75dfd33433256bba0",
+  "delivery_source_revision": "7ec99369749f52ffbe0ed3b81df51ca407cdfb5b",
+  "host_tests": {
+    "passed": 107,
+    "failed": 0,
+    "warnings": 24
+  },
+  "environment": {
+    "python": "/usr/bin/python3",
+    "PYTHONPATH_unset": true,
+    "bundle_files": 19793,
+    "framework_files": 4622
+  },
+  "device_runs": [
+    {
+      "status": "identical",
+      "forwards": 16,
+      "compared": "all input/output packet hashes (logits + all KV), positions, tokens, FNV",
+      "reference_sha256": "9bd89277354344397342e384e6782d852bf24f46869cae82bf29b6850a6a0c20",
+      "candidate_sha256": "13b8680aaf53b50b5b4da42bf2f72af69956cb4224f83b209af988c2ff572a7e"
+    },
+    {
+      "status": "identical",
+      "forwards": 16,
+      "compared": "all input/output packet hashes (logits + all KV), positions, tokens, FNV",
+      "reference_sha256": "d13e6ceac6c252b93b4db5b59390a21b86c8e66fd3090d51e379f7c56e04fcc3",
+      "candidate_sha256": "ebd49858dcca35df2c4bc9e7e3e0fe83e90902b6e1d2bd8b291e659fbde4d047"
+    },
+    {
+      "status": "identical",
+      "forwards": 16,
+      "compared": "all input/output packet hashes (logits + all KV), positions, tokens, FNV",
+      "reference_sha256": "d13e6ceac6c252b93b4db5b59390a21b86c8e66fd3090d51e379f7c56e04fcc3",
+      "candidate_sha256": "f95262e6721dcbcc0e57e76f505cf8df55dd82f6996faeb4db8e57c0bcbaa848"
+    }
+  ],
+  "clean_compiler_rebuild_verified": false,
+  "completed_utc": "2026-10-26T13:37:13.620122+00:00",
+  "implementation_sha256": "e40d4389641c86f1f0f7d2713cbe8317641f80200e50ca08df59d6d7f1f418a3",
+  "final_entry_forward_count": 16,
+  "migration_diagnostic_forward_count": 32,
+  "total_device_forward_count": 48,
+  "portable_bundle_sha256": "7b0a97f487690da6563d3b7abe105302195155f636d927fef795c61940a3a794",
+  "portable_bundle_bytes": 3502496726,
+  "final_entry_AOT_protocol": {
+    "captures": 2,
+    "hits": 0,
+    "misses": 2,
+    "guard_misses": 0
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "scope": {
+    "model": "Qwen3-0.6B",
+    "layers": 28,
+    "batch": 1,
+    "kv_capacity": 1024,
+    "query_domains": [
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        32
+      ]
+    ],
+    "linear_quantization": "W8A8",
+    "intermediates_and_KV": "FP32"
+  },
+  "framework": {
+    "torch": "2.12.0+cpu",
+    "torchao": "0.17.0+git02105d46",
+    "transformers": "5.0.0rc1",
+    "torch_mlir": "20260908.870",
+    "transformers_generation_sha256": "6ecaf17fc6ad5772cb2108a77082831f13311642eaf792fe8d15ac6a2125fda3"
+  },
+  "namespace": {
+    "adapter_sha256": "e4114f5781113e03fd530eaeacdaefd4e6ea27f23981425383745c45eeae56f6",
+    "native_source_sha256": "b222b28fcaeabb48d68b68341d6d0cc6fa22dbf50543ca1a0398426268dc8b7f",
+    "numerical_revision": "feb45fd85274d395117f6ba75dfd33433256bba0",
+    "recipe_sha256": "78884d34cf383a6535e075745b5e3849544265251ff1cb483540a84533b8e08e",
+    "model_parameter_sha256": "1daf229f20ed7e4c3d5ef112e3bd132cfb4c0a86ab0338e4c8b292a89f9e1b20",
+    "module_constants_sha256": "2ca9b1f3a3a87717c077f3053a2d1ed8191b63fa255d1e0ae41006ad45621629",
+    "torch_version": "2.12.0+cpu",
+    "torch_git": "7661cd9c6b841b62b7f411aa52ec51f05457263b",
+    "python_version": "3.12.3",
+    "architecture": "aarch64"
+  },
+  "model_libraries": {
+    "(1, 1)": "eb5184d295c42d7d8beb2ae12d63c39bd9c6634b50ad7b2ff650a6985a0e52a0",
+    "(2, 32)": "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17"
+  },
+  "runtime_files": {
+    "constants/lib_mlir_ciface_Qwen3DynamicBoundProbe-consts-3.so": "66be6d41ea56fcec9d82571551460a8c53caf4fa4200ef1d9c87fa956ed83bde",
+    "constants/lib_mlir_ciface_Qwen3DynamicBoundProbe-consts-2.so": "1700a01446763de1fbee46de08cd8dccb8d35ce3ee93eaab79483e6cb145b6a9",
+    "constants/lib_mlir_ciface_Qwen3DynamicBoundProbe-consts-1.so": "0d1b1298eb7339ed0d4324884d0cf1e7727fb63c7f02dc52cae8c4bcd0bf867c",
+    "context.json": "30ed4c7d3a31f97b07f73edd4c3716f47e6092314c7db2d7bc4a4cd3a88885c7",
+    "policy/fx_decomp_util.py": "2c1583eb71ef9a3f7791d312f2cef7badb413068950134a39729f19b2b7f48e5",
+    "runtime/buffer_stream": "b7111871db80af89041912236d9bed9522045803a8342449d7db048479639754",
+    "runtime/libhexagon_buffer_runner_skel.so": "f8ebff9681f5e563d2f381b526f91b9fbc6a05ba66a780a600f2829aec623504"
+  },
+  "compiler": {
+    "base_hexagon_mlir": "197407393c07319b8755d92cfa3d3d3ad22b6ef3",
+    "llvm": "064f02dac0c81c19350a74415b3245f42fed09dc",
+    "sdk": "6.5.0.0",
+    "tools": "19.0.02",
+    "libtriton_sha256": "4043395bddd404bcb8370f98fe068a3ddf2a481f10e1e11847a355d965f034ce",
+    "clean_rebuild_verified": false
+  },
+  "portable_catalog_sha256": "0c49fd7177193496453c6abdedd3bb76700f468088a0ad4be14d66946c1f951d"
+}

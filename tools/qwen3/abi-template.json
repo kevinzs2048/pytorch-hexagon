@@ -1,0 +1,845 @@
+{
+  "remote": "/dev/shm/qwen3-bound-dynamic-qk-knorm-v1-20260928",
+  "scalar_inputs": [
+    17,
+    1024,
+    1
+  ],
+  "tensor_inputs": [
+    {
+      "tensor_index": 0,
+      "arg_index": 1,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-01.bin",
+      "bytes": 136,
+      "sha256": "9f0b80b6a14746984c6f5548f64dae8c32fc347d0f77d154e9e911eb1809a0a2",
+      "shape": [
+        1,
+        17
+      ],
+      "dtype": "i64"
+    },
+    {
+      "tensor_index": 1,
+      "arg_index": 2,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-02.bin",
+      "bytes": 136,
+      "sha256": "bb25b5201ac6c37409bb181321e5f74ef84fc6dd59cc690d9298e927304684f8",
+      "shape": [
+        17
+      ],
+      "dtype": "i64"
+    },
+    {
+      "tensor_index": 2,
+      "arg_index": 3,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-03.bin",
+      "bytes": 136,
+      "sha256": "bb25b5201ac6c37409bb181321e5f74ef84fc6dd59cc690d9298e927304684f8",
+      "shape": [
+        1,
+        17
+      ],
+      "dtype": "i64"
+    },
+    {
+      "tensor_index": 3,
+      "arg_index": 5,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-05.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 4,
+      "arg_index": 6,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-06.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 5,
+      "arg_index": 7,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-07.bin",
+      "bytes": 69632,
+      "sha256": "101b9d2b3c98bf697f9d837b24b51f6f46ad464bfad08cfb8db30af70554fb64",
+      "shape": [
+        1,
+        1,
+        17,
+        1024
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 6,
+      "arg_index": 8,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-08.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 7,
+      "arg_index": 9,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-09.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 8,
+      "arg_index": 10,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-10.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 9,
+      "arg_index": 11,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-11.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 10,
+      "arg_index": 12,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-12.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 11,
+      "arg_index": 13,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-13.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 12,
+      "arg_index": 14,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-14.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 13,
+      "arg_index": 15,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-15.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 14,
+      "arg_index": 16,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-16.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 15,
+      "arg_index": 17,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-17.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 16,
+      "arg_index": 18,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-18.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 17,
+      "arg_index": 19,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-19.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 18,
+      "arg_index": 20,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-20.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 19,
+      "arg_index": 21,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-21.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 20,
+      "arg_index": 22,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-22.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 21,
+      "arg_index": 23,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-23.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 22,
+      "arg_index": 24,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-24.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 23,
+      "arg_index": 25,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-25.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 24,
+      "arg_index": 26,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-26.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 25,
+      "arg_index": 27,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-27.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 26,
+      "arg_index": 28,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-28.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 27,
+      "arg_index": 29,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-29.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 28,
+      "arg_index": 30,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-30.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 29,
+      "arg_index": 31,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-31.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 30,
+      "arg_index": 32,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-32.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 31,
+      "arg_index": 33,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-33.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 32,
+      "arg_index": 34,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-34.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 33,
+      "arg_index": 35,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-35.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 34,
+      "arg_index": 36,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-36.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 35,
+      "arg_index": 37,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-37.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 36,
+      "arg_index": 38,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-38.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 37,
+      "arg_index": 39,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-39.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 38,
+      "arg_index": 40,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-40.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 39,
+      "arg_index": 41,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-41.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 40,
+      "arg_index": 42,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-42.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 41,
+      "arg_index": 43,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-43.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 42,
+      "arg_index": 44,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-44.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 43,
+      "arg_index": 45,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-45.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 44,
+      "arg_index": 46,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-46.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 45,
+      "arg_index": 47,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-47.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 46,
+      "arg_index": 48,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-48.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 47,
+      "arg_index": 49,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-49.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 48,
+      "arg_index": 50,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-50.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 49,
+      "arg_index": 51,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-51.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 50,
+      "arg_index": 52,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-52.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 51,
+      "arg_index": 53,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-53.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 52,
+      "arg_index": 54,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-54.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 53,
+      "arg_index": 55,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-55.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 54,
+      "arg_index": 56,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-56.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 55,
+      "arg_index": 57,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-57.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 56,
+      "arg_index": 58,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-58.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 57,
+      "arg_index": 59,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-59.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 58,
+      "arg_index": 60,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-60.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    },
+    {
+      "tensor_index": 59,
+      "arg_index": 61,
+      "path": "/dev/shm/qwen3-dynamic-q17-bound-runtime-inputs-v1-20260927/input-61.bin",
+      "bytes": 4194304,
+      "sha256": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+      "shape": [
+        1,
+        8,
+        1024,
+        128
+      ],
+      "dtype": "f32"
+    }
+  ],
+  "wrapper_sha256": "7bc5406ee28e8508e2fd8fe353080a036fc9ec4ac7b21a252b86a87c042708f5",
+  "runtime_header_sha256": "0e4c1bcc6df416dc3d26329308a9074aa1ddb741a01d5d50a5e95d8ec9892e29"
+}

@@ -1,0 +1,84 @@
+# Qwen3 Hexagon Runtime
+
+This is the **Qwen3 application and integration repository**. It uses a pinned
+fork of Qualcomm Hexagon-MLIR as a compiler/backend dependency. It is not the
+official Hexagon-MLIR repository and does not own a copied compiler source tree.
+
+| Repository | Responsibility |
+| --- | --- |
+| **qwen3-hexagon-runtime** (this repository) | PyTorch/Qwen3 integration, native generation, logical KV lifecycle, deployment, profiling orchestration and application regression |
+| **Hexagon-MLIR downstream fork** | MLIR dialects/passes, lowering/codegen, generic buffer ABI, DSP kernels and numerical compiler extensions |
+
+The compiler dependency is a Git submodule at `third_party/hexagon-mlir`, pinned
+by both its gitlink and `dependencies/hexagon-mlir.lock.json`. That directory is
+a separate repository checkout, not application-owned compiler code. Our local
+fork directory is named `hexagon-mlir-qwen3` for historical reasons; its package
+names retain upstream compatibility. All compiler changes stay in that fork.
+
+## Reproduce execution
+
+The application retains one public command: `python -m qwen3`. Obtain this
+repository, the pinned compiler checkout, and the matching execution asset bundle.
+The latter contains weights, compiled libraries, ARM/DSP runtime, decomposition
+policy and exact ARM Python packages; binaries do not belong in Git.
+
+For the current offline delivery (the new commits have not been pushed):
+
+```bash
+git clone -b main /path/to/qwen3-hexagon-runtime.bundle qwen3-hexagon-runtime
+cd qwen3-hexagon-runtime
+git config submodule.hexagon-mlir.url /absolute/path/to/hexagon-mlir-compiler.bundle
+git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
+```
+
+On the qualified QCS9075 board, with ARM64 Python 3.12.3 and the matching
+OS/FastRPC environment:
+
+```bash
+python3 -m qwen3 doctor --bundle /path/to/qwen3-qcs9075 --execution
+python3 -m qwen3 generate --bundle /path/to/qwen3-qcs9075 \
+  --prompt '你好，请介绍一下你自己。' --max-new-tokens 32 --output results/first
+python3 -m qwen3 regress --bundle /path/to/qwen3-qcs9075 --output results/regression
+```
+
+No private PYTHONPATH or historical report directory is needed. The CLI verifies
+the compiler source lock and execution assets before loading the model. The
+complete 28-layer Qwen3-0.6B forward runs on DSP; ARM owns Transformers generation,
+tokenization and stopping. Scope: batch 1, W8A8 linear layers, FP32 intermediates/KV,
+capacity 1024, reusable q1 and q2–32 execution domains. There is no CPU forward fallback.
+
+## Application code
+
+- `qwen3/cli.py`, `qwen3/bundle.py`: public entry, portable assets and checks.
+- `qwen3/compiler_dependency.py`: explicit compiler dependency resolution.
+- `qwen3/runtime/arm/`: graph capture, Qwen3 adaptation, native generation and KV integration.
+- `tools/qwen3/`: application build/deployment/regression orchestration (Python).
+- `test/`, `qwen3/validation/`: tests and included reference hashes.
+- `dependencies/`: compiler lock and application-side Transformers patch.
+- `docs/qwen3/`: reproduction instructions and engineering reports.
+
+Compiler C/C++/MLIR sources, DSP kernels and compiler patches are maintained in
+the compiler repository. The application references those sources through the
+pinned dependency. Logical StaticCache reset/update coordination belongs here;
+compiler scatter lowering and bufferization belong there.
+
+## Validation and current limits
+
+```bash
+python -m qwen3 test
+```
+
+The earlier portable execution entry passed 107 host tests and complete tensor-hash
+comparisons on the board. Repository separation has its own validation record in
+`qwen3/validation/repository-split.json`. Do not infer new acceptance from an older
+report alone. [Reproduction](docs/qwen3/REPRODUCE.md) explains bundle export and regression.
+
+A **clean full compiler rebuild remains unqualified**. Execution with the accepted
+compiled assets and rebuilding those assets from source are different tasks. See
+[build status](docs/qwen3/BUILD_STATUS.md). The split does not introduce a new model,
+numerical algorithm or performance claim.
+
+The previous combined tree is preserved at compiler-history commit
+`1db3dae9ff09ba17c307c800777c443136050537`. Source origin records and original
+copyright/license notices are retained. Do not publish this application as an
+official Qualcomm release.

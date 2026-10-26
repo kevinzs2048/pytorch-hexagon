@@ -1,0 +1,3 @@
+[submodule "hexagon-mlir"]
+	path = third_party/hexagon-mlir
+	url = git@github.com:kevinzs2048/hexagon-mlir.git

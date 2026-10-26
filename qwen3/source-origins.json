@@ -1,0 +1,3139 @@
+{
+  "schema": 1,
+  "archive_revision": "4c174dce80553f6cd781222c73817271edfa0370",
+  "source_files": [
+    {
+      "path": "qwen3/runtime/arm/apply_dynamic_bound_qk_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/apply_dynamic_bound_qk_policy.py",
+      "sha256": "8f035781d38d661740683bfa1109f66ca9afa3ba7a70acb212a54238d80bd569",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/apply_unregistered_prefill_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/apply_unregistered_prefill_policy.py",
+      "sha256": "cb2a1cf582fe3b1a932845f1ef36b726290a42b4c2832678b7fbf5bb096b401b",
+      "owner": "application"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/LICENSE.txt",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/LICENSE.txt",
+      "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/README.md",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/README.md",
+      "sha256": "e79b6409b5ae90206daf2d852cd23fe5f56dde06922ca74bf55f0d04241ece3e",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/df.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/df.h",
+      "sha256": "cd3c7de0e47f3751a15dd62878effabdec9e47a892a03fefd75981c26fdaf097",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/estrin.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/estrin.h",
+      "sha256": "b7b49955fb5fb538096b454792aa0d0566c247ba0ea293f8f05f0c982a4096ed",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/helper-adaptation.patch",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/helper-adaptation.patch",
+      "sha256": "48e758b392cc64302451cda580b1ca12476f6139fa210435e64b69a1ccbb3914",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/helperpurec.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/helperpurec.h",
+      "sha256": "1dec369567711e9cf902d64d2457a3d9d1b757c2a83db5f14745d8161dabe7ac",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/misc.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/misc.h",
+      "sha256": "516ddeb5cc9501039b104967f1830b92e94cc6053c401fbb6773873dfb1b6178",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/quaddef.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/quaddef.h",
+      "sha256": "7dd06a0161c384d6823f4554312765cd5af61eb913fd997c5f835c10bf5cf309",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/rempitab.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/rempitab.c",
+      "sha256": "105201cc9c80126a3f18ea96e52540c0d13fda7c91a664599ba4078639f961ad",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/sleefsimdsp.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/sleefsimdsp.c",
+      "sha256": "726d962aaa9cfb0b1696122f4d26765495491c0cbc26c084c899704de46b2f5c",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/source-provenance.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/source-provenance.json",
+      "sha256": "981bf7fe9e02d1a7a59b88ea315fa0289479cdfc88bf88ab0c55880fa290f626",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/arm_rope_trig_runtime/trig_lane.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/arm_rope_trig_runtime/trig_lane.c",
+      "sha256": "9472e289dbb95f6b77a8a5e59a0573cc11e0f26cceb7c67f425c85df9086d35c",
+      "owner": "compiler"
+    },
+    {
+      "path": "qwen3/runtime/arm/audit_arm_dynamic_warm_run.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/audit_arm_dynamic_warm_run.py",
+      "sha256": "aa3b41eb71d91cde9f0ffc6a1a3b00876f4ae156c025877c50f19201f9e569b7",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/audit_qwen_native_request_sequence.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/audit_qwen_native_request_sequence.py",
+      "sha256": "c4a2e8856b93f201dee8d47ba0acad58c0fc30abc864e07a4bd0738cb438f260",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/audit_saved_packet_library_comparison.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/audit_saved_packet_library_comparison.py",
+      "sha256": "bb7f6ec9790d46b84b48dc582e7757f4146173e6aba8f986289774a3cfeabbac",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/build_arm_rope_trig_runtime.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/build_arm_rope_trig_runtime.py",
+      "sha256": "387587824f6aeef0c761ada70da96cd06b89feb6307bae5210dc19a47ef22e47",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/capture_qwen_symbolic_graph_carrier.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/capture_qwen_symbolic_graph_carrier.py",
+      "sha256": "49e3524dfcf8ad1dcb603bcd5e0b66dcd67ff54f4c06e0d52e96e12742a3b30d",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/capture_unregistered_native_prefill.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/capture_unregistered_native_prefill.py",
+      "sha256": "0adcedc1256743d3c6f66e61016ff30ddbb692619344acbc0f5fa81e5a67c64e",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/compile_qwen3_artifact.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/compile_qwen3_artifact.py",
+      "sha256": "19203c96080aeab160a8e5feb7de3178ad6006d58b2aceb1c9a4be0c9eadd164",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/compile_qwen_symbolic_carrier.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/compile_qwen_symbolic_carrier.py",
+      "sha256": "175d3660181ab9b236742dfe1215ea507726320ff999eb41488f15970a66032f",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/fp32_silu_decomposition.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/fp32_silu_decomposition.py",
+      "sha256": "1edb5bc0b14674e3d6e2a69b2782dd6b0484cb98dc0b9097859c76a97aa3d8e7",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_archived_graph.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_archived_graph.py",
+      "sha256": "12cd2388b1e5ac3b6bd0d54a68331a6406322a805ce82fb9c815ef320b698d13",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_arm_bundle.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_arm_bundle.py",
+      "sha256": "9b26b72e9850d44a4edf111627214dd55c4c7ebfdfe088d72a611b215b8b2af0",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_arm_dynamic_catalog.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_arm_dynamic_catalog.py",
+      "sha256": "6cc8ab4a67f3b261d04a336914a0a085acf40e71f72e112c5d28a5bf0cb3e2ac",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_arm_graph_capture_setup.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_arm_graph_capture_setup.py",
+      "sha256": "8ae0f70e9521be259d80ce05f3e854e101b1cb1a4c09a52cacc6dc2383609553",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_arm_native1024_admission.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_arm_native1024_admission.py",
+      "sha256": "e4412dfd5785667daa7f8fb9026b58d02f941fb08fb4e8ff183f45e8a97df5d8",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_arm_native1024_bundle.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_arm_native1024_bundle.py",
+      "sha256": "9907b918c5af3e11d38b5639067107c447a2d1ee880e5604dd1d78e2fb3688ec",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_arm_prefill_bundle.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_arm_prefill_bundle.py",
+      "sha256": "cb70bf98959303374757312e27d771bfe822553d1701140d404c28886df4ac3d",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_arm_prefill_plan.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_arm_prefill_plan.py",
+      "sha256": "bf114008e270d513898f34997225de966f18cbc1f2fd65c0e3ffae7011f9f103",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_buffer_binding.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_buffer_binding.py",
+      "sha256": "d111356b730c1dc0bb25634c82ff12a64baa4f1229081ab2afb4441ffa74fd91",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_buffer_transport.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_buffer_transport.py",
+      "sha256": "4c0fe49bb7496491e4a3b19ca86cc48cddf7935b7c1dd883c038df3e83b8199a",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_caller_byte_copy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_caller_byte_copy.py",
+      "sha256": "ae9da97c51f6748924df211746e5df2deed041ac5a23dd60810a5b7bd45a77e1",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_captured_linalg_cache.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_captured_linalg_cache.py",
+      "sha256": "7ef6305c38550207e854c268a2155fa4950675393706db53f1374b982af0cf82",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_carrier_parameter_binding.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_carrier_parameter_binding.py",
+      "sha256": "42156122c220758bf38149550a28ecfff0a46aec0b32f88cea58e013e2c253ab",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_compile_library_reply.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_compile_library_reply.py",
+      "sha256": "7f591ded9e589f749f893117d1378c12d043d8438a758420f5dcdd350a7e80f7",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_compile_session_progress.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_compile_session_progress.py",
+      "sha256": "de06a415372f3cd8aee1d3130a8f3d8a8e6226cb066f67c457ac7a30f005cf80",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_compiled_artifact_cache.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_compiled_artifact_cache.py",
+      "sha256": "d0c9d0e8e9040bf117e8b7f800734ffbcf7d58eb3f3d422c8ccf71614790339b",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_dynamic_module_constants.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_dynamic_module_constants.py",
+      "sha256": "59072d5a6aa53c648338232de21031f34e1a72dd7c8c246338a9e1be7ed280a3",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_dynamo_parameters.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_dynamo_parameters.py",
+      "sha256": "38db0808aefb20f61748f050c7dd2b8a8f6bf4ae141375244602b2a1b903ac16",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_extended_kv_layout.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_extended_kv_layout.py",
+      "sha256": "d155a7250d93bbbd67c90441310a649d777ecdd72b27fa5dcccc128f8f9469f3",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_fixed512_memcpy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_fixed512_memcpy.py",
+      "sha256": "b470c27841f6016cc89217aa4643e6f63e4524df67dd1936c9352c8b7fcea9a8",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_generate_reuse.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_generate_reuse.py",
+      "sha256": "7d0595d7a6ee90352f72763a523e63ded0b63966ff25814d98207fc4ef78a3a6",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_global_memcpy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_global_memcpy.py",
+      "sha256": "7870e663132edba56f712e78112c2f80b6fe1deb76c6a760125a8da512f42745",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_guarded_memref_copy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_guarded_memref_copy.py",
+      "sha256": "527569e3e8a2d990991ccbdbe8fd9cc6e0a0169a63ea0974f73f09124c4e7911",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_host_timing.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_host_timing.py",
+      "sha256": "c58bfd836db32f384410bdc36ec902751648d047ea0827ff0c5a1041d6fb77d7",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_library_lifecycle.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_library_lifecycle.py",
+      "sha256": "032d21dc88368ab36a536238414aa2c4629a26bca8349f4afe53aa4013fd680c",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_live_compile_mailbox.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_live_compile_mailbox.py",
+      "sha256": "75cd4aef1aaf06cb08fb222754c11e27c940b40abb94a46d07ad5fd3ca7ea425",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_module_scalar_binding.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_module_scalar_binding.py",
+      "sha256": "8b1df8f036572c829b25f3701a8c957421584a8945b572d5ef7ff68b483f9ec9",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_multi_integer.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_multi_integer.py",
+      "sha256": "65504ef612b3dda33e5f3f1d3eae34091a9c63ed18afc35ef150061f4eee8866",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_native1024_cache_binding.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_native1024_cache_binding.py",
+      "sha256": "7554c5a60c51d68340e2e16c0ddb746a132493fcfe1a6ec8439119d23f5f4f9e",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_native1024_cache_setup.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_native1024_cache_setup.py",
+      "sha256": "ad325813f882534166ae776840a43ae410da1742fe0c107a197664ba2bb5de55",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_native1024_closed_probe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_native1024_closed_probe.py",
+      "sha256": "f81f567e50e8a316cec141e270a1fb4b05ff6b02ddb9609da0cad8df84bd18e6",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_native_graph_identity.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_native_graph_identity.py",
+      "sha256": "c6e401aef15bc701cea063563d475fe4f25004ed39d90b720498a203bdacd6ba",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_native_silu.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_native_silu.py",
+      "sha256": "9d003857175867a7444fac6bdb17c52cefdfecd64075718698b9372e7553c629",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_new_reset_archive.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_new_reset_archive.py",
+      "sha256": "7533d8ac22cbff37ce63213656403ad375ad380772a07c4e72ab866b68666d00",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_pair256_kv_layout.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_pair256_kv_layout.py",
+      "sha256": "63ddae71024f6dd6d1199d728d563939cdcc34c8d009b95c9242d9cf52478df0",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_prefill1024_layout_candidate.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_prefill1024_layout_candidate.py",
+      "sha256": "b5937898359bde13fe127df4b906fda2ccd966923ceae8b2eefa8b9a52823a9b",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_prefill_cache_binding.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_prefill_cache_binding.py",
+      "sha256": "f574f791504f228a6aca373923682c9bcbfb2cd2d715d1254f998dabfc2c7871",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_preserved_memcpy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_preserved_memcpy.py",
+      "sha256": "54a881d252bb6f33e1dca57d2b0baaa6becb3457c69f1325a35e735884867744",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_python_source.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_python_source.py",
+      "sha256": "af3a866311e4aab4401e53b47e3c13d0c61e70ca7b80b91d34892aac0134eb3d",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_q1_integer_tiles.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_q1_integer_tiles.py",
+      "sha256": "dea6b5b10cdf842cd4626e4b355b90c6071bd5c2499f10141ac876ccad314c45",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_q2_identical_tail.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_q2_identical_tail.py",
+      "sha256": "b30eed215d550de4b673d997aadeafc6bc5c31d77315ab44860b423211bc665e",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_q2_qk_dispatch.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_q2_qk_dispatch.py",
+      "sha256": "63e947390741108930570376e48598bfa10c1a3001a981d91a4999c620e7560a",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_qk_tail.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_qk_tail.py",
+      "sha256": "becf988398980aa311cdd84b7fb482781a144ae2f938709edbfc8060e84114ef",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_qwen_captured_machine_cache.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_qwen_captured_machine_cache.py",
+      "sha256": "f549af2f5fac654b148f6f9e37241b4a701fd827f133ddf542e2b5376ae1c755",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_qwen_generation_budget.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_qwen_generation_budget.py",
+      "sha256": "739c8cb3b09799cc9183d6f3f89cc5468d8837d01738ef3be597e82ab3013041",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_qwen_numerical_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_qwen_numerical_policy.py",
+      "sha256": "590e23c28b0a93716438230e31e27ab3c754cb834dc28354c1d0f570dea82214",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_qwen_shape_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_qwen_shape_policy.py",
+      "sha256": "be0e64c2ab11049134c56214a2b481e9d7eeae1587702241831187296c3f03e1",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_resident_kv_layout.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_resident_kv_layout.py",
+      "sha256": "5884b9bb94e95d1838f42af90fb2a1d26b28e9d5bc4b748d4a6c5db0cba18b7a",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_rpc_stream.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_rpc_stream.py",
+      "sha256": "ade29d55e2e24aa24326bda07230ed2cbdd81461a9fdc1d690fe1489fe40a89d",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_runtime_decompositions.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_runtime_decompositions.py",
+      "sha256": "3fcaa33ca49c71a405fe6da8627cf999bbf4f484ae3c4d368e31e0ccc171a3f7",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_shared_packet_transport.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_shared_packet_transport.py",
+      "sha256": "5fef4d20ec6336da47043e32bf5ccf09c8ee2a9374a4680976f5acf8b78fe68c",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_silu_helper_effects.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_silu_helper_effects.py",
+      "sha256": "ac7f1e80655cc707f2e217868a4d2e16ff9c6b1bc209729c804fc01a68c66d70",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_sparse_packet_storage.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_sparse_packet_storage.py",
+      "sha256": "2ba9a5163289f00b79d8b4064f19481723ef1bd8d2bfe77689cc74e7da19d30f",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_tensor_literal_buffers.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_tensor_literal_buffers.py",
+      "sha256": "c11cb4d008f81804d6da32ac03a53098c38cbd6639c8f672f552609e356e38d7",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_wrapper_relink.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_wrapper_relink.py",
+      "sha256": "a3ea2b7c7df9e9dcd8805f9fc27d3fa38d6e7dbb2f27a7d3bfb980661015cb3a",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/hexagon_zero_tail.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/hexagon_zero_tail.py",
+      "sha256": "64d960d2977f17fe11defb8e29b2894b8cfab76cf042be1083f9f3cd5070320f",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/link_qwen_static_query_entry.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/link_qwen_static_query_entry.py",
+      "sha256": "b82882a2b40e7eb1ecf9e1114e908c2d996cecd14c499123d6f147a5db12c4f6",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/prepare_captured_qwen_hexagon.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/prepare_captured_qwen_hexagon.py",
+      "sha256": "877a31786f07ff7db636e5954fcb87a4c4c69c14299cdf7f104938730a4ae188",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/prepare_captured_qwen_q1_caller.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/prepare_captured_qwen_q1_caller.py",
+      "sha256": "229374b33d59f00ad0182ebcd79f8e27f1af6678e39e344680d3ddc547db0bf9",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/prepare_qwen_dynamic_debug_caller.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/prepare_qwen_dynamic_debug_caller.py",
+      "sha256": "74e034f40df4f152fe31b746681ade88cb380196a19b281c30ec004cafc5c65f",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/prepare_qwen_static_query_entry.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/prepare_qwen_static_query_entry.py",
+      "sha256": "ae5de2c60771932c3e5754152f3dbf90d26759e1457faa5a0c9e3f5327481cb2",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/probe_hexagon_dynamic_linalg.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/probe_hexagon_dynamic_linalg.py",
+      "sha256": "b51f74b7ab09ba32eacb8c1df1b2313bb1bddac5268e11c4a9214b4f308251b2",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/probe_qwen3_dynamic_bound_linalg.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/probe_qwen3_dynamic_bound_linalg.py",
+      "sha256": "b25ed37aac2c843c74745db47aa29c5b5de4266a7795758993db0a03e48a2be8",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/probe_qwen3_dynamic_weight_binding.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/probe_qwen3_dynamic_weight_binding.py",
+      "sha256": "6a2665ecbe0310db6e203247e7c1f617747133818ec97d953351aa07a3f9f941",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_capacity128_generate_common.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen3_capacity128_generate_common.py",
+      "sha256": "969d73455bb38b5ddc7828aedeb4f10307747389bbc05363ee26e548e9d30176",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_capacity128_validation_profiles.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen3_capacity128_validation_profiles.py",
+      "sha256": "329fe5f673ee15a3002f3eeaa268e00ccaa94245d7bcce08c5616581347cf912",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_dynamic_aot_bridge.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen3_dynamic_aot_bridge.py",
+      "sha256": "17d00ec30b1123d1d1b1d374088796bd79d74b7929d883c7ca626293209d3c2e",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_generate_compile_common.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen3_generate_compile_common.py",
+      "sha256": "e75e03ab3f5822669f07929991b209ec35d0795cc2f341f759e08cfcaf66db9d",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_long_decode_corpus.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen3_long_decode_corpus.py",
+      "sha256": "848bdb808edcd4c7fc78204a9a7463254a9dd2ce34c05c64728fa799e5583497",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_object_bundle.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen3_object_bundle.py",
+      "sha256": "b794fb447953b4560d6bc688430eb60c2cd24b56a09af8a847de0d024d71abac",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen3_prefill4_corpus.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen3_prefill4_corpus.py",
+      "sha256": "4d5f656f67bb2f7439944c3e6107b2beb40e39ec48519e72b9150c350a24eb1c",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen_native_module_observation.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen_native_module_observation.py",
+      "sha256": "e5b2b8e3fc64fa274c48ece048cd24a39d3a3981401f7138b573856b5f10af2d",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/qwen_native_request_sequence.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/qwen_native_request_sequence.py",
+      "sha256": "6f89efdf4a125591eea1e62a3b0fd4998562821f050bcd8b2d7e8f45d21f3369",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/reference_qwen_dynamic_exact_packet_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/reference_qwen_dynamic_exact_packet_arm.py",
+      "sha256": "189fad545a970527fbc6c1e7ffc4ff49ae22c35d92a4f58193a125438ae278d6",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/relink_captured_hexagon_object.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/relink_captured_hexagon_object.py",
+      "sha256": "0950465087593b2090acaaafbce0a58d2079cb9afe65989b6e9b7b8e7998afc7",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/repair_dynamic_scatter_mlir_text.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/repair_dynamic_scatter_mlir_text.py",
+      "sha256": "82640e41d3ccd4537ca5d09ad08ea7c0d36d3f71a91c6ed8d917ffdd8a13809f",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/restore_qwen_symbolic_graph_carrier.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/restore_qwen_symbolic_graph_carrier.py",
+      "sha256": "adb9c6ea61f0b7459430f174b16aac0483293a6e38a8b4fbff48cb550c4f104b",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/run_qwen_arm_dynamic_warm_generate.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/run_qwen_arm_dynamic_warm_generate.py",
+      "sha256": "b222b28fcaeabb48d68b68341d6d0cc6fa22dbf50543ca1a0398426268dc8b7f",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/run_qwen_dynamic_debug59_q5_device.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/run_qwen_dynamic_debug59_q5_device.py",
+      "sha256": "9eabc5327e724301167db3c05aac851ac3e57ac045245f6d0e54039b83bea67f",
+      "owner": "archived",
+      "archive_revision": "1db3dae9ff09ba17c307c800777c443136050537",
+      "reason": "Obsolete machine-specific launchers; audit now uses canonical context pin and explicit caller input."
+    },
+    {
+      "path": "qwen3/runtime/arm/run_qwen_dynamic_layer23_q32_device.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/run_qwen_dynamic_layer23_q32_device.py",
+      "sha256": "896e3c7c2a4ca2bd3db581fe11bd44253b87a9803b237718930a2b6ffdea560c",
+      "owner": "archived",
+      "archive_revision": "1db3dae9ff09ba17c307c800777c443136050537",
+      "reason": "Obsolete machine-specific launchers; audit now uses canonical context pin and explicit caller input."
+    },
+    {
+      "path": "qwen3/runtime/arm/run_qwen_dynamic_native_generate_dsp.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/run_qwen_dynamic_native_generate_dsp.py",
+      "sha256": "e4da4d324b089e29c0e7f497e0242c9202023af5d19d826b1d4a225fbed77541",
+      "owner": "archived",
+      "archive_revision": "1db3dae9ff09ba17c307c800777c443136050537",
+      "reason": "Obsolete machine-specific launchers; audit now uses canonical context pin and explicit caller input."
+    },
+    {
+      "path": "qwen3/runtime/arm/select_qwen_layer_observation.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/select_qwen_layer_observation.py",
+      "sha256": "7b9bb4257b772148f093151b1028e6ce41b303c0580bec868ab1448d612cd355",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/serve_qwen_compile_mailbox.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/serve_qwen_compile_mailbox.py",
+      "sha256": "dc7928b63f5545a959ce50713187cd1da77adb3819e834d11de4cf789f92964d",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/streamed_mlir_interchange.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/streamed_mlir_interchange.py",
+      "sha256": "ccbe1ff66acf9321cc994993d0a246da291bbf60e2bda45ca39c7227f4515e69",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_add_matmul_softmax.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_add_matmul_softmax.py",
+      "sha256": "e72d72c8039751e6ed390f28d219ea6b3832affc5421ff4c2ed4f07535b05f0e",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_arm_dynamic_warm_audit.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_arm_dynamic_warm_audit.py",
+      "sha256": "7988159db2259c46594f6e4358c1820ec0497b0db1254b2535e416a0303de12a",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_arm_rope_trig_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_arm_rope_trig_policy.py",
+      "sha256": "7861ba937e3bb00e2ad958197b97309b0b43c4bd336a1f432648c31337aaf60b",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_bounded_softmax_singleton_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_bounded_softmax_singleton_policy.py",
+      "sha256": "b662fe627096636e7463a4172b1a2eb3498db5b560ebaed39484ce5f9e0cb9aa",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_captured_machine_cache.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_captured_machine_cache.py",
+      "sha256": "453bcdfc8b7d7ec436480dc41675290bed593ef288ee8b0f4688071413571d79",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_compile_qwen_symbolic_carrier.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_compile_qwen_symbolic_carrier.py",
+      "sha256": "610ab21aa7aa5b2b088c27c71076bcfd12c9791e84c35a668d7cf8922601b06a",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_concat_linear_torch.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_concat_linear_torch.py",
+      "sha256": "ff99c4b5d2618a17af98a7e8d83968dda8a20caea53e94949bb58b56f91c984e",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_fp32_silu_decomposition.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_fp32_silu_decomposition.py",
+      "sha256": "405841c74e4be3000a4dcf80587353c7b55deacda55bad610dad45fafad91327",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_fp32_silu_exp_compat.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_fp32_silu_exp_compat.py",
+      "sha256": "96643c551d5b5ad5ab81e7052f8504c96ea47437de852fd9a0dae4acdb675c24",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_fp32_sum_cascade.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_fp32_sum_cascade.py",
+      "sha256": "45c6b35a9599e569a91d9b9eb0737cf3e5c39c01efb28e97366a3f25dcf29bed",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_gelu_torch.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_gelu_torch.py",
+      "sha256": "ea8b3bb15b27c4bd29b2c31ce62cf7a9901e8924b458a72ca0b971640334534e",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_hexagon_library_lifecycle.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_hexagon_library_lifecycle.py",
+      "sha256": "135edaa0cdb7ebc3ce9db619e5fad439c8619c8843e38e240c66e57159c962fb",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_hexkl_macro_matmul.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_hexkl_macro_matmul.py",
+      "sha256": "e7b1a1e17ea8329cf8107a328192913d2b1f76875ead2f865a0c42ff0772d09d",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_layernorm_torch.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_layernorm_torch.py",
+      "sha256": "43a2f87dea5d201d965ffca7685635fe21799f1853fca27264ccb586f242fc4d",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_live_compile_mailbox.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_live_compile_mailbox.py",
+      "sha256": "2463f59e50143ae6f4ddcc67627079257483bbfae6ca1bc05e0af72f422bf3e8",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_matmul_schedule_safety.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_matmul_schedule_safety.py",
+      "sha256": "913ecf0114270a52c6fc8c40f438998bc8104b8d3a9a094a7be8053ef09935f7",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_online_numeric_acceptance.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_online_numeric_acceptance.py",
+      "sha256": "d38b0e8b0f7035b810d2bdfef80c25a0dcb334e9c8b0e1bb0c6b78918132cc59",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_online_packet_trace.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_online_packet_trace.py",
+      "sha256": "d403857eb5bbb7c93a10c5d62def4c55221b5c19488467f5243f04cee0a59e7f",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_online_reference_state.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_online_reference_state.py",
+      "sha256": "937b08acb30ee163dbf6c7e859216c09d2f599e568e023e8fd654456a1ad4bb4",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_cold_boundary.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_cold_boundary.py",
+      "sha256": "601591cb20aa773f43343c37f9f3a522691c4252946335d99d7c82531fa7dd3f",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_fixed512_memcpy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_fixed512_memcpy.py",
+      "sha256": "51a15d28b4881764af8b2d5529cde71f390fbe17c399cc08af6abedf95558e08",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_fmaf_effects.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_fmaf_effects.py",
+      "sha256": "8d9f08c7ed26319d14d6324bb00c0ad14b83778e320b0c206ef94b46315d6402",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_generation_budget.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_generation_budget.py",
+      "sha256": "f8a8189202227727d5d41a183433d1b7e62f147a3c31bcacc6524e9786b3791f",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_guarded_copy_protocol.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_guarded_copy_protocol.py",
+      "sha256": "4ab1cc0dd70d71a4d9daf4a4a62efc029c61593e486dd4a88ca10a43ce373ec8",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_guarded_memref_copy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_guarded_memref_copy.py",
+      "sha256": "e2ca0a8098c6bcbb292b40ced0a2118854f349661d617942e04aee25e20a9fcc",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_helper_effects_probe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_helper_effects_probe.py",
+      "sha256": "5cb7558fde2b2e6357a173caf6208e5dd11b467d0db49ebe1c12a520944a4543",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_late_clone_hoisting.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_late_clone_hoisting.py",
+      "sha256": "6037b48d55b48a975dbd3b83fb2dd8e0a4107cce567ebe699fb7aebe7afc5e37",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_model_external_profile.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_model_external_profile.py",
+      "sha256": "b6d0cbdf334163f959f716a5272a67f2d783853de174484dc45ba4dbb747fee7",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_model_memory_profile.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_model_memory_profile.py",
+      "sha256": "29854526774fa82e39d654a8d3842abff1ccdf06190678a78f48e79b131e92fb",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_qk_bufferization.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_qk_bufferization.py",
+      "sha256": "bbcf8ecfc8962d612e0517f819c29f98e88ddabf1eea1fea34e895a9438c8cbe",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_query_shape_scope.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_query_shape_scope.py",
+      "sha256": "340fb3124eb8a609e8c83411240f360f63126a882279477608cdbb9118557fa1",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_silu_effect_guard.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_silu_effect_guard.py",
+      "sha256": "592d0a01ca8389dc18a7868c7a0a0cd095013fad711697b7cf43ab6f92465fe3",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_qwen_silu_effect_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_qwen_silu_effect_policy.py",
+      "sha256": "22d1fa5cfaee3eca203e3f7d592405538a148639e78742ce76016b720b355b58",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_singleton_attention_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_singleton_attention_policy.py",
+      "sha256": "38551cf37206e829bae0be0cd8c2491e09cfbad34e003ea07db841167f15c50d",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_softmax_torch.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_softmax_torch.py",
+      "sha256": "86e011339352c6f35d6a70b723a883297f5c6021cbd02b002e0a57c453c3f3b2",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_static_query_caller_profiles.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_static_query_caller_profiles.py",
+      "sha256": "c61dda5d33b37af00168f22fc1dff63bb7db6507cd4f424dff297e818ea48fc2",
+      "owner": "application"
+    },
+    {
+      "path": "test/python/torch-mlir/test_unregistered_policy_stream.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/test_unregistered_policy_stream.py",
+      "sha256": "e277949e18510d8355020ffefc16c3bcc3eaa95cbded014eb3ca69b50e5b0772",
+      "owner": "application"
+    },
+    {
+      "path": "qwen3/runtime/arm/utils.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "test/python/torch-mlir/utils.py",
+      "sha256": "3f6e9ef849a9f82da4505325e08b09e5ce0a976162263fbd22c7044193db3c2e",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/abi-template.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/abi-template.json",
+      "sha256": "642d98fe097934dbf52c4f67f736e2e57e91eedb787b35dba963e7dde1a4daed",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/analyze_performance.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/analyze_performance.py",
+      "sha256": "d322c04ad409a6d115885101b1a5275de723f12d37b757c6f4dd0c17d13784a6",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/audit_native_run.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/audit_native_run.py",
+      "sha256": "1d51e9e68b6b792c7b9114124bf74508780bdcd36f3bfb9e001389cc919796f4",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/audit_prepared_stage_reuse.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/audit_prepared_stage_reuse.py",
+      "sha256": "35fdf3bc8e81d151d5bb5e047885f62b9d6fa2b784b46daa25596b6252fe7ae7",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/benchmark_accepted_generation.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/benchmark_accepted_generation.py",
+      "sha256": "4e0ee6ed43f5675451c0049da323a539c75fe607833dc22233e1da18aae4251c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/board-framework.lock.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/board-framework.lock.json",
+      "sha256": "eec4ab273076b99e6ce737c1695cb881dadf781ea755dc4ab653d6bc2d2da2b6",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/bounded_loader_policy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/bounded_loader_policy.py",
+      "sha256": "6ccdefe206a1376a5ed1bf24ce5947796dcd06805edb5a37608570160dc8888d",
+      "owner": "application"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/DynamicPVLoopPreflight.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/DynamicPVLoopPreflight.cpp",
+      "sha256": "69aaab91bf816153231a587f52a742f0e222b274d3a8ab8ccd9559b0bb42aac3",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/DynamicPVRegisterPreflight.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/DynamicPVRegisterPreflight.cpp",
+      "sha256": "7e32a2d3c3f24c6c9d182d497dbff5622d53a778dd6b967e5c7e1389fbc17ef5",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/DynamicQKColumnTile.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/DynamicQKColumnTile.cpp",
+      "sha256": "7fca0c31334697b9d624409a259b867561cb45d5a52250e88d951370cb68aa55",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/DynamicQKIdenticalTail.inc",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/DynamicQKIdenticalTail.inc",
+      "sha256": "a4d8e86bfb6ba61be204705f034d5bc61fe437153dfb9c382bb5dd3f18f9d061",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/DynamicQKInvariantVector.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/DynamicQKInvariantVector.cpp",
+      "sha256": "90aef32efdbdf7272996b2418b53eee449e969fc1a015449126f5457a8339e39",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/DynamicQKRegisterDispatch.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/DynamicQKRegisterDispatch.cpp",
+      "sha256": "fff57efbca6c8a9bc2643ed8efc4adf010f58724d2302e8c59611f1b4ca6fd56",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/DynamicQKRegisterProven.inc",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/DynamicQKRegisterProven.inc",
+      "sha256": "f52124f16d42b47dd22691ec2d714e2825871330618eea1b9404438c1f89db80",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/EmptyTensorCSE.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/EmptyTensorCSE.cpp",
+      "sha256": "212326b13c9671ef91f52a8e49eb472cd92a885fc7d46e54ed89a8b76c31f13b",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/GQACopyOrder.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/GQACopyOrder.cpp",
+      "sha256": "6a3c1c62f23adc982bf9940386be9f20af35345193228fa4d2128100bbc87519",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/GQAKeyCompact.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/GQAKeyCompact.cpp",
+      "sha256": "a84204cf5a229c7529e34ba4420c3330ba9b5734c1bfee967cae8e05c00268bc",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/GQARepeatSliceForward.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/GQARepeatSliceForward.cpp",
+      "sha256": "544e8d860efaf7e9ba408dd9192441d70bd0231bc046d267ea51f18105de6088",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/GQAValueForward.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/GQAValueForward.cpp",
+      "sha256": "67d756b6508ea383ee42d5a075a5eec97ab472fb73c5ab0070ab447ede5b5de1",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/GQAValueView.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/GQAValueView.cpp",
+      "sha256": "75391b25c0a5f3b487969c7705202ca3a982edd389bb58c8d9b60b7dd3ae368e",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/GuardedKVCapacity.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/GuardedKVCapacity.cpp",
+      "sha256": "b00c075d3e3545bcf9358a716c3d48bf2c5a7379263337b3a3e6ea65b1081309",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/LoopRegionProfile.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/LoopRegionProfile.cpp",
+      "sha256": "abc0f5d1f7ee7dfbe0e0100be355b8978c8dd52cda59395c1eef0d009a9868b5",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/OrderedPVLoopPreflight.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/OrderedPVLoopPreflight.cpp",
+      "sha256": "2ff0a4e6b1ee49e028905ce10766a4d1e4c9b5293fd5c02311b0d4c4c0ab38d1",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/OrderedPVRegister.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/OrderedPVRegister.cpp",
+      "sha256": "adad733d6c7887974243b1506d63db1f58171aae9aeec8244cbbcfc4c21a069d",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/QKLoopPreflight.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/QKLoopPreflight.cpp",
+      "sha256": "3441a5a183f1e947735f867c85cc4b3d1ba2a3a34f6955b927add5f4407e2170",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/QKNDVectorization.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/QKNDVectorization.cpp",
+      "sha256": "51ee40e1faab5337ec4c21b9b5b0e7c1e4da2fa9cb9707f62708748f279f56dd",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/ZeroTailPVRegister.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/ZeroTailPVRegister.cpp",
+      "sha256": "e7ac61ac81b3c0a152f9dfe4815edd02e9b2661fdeb6a1d8d988ebe3e9920f57",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/ZeroTailQK.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/ZeroTailQK.cpp",
+      "sha256": "f639563177d18b560d637f863257a55575a3395f41f330a90de4b1403014fbce",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/buffer_reuse/ZeroTailQKModelHook.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/buffer_reuse/ZeroTailQKModelHook.cpp",
+      "sha256": "1a43f3df090e41567d451f26fd35f764a5821ca3320881fb34bdebcd3ed4532f",
+      "owner": "compiler"
+    },
+    {
+      "path": "tools/qwen3/build.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build.py",
+      "sha256": "12956c3b975dcd6f07fc3dcabaf36fda4817bf1aa15a51e433ece47afdf83ed3",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_caller_copy_native_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_caller_copy_native_recipe.py",
+      "sha256": "eb6f99d048aca2aa852ecc856c9591bd425c9b306473e29d21f9e178c6b5c701",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_dynamic_pv_native_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_dynamic_pv_native_recipe.py",
+      "sha256": "a6d48bb8d585efcf267a88dbd6d897a2aa3e34d94da88af4dc3ee7fc66308b9c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_dynamic_qk_invariant_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_dynamic_qk_invariant_recipe.py",
+      "sha256": "5fa6f053005002c81fffb7ad9e601cd775fd40d3d432a39cf3bfd58d3faf8516",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_global_copy_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_global_copy_recipe.py",
+      "sha256": "d684b08bb5d7e6d47e808619fdf9c2f9d5d0358f26e7451e0bcf077c619bc31a",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_global_hvx_copy.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_global_hvx_copy.py",
+      "sha256": "33e25c7fc41b9b6a7541e12a15be088ce19bfd54b19578e9f2a7a74a3e083ab7",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_model_empty_tensor_cse.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_model_empty_tensor_cse.py",
+      "sha256": "a3c5a976fbb38b3b61963736a7b8bbac93139a07f931272d368cf1695b45cadf",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_native_artifact_catalog.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_native_artifact_catalog.py",
+      "sha256": "7de6e2ee96e10e6d80a0ab0c9b309bb15bc0f3591d8a17b81ea477e80f507977",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_ordered_pv_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_ordered_pv_recipe.py",
+      "sha256": "7f8c0d29bbca567ac519bf7468949f279fdd75ba563ddf5ea697b57f98ca95bb",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_q2_dispatch_model_sdk.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_q2_dispatch_model_sdk.py",
+      "sha256": "ba1e3c431a9bc91593d7e796958cf2eb68c522df7dcbcdbb81f7b36508d84011",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_q2_dispatch_native_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_q2_dispatch_native_recipe.py",
+      "sha256": "666e110dd9a28a996fb2dc1ef0c3af09e2c99c19902e483899fd3e7223b5e8af",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_q2_dispatch_preflight_sdk.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_q2_dispatch_preflight_sdk.py",
+      "sha256": "d4de21a80267a3fbf1f2786f123e99bdb29f1614be193b4c9e90b1b1d952f5f5",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_q2_tail_model_sdk.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_q2_tail_model_sdk.py",
+      "sha256": "52760340c0b19153d689fe1ecf319e4734b21f4d96a52fd3b65deca12fd29588",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_q2_tail_native_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_q2_tail_native_recipe.py",
+      "sha256": "b44adbc32dbe33b7ff2f47ef2223766e4e8073d5dc713146946d09271da0e36a",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_q2_tail_physical_probe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_q2_tail_physical_probe.py",
+      "sha256": "dd7bafa4432e72bbda0d43d34bad635e432426b32f64e1318064ff070f3344f1",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_q2_tail_preflight_sdk.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_q2_tail_preflight_sdk.py",
+      "sha256": "a126083832b62b7ac87cd8a4f847005895e0d8b319e30d8da7e4e780c652f2f7",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_q2_tail_row_guard.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_q2_tail_row_guard.py",
+      "sha256": "da35c7c2b8d2b915906f64876fb8588ee77c452098a8b171ef9292a5faa32d26",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_zero_tail_native_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_zero_tail_native_recipe.py",
+      "sha256": "4313e3160e4980f2def62888c533b501440318dd996ec6816bdb18979f35f36b",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/build_zero_tail_pv_preflight_sdk.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/build_zero_tail_pv_preflight_sdk.py",
+      "sha256": "380976abac684417372bbebe5bedc060451972e9da37662f4016d2b33ebe4395",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/caller_byte_copy_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/caller_byte_copy_contract.py",
+      "sha256": "2542fdd8718fa22e1ee1ced94f17131c3b95b33d9b02a34daaefcd4ed5dea3c3",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/caller_copy_native_gain.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/caller_copy_native_gain.py",
+      "sha256": "06d6da334bae7b9b1c276758fac9c43696443fb3c99072348e9c4f4dddb0b101",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/capture_configuration.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/capture_configuration.py",
+      "sha256": "5ed20286f13b9a500b4f002094bde695bd01bede1d9c9908e66bef4bf05be1cf",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/common_hvx_model_acceptance.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/common_hvx_model_acceptance.py",
+      "sha256": "c069421544516b5d2caec2bff1bf1d9eaf42d1e13ea7bfa289b5caeaddb218ef",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/compare_performance.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/compare_performance.py",
+      "sha256": "b31d1239cb65bcfe9dd96ed2f131a052deb7119e489f79fdc6168820d41b46b7",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/compile_q2_dispatch_model_candidate.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/compile_q2_dispatch_model_candidate.py",
+      "sha256": "cf2308d0cd62383b5231c7d074c37af779de621d339a5055630cc82d94e0efb7",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/compile_q2_tail_model_candidate.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/compile_q2_tail_model_candidate.py",
+      "sha256": "f574c5cb9d99265d7173b5ba53ac50c3611ff9454877e1929e4d8f3ec753b42c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/compile_zero_tail_q1_model_candidate.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/compile_zero_tail_q1_model_candidate.py",
+      "sha256": "5b4015d3a86d9d516216cc9857129eb57131a21604a692d6992f4bcd064098c8",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/config.example.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/config.example.json",
+      "sha256": "37d8d488f9eacbaf2fd7acce44b4c2b1a5b3a2cb4224ba7e73fdb26774fe7cf0",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/dependencies.lock.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/dependencies.lock.json",
+      "sha256": "391a61890e85a1c0e5659be09d4c254f81f99b0dd7771e736b22c69258deafb3",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/deploy_input_packing.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/deploy_input_packing.py",
+      "sha256": "758c312349b2fa0612d061ac371485de3debb71ad538e3006f1f48c7b70686c0",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/dynamic_pv_native_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/dynamic_pv_native_contract.py",
+      "sha256": "1b450bc215bb1629f879f430b82a401c4e47c55d5ceedd76e636a9dcdd576887",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/dynamic_qk_invariant_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/dynamic_qk_invariant_contract.py",
+      "sha256": "ffcfc6a67e0f5a627cf75a05b5e85e292d5d4174f60ca6a1401bd0dea0bfba32",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/environment-20261004.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/environment-20261004.json",
+      "sha256": "1d98cc3a2fce1d0dbabcdd98d2789af842b2367f6924abeb4784b9a171b28aeb",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/exact_parameter_bytes.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/exact_parameter_bytes.py",
+      "sha256": "be1f18e9d07a31c8473861ab301e1213cfd53e999f5342ca3e251862d37183d7",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/expected_objects_result.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/expected_objects_result.json",
+      "sha256": "242a5111b63794b359503f372562808bf363436d927d07d69b25e5e3f7601319",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/generate_native_aot.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/generate_native_aot.py",
+      "sha256": "f0d9c9a06f95f9f0e6434eb20adc8ebe86c57e4728123a860d4244301c45f778",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/generation_timing.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/generation_timing.py",
+      "sha256": "4a4d5efb9eb96df19990c67570348b3934a17236f4ef87a41b7b34a767b4389a",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/global_copy_model_acceptance.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/global_copy_model_acceptance.py",
+      "sha256": "eed320391dd22f69428f1fe32c7967512efaf3d226413631ad864a5c2ae2cf51",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/global_copy_release.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/global_copy_release.py",
+      "sha256": "db1f2ed504035d463d8e7a1f1d6aa0d8281e9c5485cf0a3784f02942cbb8f8cf",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/gqa_dead_repeat_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/gqa_dead_repeat_contract.py",
+      "sha256": "304485e534fd4222adc750f10a4ddcc4221cd42502e0347450c6dddd72bb8b5d",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/gqa_shared_copy_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/gqa_shared_copy_contract.py",
+      "sha256": "708a0757a3be92ec54f70cb8d29de02b547e6d0638a6bbe62f6b29db5966eab9",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/guarded_module_constants.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/guarded_module_constants.py",
+      "sha256": "0333266df664bc19c37bc8a2ba3ae5672ad68c8972e0e7092c1afb2ebe6af4b9",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/host_input_packing_acceptance.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/host_input_packing_acceptance.py",
+      "sha256": "580782dc5dedaf35ae841e69a428c1d6e4b3e6b394698f8b01fc7e94803553ce",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/inspect_integer_matmul.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/inspect_integer_matmul.py",
+      "sha256": "6619d8d7197aa4d4e80e957ab9824d491d3d0b2e6a9f04cb2e6f161ef382c760",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/inspect_q2_dispatch_fixture.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/inspect_q2_dispatch_fixture.py",
+      "sha256": "60595c63d5e6fde91ccd450081cfb21f23c93570bdfa177ce1137151d15c5713",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/inspect_q2_dispatch_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/inspect_q2_dispatch_model.py",
+      "sha256": "2e56853702a276dcc50f7cd0b3217680e540bb70cbc10a30eb5c3b88be8c1295",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/inspect_q2_tail_fixture.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/inspect_q2_tail_fixture.py",
+      "sha256": "061da6e73427ccf27616cf5825c6ddbadfd7a0e77b76245168ea250ef68d5a06",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/inspect_q2_tail_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/inspect_q2_tail_model.py",
+      "sha256": "3800297b1edf9a090efc9a255198a8ef86f165cf21aace37992e2d038f53d4d4",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/inspect_qk_model_preflight.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/inspect_qk_model_preflight.py",
+      "sha256": "3017c8d6999eb7efa6449736444cf1733140ee70f1151864b22e62d3a23a7778",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/integer_call_timeline.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/integer_call_timeline.py",
+      "sha256": "b3019fcddc9f9a7e4b8131d7c5f8869932327bdbeb57c8a760090d8f2a59929c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/joined_input_packet.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/joined_input_packet.py",
+      "sha256": "d458ce15532bdcb92a0cef685f9fc2003bfde42324b029eb4a7365cad55739af",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/key_forward_model_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/key_forward_model_contract.py",
+      "sha256": "a0de72223bff124977495e2992aacad4ab425a0ae8df5ce10416d86a79067a3c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/key_tile_model_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/key_tile_model_contract.py",
+      "sha256": "79768820c17bd1eda6e4f7ea0ff52f5255f7e91bf31ce6a0506c0b670186abde",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/link-template.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/link-template.json",
+      "sha256": "045b5d9adfc6f20fd7b02946f8c3b67f42c8ef3eddd69003db0c9572d3d1720a",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/link_q2_tail_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/link_q2_tail_model.py",
+      "sha256": "cc64760c3bd6ab757f66b89983bf8a4395c7d590c7f5f2be9337b14c9d6cf518",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/model-constants.lock.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/model-constants.lock.json",
+      "sha256": "cec269839445d5c0cfa78bb8ac4af441b5356ecd0da3fcc66f89ab6b6c5e46f1",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/native_aot_output.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/native_aot_output.py",
+      "sha256": "e4114f5781113e03fd530eaeacdaefd4e6ea27f23981425383745c45eeae56f6",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/native_compile_session_worker.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/native_compile_session_worker.py",
+      "sha256": "ab470e1eaa1aaf7c10336363ae311809976b6da2764d03e4986c740fa1ef2816",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/native_model_acceptance.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/native_model_acceptance.py",
+      "sha256": "1f3c87adaa56ed77325d08d2988d5fd28221433d552da677d34fdcc3c3865422",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/native_warm_deployment.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/native_warm_deployment.py",
+      "sha256": "40301ddbbeba4f6186b6ac9cec46c5138eafc460c8f19109dda70229f2cc7430",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/native_warm_release_budget.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/native_warm_release_budget.py",
+      "sha256": "986204d447e08b690bfc86265d7fb3b785ad7ad53be8d34ae88e4a0879c65ad5",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/nonempty_prefill_packet.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/nonempty_prefill_packet.py",
+      "sha256": "2b393b014acafc2729b11269c8b6f0b24b5de00705018c1141001221e9895bc2",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/online_packet_audit.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/online_packet_audit.py",
+      "sha256": "a61aca84389a4d7b3a23d5160c9fc7fe94d5b078417c087955670836a0fd1132",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/options_result.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/options_result.json",
+      "sha256": "dc2f7c82b706343c011095f030fff1532b20bd50f500976123d1d0c3aa5ecffa",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/ordered_pv_model_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/ordered_pv_model_contract.py",
+      "sha256": "e10825219b2cb2a5f052316325adececf65a3e08daf78c92b193b908f402e4e9",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/ordered_pv_release_acceptance.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/ordered_pv_release_acceptance.py",
+      "sha256": "7bf16f96c86d44d98a5c3d8fb36740c82cbce63250a8dcd1a89abac174f6fea6",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/packet_replay_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/packet_replay_arm.py",
+      "sha256": "3ac6cffab50ecf53e1ad4ff368dcc18837b023974c64286608ff7a975e58d2b9",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/packet_trace.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/packet_trace.py",
+      "sha256": "939795175fcfc5b8cf413da45294c2fb7a563e90d49fd643e8e7f96f8363afe5",
+      "owner": "application"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/CMakeLists.txt",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/CMakeLists.txt",
+      "sha256": "2db2b2b4101ff400afdd2f74bf9e3b3f4f35b84fd12be8f0f60f1e66476566e5",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/effects/ScalarHelperEffectsOpt.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/effects/ScalarHelperEffectsOpt.cpp",
+      "sha256": "359df3d03ee0e2ae004bb42476405c26d5ea80f37c25c23a1dc8e65c73b0de94",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/first/StabilizeFP32SumPass.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/first/StabilizeFP32SumPass.cpp",
+      "sha256": "4cf729ed1982100afa55e0b6ca7bbb074d3b5a51d784ea014de108d1918deb61",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/first/include/hexagon/Transforms/FP32AttentionDotOrder.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/first/include/hexagon/Transforms/FP32AttentionDotOrder.h",
+      "sha256": "b096acd8ecc696aec434ecc9f118cfe1d870ac2232c3a510418a78dabba15487",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/first/include/hexagon/Transforms/FP32DecodeQKOrder.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/first/include/hexagon/Transforms/FP32DecodeQKOrder.h",
+      "sha256": "6b30f60ddf127fae907c38d83eca0b561a89ef16eae3f947509a15c65249341a",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/first/include/hexagon/Transforms/FP32PrefillBlockOrder.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/first/include/hexagon/Transforms/FP32PrefillBlockOrder.h",
+      "sha256": "fd447f9d4f98dc83b0400e913ab5943da16790c46f0c8ce30d27e15e8d1cbf75",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/include/hexagon/Transforms/CMakeLists.txt",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/include/hexagon/Transforms/CMakeLists.txt",
+      "sha256": "9ce51f9a3acd2b36c41c98e6514df55fc24a23a439756307969553467017bdb4",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/include/hexagon/Transforms/Passes.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/include/hexagon/Transforms/Passes.h",
+      "sha256": "b5b3903f8c87fae96aa2d2e3f97ba66858f5b2576fde696a6c4fc6f1bfbd91d3",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/include/hexagon/Transforms/Passes.td",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/include/hexagon/Transforms/Passes.td",
+      "sha256": "11807d5beefe34bc9a1e59fafbce0725af817b077913bd472be45e499b319296",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/include/hexagon/Transforms/Transforms.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/include/hexagon/Transforms/Transforms.h",
+      "sha256": "ff8ce2d953ad9b2b36a896505cac47dfdeca567bc9bb7d3a1ace717769d94d80",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/packed/ExactInt8MatmulOpt.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/packed/ExactInt8MatmulOpt.cpp",
+      "sha256": "f8ec438737bd3f5234130694f1b55a9b60f1670ead699881e4e331acec25cace",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/qwen-policy-opt.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/qwen-policy-opt.cpp",
+      "sha256": "b7f01795703b0fd811e75cbec25f5d21c58d8915dac120f05c0ecaae3b92aa06",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/sums/include/hexagon/Transforms/FP32AttentionDotOrder.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/sums/include/hexagon/Transforms/FP32AttentionDotOrder.h",
+      "sha256": "15476ea6cba85b17e7de0859d30976e0e56afb6977f2bdd9b74d0235cbbf7f16",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/sums/include/hexagon/Transforms/FP32DecodeQKOrder.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/sums/include/hexagon/Transforms/FP32DecodeQKOrder.h",
+      "sha256": "6b30f60ddf127fae907c38d83eca0b561a89ef16eae3f947509a15c65249341a",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/tablegen/CMakeLists.txt",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/tablegen/CMakeLists.txt",
+      "sha256": "056cc14949a572cd82bff681b572f0ab3170d3a5661d6da439d9aa74a859b141",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/policy/tablegen/tm-tensor/CMakeLists.txt",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/policy/tablegen/tm-tensor/CMakeLists.txt",
+      "sha256": "2c398a522ceb9e05f211559cd135f8c795e943ac5044f2a4ddbae3d3c0e4e0e6",
+      "owner": "compiler"
+    },
+    {
+      "path": "tools/qwen3/preflight_global_copy_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/preflight_global_copy_recipe.py",
+      "sha256": "e3f7f864a620668cf9971895506ab06ddb7c194a951da3d0e40fa99ddbc2fc8a",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/preflight_q2_tail_native_recipe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/preflight_q2_tail_native_recipe.py",
+      "sha256": "025848faaceb1807c734640fb11a1ec6f3942ea8be9b57e5527e885a1c71a472",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/prepare_caller_byte_copy_packet.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/prepare_caller_byte_copy_packet.py",
+      "sha256": "9a579f77a129c386f233c74cfcf4f256677cf38d307aba03f7839fae59b36e3e",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/prepare_performance_runtime.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/prepare_performance_runtime.py",
+      "sha256": "e975479fe8bd4e0ffdd50fdaa7b1f76515101f5a20e33921163ebdaacc088b0f",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/prepare_q2_tail_guard_profile.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/prepare_q2_tail_guard_profile.py",
+      "sha256": "b98e8dabeed12f9d461ecfa4953c2ec7eafe729e254961242f74da1fd4a8605d",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/prepare_q2_tail_kv_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/prepare_q2_tail_kv_model.py",
+      "sha256": "1dcf9e3f915d05946a998decc097ac043109b81da79e31f52d38f30bd8c67058",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/prepare_q2_tail_row_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/prepare_q2_tail_row_model.py",
+      "sha256": "a6c3da61e1f96018a64704418f56a9effea89a317c2b7d45050ea8d54d6a1f8c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_caller_copy_model_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_caller_copy_model_arm.py",
+      "sha256": "e5871e285f685d7762b07583b04bf53e7affc52634f51eb29a419e486708ceb3",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_dynamic_pv_model_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_dynamic_pv_model_arm.py",
+      "sha256": "3f40ed40ac22dc277f3b5c3d2895afa0748eb9770406257da2e60fcf6bdfc403",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_global_copy_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_global_copy_arm.py",
+      "sha256": "c5919acbc98b417f91311e5d329d61c422594671c8d22f7ce8bc79551b85eeb7",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_guarded_copy_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_guarded_copy_arm.py",
+      "sha256": "aa8f2e48f5258a4e9c93d3be3c2e07f34cdc5b3f4cdd77e5c727f6c5f64a5444",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_helper_effects_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_helper_effects_arm.py",
+      "sha256": "3850242b52eac0b3c2ea8ce6b2158e43e5204aa16e457a402176e0938882c0c2",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_joined_input_packet.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_joined_input_packet.py",
+      "sha256": "5334d28a06b76788d50ce8ce8f8acc44774b76f692816898794b2b858c8c41a6",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_model_helper_effects_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_model_helper_effects_arm.py",
+      "sha256": "2d1b4ec29a54e9acf2b70fb7dc7aa905bcb1bc463b6e92fafde11039a16851fd",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_model_loop_regions_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_model_loop_regions_arm.py",
+      "sha256": "92aa8f8062daae3b9a744d50d5edc140bd59c59f56873c8a3dc9b67762a7272c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_model_memory_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_model_memory_arm.py",
+      "sha256": "e035b9a7b945a18f1feafeefb5153161b38ee74de577b5fd040152a73ea336e0",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_native_aot_cached_session.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_native_aot_cached_session.py",
+      "sha256": "8e5f731f037193e2b5c896ffc0f06f743525ee189d14112682e86322e4b7977d",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_native_aot_online_regression.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_native_aot_online_regression.py",
+      "sha256": "d205833def7bf36e708a3ba21e3a8674aea90cbbcad86a46c3abdae5453a2915",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_native_compile_session.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_native_compile_session.py",
+      "sha256": "1d1cf6305e259ce294428940ded798d649ee6e1d9c60e0d1dfae4a2c81360c2e",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_q2_dispatch_model_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_q2_dispatch_model_arm.py",
+      "sha256": "7c20152c06b86b605434879143470c97a0c3fcae89259d7b20be20f605308fba",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_q2_tail_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_q2_tail_arm.py",
+      "sha256": "0c6ef98253c0af64721aa54e121095f4355e0dda5f9ce471662a852ed50f1845",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_q2_tail_kv_model_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_q2_tail_kv_model_arm.py",
+      "sha256": "1d300c4dab703230510cd1aedac055debdc4e5b4e4bc394b87a29f7bdc6c248c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_q2_tail_model_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_q2_tail_model_arm.py",
+      "sha256": "c1180de6045bec15311a54d5618d450fd7c5271c29649dddf61b9bd37b42957c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_q2_tail_row_model_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_q2_tail_row_model_arm.py",
+      "sha256": "eae422ead6e41c0671dfbc8ac65cf21440524feb95c2bc8979655401b51ac20d",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/probe_zero_tail_q1_model_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/probe_zero_tail_q1_model_arm.py",
+      "sha256": "faf603fd89ab4e1d65bdf27785a5d419097fac16f8d2aa52516d34a19322dc37",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/profile_model_memory.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/profile_model_memory.py",
+      "sha256": "f8d265598aed02ed48870d639a3b989f8ac183c2ca50776f37f63d603f039172",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/profile_native_compile_host.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/profile_native_compile_host.py",
+      "sha256": "965bf27ff12d1af39c114fa6130b4eef60fe488b7e3ca0a4a17b7d844e6b02e9",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/q2_dispatch_contract.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/q2_dispatch_contract.py",
+      "sha256": "dfb0efa86722c5baa4f3c7f88908adba4757f8e830ab50716e4aad165901dba9",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/q2_dispatch_native_gain.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/q2_dispatch_native_gain.py",
+      "sha256": "9f69b16ee6bddb30b91032706e5a4be0c1337387b5eba2953464232600b51c31",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/q2_dispatch_release.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/q2_dispatch_release.py",
+      "sha256": "30d4775ff3043d20dc84d064a852f9df6f38fe62833ea0dcd0900bad423306ce",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/q2_tail_guard_profile.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/q2_tail_guard_profile.py",
+      "sha256": "f5ca4df5e036ee7b3edd4c1c96d13d0703778a7d23fbd7bcf61521c4db2ff9d4",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/q2_tail_model_acceptance.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/q2_tail_model_acceptance.py",
+      "sha256": "9b75ac43445ce02334e15ae8af4fd1d4d619a804da9c6708bfdb4160d6a0c6e1",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/q2_tail_packet.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/q2_tail_packet.py",
+      "sha256": "df95e1bd01a9053267d2c840d6a51a076b8452ffc01ba258cc3b3da2cb60fd2b",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/q2_tail_release.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/q2_tail_release.py",
+      "sha256": "78a4b183af7972af2ff3d76cc69d2699bc55f8ac36004fd23a7357baa78b3f82",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/qwen3_native_infer.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/qwen3_native_infer.py",
+      "sha256": "4a810ec3737b5a6f24fcdfeed9894db458dbaa7fde3dd147cfc5fe15d730800d",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/reference_native_handoff_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/reference_native_handoff_arm.py",
+      "sha256": "b493e1993a4ba07a15c82a33c6e9feb9f45a4bae05e6b78867e1fd91aac67b5f",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/reference_packet_trace_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/reference_packet_trace_arm.py",
+      "sha256": "e4f16cb3914d3684308f20ca6f6b6ccb637fdaf95b2c17f7f05e360b71cdc68a",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/reference_reuse.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/reference_reuse.py",
+      "sha256": "decb7a7b8370232252d163a152edf79827d2613871d678f92511995b8ae98d07",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/resume_native_compile_session_abba.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/resume_native_compile_session_abba.py",
+      "sha256": "a5c1898c203debeb1eb651a123a083eb7e6f857b2b846c60246b0ea0f8cf5244",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/reuse_accepted_compiler_objects.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/reuse_accepted_compiler_objects.py",
+      "sha256": "66b3fc404d3fcd3cc2765e910b4a5cee39ff304d861f5687c5c076d161cbd7ae",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/reuse_accepted_prepared_linalg.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/reuse_accepted_prepared_linalg.py",
+      "sha256": "2cbe4fb116da05b6a95a51e59e80e16bde4ede9496a9bda415c9e0f1f3ec14ff",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_frozen_ordered_pv_closure.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_frozen_ordered_pv_closure.py",
+      "sha256": "d3a2962d299d177dc3303ad2ea386fff7a4a1a7cce8dbf47c1432ca9e989ea18",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_global_copy_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_global_copy_model.py",
+      "sha256": "9d2476829633bd0e66fe0b56c5a5803ba2ad5bd1fc61bbb7b0f091de4f087634",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_global_copy_native393.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_global_copy_native393.py",
+      "sha256": "a63d8158e99d5244ae4031cd5113cb4739e2b084aba3e15658368e0c70541e3c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_global_copy_physical.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_global_copy_physical.py",
+      "sha256": "2b3813a9c654476e7daba077ed0785b852edb29085af4dc53073612cd33d7dd5",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_key_tile_external_profile.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_key_tile_external_profile.py",
+      "sha256": "6264492f0bf130117b9cfc10c696d7349bd7a2e3ee1b383fcb568f55d7293311",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_key_tile_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_key_tile_model.py",
+      "sha256": "f2b00615c2f688fdd26b08a689d545347a2e24807c405dd8e5fdecf5f1ee81e9",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_key_tile_native_closure.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_key_tile_native_closure.py",
+      "sha256": "5e5185ffdb40fb99a57f143d1678eee17ad8f9bfac8ea08f7a2e2d073dd473b6",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_model_integer_timeline.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_model_integer_timeline.py",
+      "sha256": "c1b016ab3d7911fcae8f3fe9e1a93ab2727b05708b084bf81a85de82bb56bf01",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_native_aot_cached_session.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_native_aot_cached_session.py",
+      "sha256": "ef3e640bcf299247aa00a023369b3ca87453e3874ea2ce5b8bec7088f2973184",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_native_aot_online_regression.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_native_aot_online_regression.py",
+      "sha256": "5f7373608e22966d03bca2510dc586e0380cb700ea8b766b582bc99a9487ebad",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_native_aot_startup_abba.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_native_aot_startup_abba.py",
+      "sha256": "cad2ce66e365f3ddf7293f8a039f0878bd839f3aec3220e2d7e6ddfd9519bcae",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_native_artifact_generation.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_native_artifact_generation.py",
+      "sha256": "ab3029c1a9450f915d45d00b934533dccc4293b1943bc66f6f2121c9c98f8b75",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_native_compile_session_abba.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_native_compile_session_abba.py",
+      "sha256": "7df58df1fb3fc4b6d208fdb1125bedb466958c88b3b68c5e2895cfd871773e56",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_native_startup.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_native_startup.py",
+      "sha256": "7db1ae02db2583063b0569c5df3b69939d7dbe4263b8b0b1489c07c5e90a4118",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_ordered_pv_closure.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_ordered_pv_closure.py",
+      "sha256": "1de05e0854932ebd2e030a3253126143a19e5b914cdfbb1e1af5808090f8893c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_performance_release.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_performance_release.py",
+      "sha256": "47df79e6b7f944dd0aa58fa970c88c52a774dd8a2c1240b188969a44b69934ca",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_q1_model_runtime.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_q1_model_runtime.py",
+      "sha256": "1d28236c9a8148ba785db56eec94046146ddefba27d1ff16bbd01cc40bbc2182",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_q2_dispatch_preflight.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_q2_dispatch_preflight.py",
+      "sha256": "7155ac851970a7c1f423e3e33104510c81b566d02c68bf4db7d8b48f2d74244b",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_q2_tail_kv_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_q2_tail_kv_model.py",
+      "sha256": "c10323f054379aa0a4e68625ba02efb84360bc036860f081cbf8542fb6c1474d",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_q2_tail_model_comparison.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_q2_tail_model_comparison.py",
+      "sha256": "9463c8ca34dedb92183af4db51ecb04afc50d7a2e620123bdb9715ff0cb66ced",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_q2_tail_native393.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_q2_tail_native393.py",
+      "sha256": "a35717217cae81f2f19bf46b95e7e02b6c86505d4033624ffafb8c3566ca2ac4",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_q2_tail_row_guard.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_q2_tail_row_guard.py",
+      "sha256": "61b413e5c077effcd389a38ac9087ecbcd0329ae62cbe825be641b511c350224",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_q2_tail_row_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_q2_tail_row_model.py",
+      "sha256": "b015fb4e813f87265bb30548658f7168f9b19e7330ba7faabda57c8583edc175",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/revisit_release_index.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/revisit_release_index.py",
+      "sha256": "19866febcd92da2f6ae87999883f723b6c77fcbaba32587b731c94e83eb44111",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_cold_boundary_probes.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_cold_boundary_probes.py",
+      "sha256": "d763c7749cd5b5798957382a2655979f41a68f41e2ad79451626bd4f61bdf720",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_dynamic_pv_native393.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_dynamic_pv_native393.py",
+      "sha256": "3e04ecdb01ac020cf4ef6b30c10c6e9c3c221270a6a17ab3d4a119d58e4d9f3e",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_global_copy_native393.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_global_copy_native393.py",
+      "sha256": "4d22178dcbd7f2fea2ae775d5b110cf7c4700209b5d8c2af4e7eb81e6ac90072",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_helper_effects_iteration.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_helper_effects_iteration.py",
+      "sha256": "a668a83f0802b20f3bede3273fca6d36fb7b7cc020325d87e8ae5cacb95187c2",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_integer_regressions.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_integer_regressions.py",
+      "sha256": "40e834c01f758f4afb18226a692d3bb5694ea41e3a059b8212f653d9f1289780",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_native.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_native.py",
+      "sha256": "5e37aa46a10ee1a15d2fe1b41c087c658036c038f9157341cbf5ca0bf9b334c2",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_native_aot_cached_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_native_aot_cached_arm.py",
+      "sha256": "f72d1a3df81d62c2d9aaadb4bd8a88cb60f564c0992ab23d13d0c1a40721db6f",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_native_aot_generate_arm.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/run_native_aot_generate_arm.py",
+      "sha256": "40424cc566d3041973a4fe060b655c977088cb43e616b22055861febb10f9561",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_native_aot_observed_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_native_aot_observed_arm.py",
+      "sha256": "0a3a92e01e995deb62c80f5ae439f2c8e00ebe8f9772deb396afc870cd203dbc",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_native_aot_state_suite.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_native_aot_state_suite.py",
+      "sha256": "edd551ae67016fe156a4eb3ccc915baa818846640075472c0299c2a289543d8e",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_native_compile_session_abba.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_native_compile_session_abba.py",
+      "sha256": "459d67d6b9ba7a24629b2a76b3de20c46082541275bc80fdcc8c7965901e7936",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_native_warm_release.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_native_warm_release.py",
+      "sha256": "4133b3bb38c92d1d1544379ea4290b2c2fa88333e2a3023c00af5c15ed52f286",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_online_packet_trace_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_online_packet_trace_arm.py",
+      "sha256": "15f1ba2226b620a3134406afdc0be793cb8d1cc88490c8097a5a1d4ed23b423e",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_online_regression.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_online_regression.py",
+      "sha256": "16b3ce9f354ed5f35ad7cddd0c397d185a09c94650bd1d60850c7f20f1f58621",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_ordered_pv_iteration.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_ordered_pv_iteration.py",
+      "sha256": "9c4a5d22e97404b28f43f14c00e5b7f7ade5f6bcc459f96ffb485cdb1c2a786c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_owned_command.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_owned_command.py",
+      "sha256": "edf163136f4d07b8b2fbf92f37172760a252c0cbdda7283bf33c5848c62100ef",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_performance_regressions.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/run_performance_regressions.py",
+      "sha256": "43274385642c9b7bef2ac457c915169a3eccc01c310e1da7bf800c425b0eadd8",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_q2_dispatch_delivery.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_q2_dispatch_delivery.py",
+      "sha256": "67dac2aa39a5adcca37d059753d0bdde5bd76ebb108b79542ba8d55162c3a967",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_q2_dispatch_native393.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_q2_dispatch_native393.py",
+      "sha256": "0e47bc9de026968d0abb61acd80b0a41eb4438648b52809cba5b0c05e1c23315",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_q2_tail_kv_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_q2_tail_kv_model.py",
+      "sha256": "d1dc3a94f59641d5d89700d2738b5235ba06e6ba0fe58e6b75a1b986fb09a625",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_q2_tail_model_comparison.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_q2_tail_model_comparison.py",
+      "sha256": "99629df8e293a8569725cb16a34e54eff047e2612b055a664fe07a5c834a93ab",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_q2_tail_native393.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_q2_tail_native393.py",
+      "sha256": "548f076f934c0c1bd8a0a2d75e66053f58e7feff9dfad019f9b1229c6c5f760c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_q2_tail_row_model.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_q2_tail_row_model.py",
+      "sha256": "2f69b93c60079682e069e832e12cabfb9a254fdd86f40f0e1b806bbb471d54df",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_regression.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/run_regression.py",
+      "sha256": "79920aafb719b271744f801014a2d427ba882ea4af93f2b7e593439a0e4725f3",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/run_staged_probe.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/run_staged_probe.py",
+      "sha256": "19cfb06cf33545b2f3f8d12d79e3f108680afbc2529fd5d843aee7ca76f3edb2",
+      "owner": "application"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/aligned_alloc_shim.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/aligned_alloc_shim.cpp",
+      "sha256": "40443fd54aef512f7c65e7df2242082e489033c48e27f23f528962cff28a9126",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/CRunnerUtils.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/CRunnerUtils.cpp",
+      "sha256": "115fde17e7331854d16d648a7f039939f94f759e462f79f1a5c30321316580aa",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/CRunnerUtils.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/CRunnerUtils.h",
+      "sha256": "c0217c95ac1d646bb41ca65bed8b81ad38262b0576021bfc700c8d316f107b8c",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/common.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/common.h",
+      "sha256": "e6c589f3c4953bee5ef245d6fe1e7aa5673c769ddc08397feb0505ef331c382b",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/debug.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/debug.h",
+      "sha256": "dfe3c7345a85bf9be14e9a1148e43760a1f0355eb857aeb58bd0d2db4f88e89e",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/hexagon_benchmark.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/hexagon_benchmark.h",
+      "sha256": "4cbc3670ec5974653f061d7e67454a901afc41fac2b733cc455def567cfe0836",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/multithreading.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/multithreading.h",
+      "sha256": "adcfc68e68a759914972028e107fa026832331fee59fd665efb90459f5fb01df",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/prof_utils.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/prof_utils.h",
+      "sha256": "5736420cbb6de1c40954dc4c3e5fa12900db33b249a66d5e6335abd255c4abbe",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/returned_memref_owner.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/returned_memref_owner.h",
+      "sha256": "8a83a0e4bdde30ab77f4d5aeca61f0e758ad86c627b300ec0b53624d5a62d0f0",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/tensor.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/tensor.h",
+      "sha256": "0ad0edd8c10a0f40390e56d05330bcd6a1af9cd0247894dcb46524b4a5808810",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/dsp-include/test_report.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/dsp-include/test_report.h",
+      "sha256": "6d2c8ea0870e2e3c7e35e234f6a3a47be26ad7f8b01b60818dcc9fe6184db2a0",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/caller_copy_probe.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/caller_copy_probe.cpp",
+      "sha256": "bf34b52ed5b61b2e99ab5711f35bae48d7d59bf97ed45aafb9010c46fad018e1",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/caller_hvx_byte_copy.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/caller_hvx_byte_copy.c",
+      "sha256": "b17bd348cc05cd115016352ce2b8d52191e89835a68cab788246bf9d8ffc9f04",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/checksum_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/checksum_probe.c",
+      "sha256": "4697d32a373a3e844debbddfa71f4cb615c27b3c6eb1bb6c829d68c3f414b87d",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/dense_checksum_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/dense_checksum_probe.c",
+      "sha256": "042d3164e1aa4023c58da9e68565d05b6d56902294a7ac6ecb5c85fb50f1f895",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/dynamic_pv_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/dynamic_pv_probe.c",
+      "sha256": "da88d70f1d8eaed542368ba9f20cec4c338e0c1890c8dbfc589b499338df3911",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/dynamic_pv_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/dynamic_pv_reference.c",
+      "sha256": "cb879d52a9cce74689d67a94f71a168d55c47c7111ced0fb768834ff11c9203e",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/dynamic_qk_invariant_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/dynamic_qk_invariant_probe.c",
+      "sha256": "48a33edfebd86eb8b2e212839c9ba0df3c0b57f2c3182d694c61bd958fdc8bf9",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/dynamic_qk_invariant_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/dynamic_qk_invariant_reference.c",
+      "sha256": "547bac29419216bf680e3c1486e1f238c655985b62a9dd09787cdfd4d661502b",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/dynamic_qk_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/dynamic_qk_probe.c",
+      "sha256": "cb8bbecd070ff1c9071b53f4a928849c48aaab83a255aa01d297e01a64264d8d",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/dynamic_qk_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/dynamic_qk_reference.c",
+      "sha256": "7cf3a0c4cdaf002a46a358afaa467f28d6e1984df00e66838e156bbe5878db83",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/exact_fnv1a32.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/exact_fnv1a32.h",
+      "sha256": "45bdd21cb6bacdbd6e351794b1764ca132914e45ccabd8173332ade5a734ae3d",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/exact_int8_dot.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/exact_int8_dot.h",
+      "sha256": "caf7a3d67ef63405bb8fd529719057569878aa8ec8467103378091360843bc6f",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/exact_int8_matmul.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/exact_int8_matmul.h",
+      "sha256": "78f1f5441c3f222c88e51d9cf228537ba133f105348015cc15e0652f854050da",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/exact_int8_matmul_tile256.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/exact_int8_matmul_tile256.h",
+      "sha256": "e68e6bb9096c967a0d66114fb1f82f4375465b97e4f8e73a25abdb040d6d6c0e",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/exact_int8_multi_matmul.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/exact_int8_multi_matmul.h",
+      "sha256": "00c1cf7a826b4c3606436e9896136e6a3fa61bc897493b0273af18c93cdafb81",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/fixed512_memcpy.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/fixed512_memcpy.cpp",
+      "sha256": "d004012e21b6d85f42b1a2fb64b6290d2b76c26a5350091aa93252e3ff41587d",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/global_copy_probe.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/global_copy_probe.cpp",
+      "sha256": "bf7b5c1cd65667b7abcb5658649d2e4a158fbd7fd93f37717182111916f046b1",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/global_hvx_byte_copy.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/global_hvx_byte_copy.cpp",
+      "sha256": "7adb9bbdb191dc2615b404e61a5592403a049ba9100d3974cc8f7b4d14317624",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/gqa_copy_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/gqa_copy_probe.c",
+      "sha256": "1b377c9649f9bbeb8590ecef20167c860646faac2a964dfbd15a4e588c956863",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/gqa_key_compact_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/gqa_key_compact_probe.c",
+      "sha256": "e8274e52d508811432523373d4d2786f6f12637880018f433bbefa512ae4930f",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/gqa_key_compact_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/gqa_key_compact_reference.c",
+      "sha256": "4ce3b88cb625e29dbf34cb084f263cf2304a0fd1e3c8b9cbd9307aa489c0b737",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/gqa_key_copy_bits_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/gqa_key_copy_bits_probe.c",
+      "sha256": "0896b315cca1cd2439d36b4aea3936c19443f57ba469bc2394aa11fed026292b",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/gqa_value_forward_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/gqa_value_forward_probe.c",
+      "sha256": "4d43ab0de3fc3d12207aedbbfbceea28f21baf3e21812e14a3153d126d96fa3a",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/gqa_value_forward_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/gqa_value_forward_reference.c",
+      "sha256": "e9686de1a73a8c314760694892c0ebccc3178ce5bbed2c34e4f9c634c0979741",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/guarded_memref_copy.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/guarded_memref_copy.cpp",
+      "sha256": "2e148a5a5d35479944792ce3f4144f2b31f9ca188cfffe70151ab1d57ddef890",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/hexagon_buffer_runner.idl",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/hexagon_buffer_runner.idl",
+      "sha256": "639ef70ec65c3814ad3bca5bb26b2f793eb4845207270e81c54545d6267b8629",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/hexagon_buffer_stream_ap.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/hexagon_buffer_stream_ap.c",
+      "sha256": "13f0e61f8c4ae387b76befc0d9fb1c6d18850a2765d3b4e83eef1837f1b3de93",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/hexagon_persistent_runner_dsp.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/hexagon_persistent_runner_dsp.c",
+      "sha256": "dccbbca1b495a5163b9c74fc5ffbb2f9f777355201b4758c44cbc9e000a43f37",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/int8_dot_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/int8_dot_probe.c",
+      "sha256": "29cbc9a8ffbc5e53e1f66097ed23168d91bec6e6385d075867d078eb30e9b23e",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/integer_matmul_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/integer_matmul_probe.c",
+      "sha256": "3aed9aabc15bebaa568b408193ef8e41c8e8d6f07168fe2cbeeeb5c3dce0595b",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/memref_copy_checks_probe.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/memref_copy_checks_probe.cpp",
+      "sha256": "346b48c8898ee0df80bf0da77e316b0febcb2bdcb7a9ff904af17b416d5e60bb",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/memref_copy_probe.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/memref_copy_probe.cpp",
+      "sha256": "e84b89db10611e40a67019df2d87185772b1e5900d920d2d58905b8ba3067c3d",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/model_external_profile.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/model_external_profile.c",
+      "sha256": "fe0edfecdb388cedcace7a01ce394b660993fad0a2c0d19791a5922022071e67",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/model_fmaf_effects.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/model_fmaf_effects.c",
+      "sha256": "ec9ffc24a0fe51fa3a9863ab8cd0bb4968b226a32d0c0f3aee0811ff5be4272f",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/model_integer_timeline.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/model_integer_timeline.c",
+      "sha256": "828de37ae0e35be4d89c4b28c3bbc0902f94637da1fb2f89ab65e26de7b2a1bf",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/model_loop_region_profile.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/model_loop_region_profile.c",
+      "sha256": "5e3fa111b81091af0f43c116ea3b81012a176db25aa6679787586e82fa216fd4",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/model_memory_profile.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/model_memory_profile.c",
+      "sha256": "0e8898a819341804fea059deac0debc8b13dbe41134d451d16c18975f824db3f",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/multi_integer_matmul_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/multi_integer_matmul_probe.c",
+      "sha256": "1bc3ac10ae14e249461febb045100ab8e96bd1567344b361be3bf8aef09c21f9",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/ordered_dense_fnv1a32.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/ordered_dense_fnv1a32.h",
+      "sha256": "aeb434ebc74288400df25d1db83797dd713f1b23bb490113409c3a53ffd0daaa",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/ordered_pv_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/ordered_pv_probe.c",
+      "sha256": "ece3e0ca251fbd3cdcdb5d0e0dc9a1d815b84e36bc2c36dd4fec05cb0dfde60a",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/ordered_pv_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/ordered_pv_reference.c",
+      "sha256": "a2276c962c4213a2d3adc84d2115cafd8648ad0154c88020e787685434af0802",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/ordered_qk_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/ordered_qk_probe.c",
+      "sha256": "9b6f0059cefb48b047f6e2e69728fc936e39d9b0e4f7afc7903d603ecccaeff5",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/ordered_qk_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/ordered_qk_reference.c",
+      "sha256": "9f6d61b0176593576ba05e503553326da532d4477180fc60a2432584c9af9581",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/original_memref_copy.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/original_memref_copy.cpp",
+      "sha256": "8b578e81cd7d9ee64dd3dd8d4674c97c8983d7f5ef3e2cd3ea5028b2573db6b6",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/packed_int8_matmul_runtime.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/packed_int8_matmul_runtime.c",
+      "sha256": "62e082c20ce5bbe96da1642ce8f59df177e6c9246572892c9b6fe62a2eca9c19",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/packed_int8_multi_matmul_runtime.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/packed_int8_multi_matmul_runtime.c",
+      "sha256": "36d94e9416f4cf388ae9119639ec744e27d0d0b448c64b2fa6a3889defc38ed2",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/physical_gqa_pv_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/physical_gqa_pv_probe.c",
+      "sha256": "51702e0f3be9d3a38808d22a237813187a558454faeb9e162a0f91a723ff851f",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/physical_gqa_pv_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/physical_gqa_pv_reference.c",
+      "sha256": "e8fd6b1a061136860e423b0ccc44577320f4aebfff61257b998ec6ea3b407735",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/provenance.json",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/provenance.json",
+      "sha256": "1d925207b7f8d290276cebd3aee6ff4fe034dad4a01f81fb04d4b40bfbca743d",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/q1_tile256_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/q1_tile256_probe.c",
+      "sha256": "3b84b8b5152e22dfdf51c082fcb5fe0f46eed2821100388e42a8c2a4b4ca6d21",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/q2_qk_positive_zero_extent.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/q2_qk_positive_zero_extent.c",
+      "sha256": "fa2daa50d9530a44b31c9bbb0a3b804d7bf3a2b4a798ff9a424551fff07815c2",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/q2_qk_positive_zero_extent_row_major.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/q2_qk_positive_zero_extent_row_major.c",
+      "sha256": "e863c0535fce9eacd1c936ba2baf17641176ab8994aee942eb1fb0ba32b11e57",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/q2_tail_guard_profile.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/q2_tail_guard_profile.c",
+      "sha256": "bb769b15b7bc87ae1eb8aea0d6553339a0134012322269046cd68f13b9b05c80",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/q2_tail_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/q2_tail_probe.c",
+      "sha256": "b0121e4e45dc76f345b5282f557611c16df44d0bc2b764a96f88a863c3551744",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/qk_identical_zero_fma.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/qk_identical_zero_fma.c",
+      "sha256": "0a184787cf316fd32b3562987faad0399e7f08acacbbebb92435c0fe3adc1c36",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/qk_physical_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/qk_physical_probe.c",
+      "sha256": "51175375ec6b486c437b3a43762815c90523196e3c8aef3fa12a33c1fa0bb8f8",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/qk_positive_zero_extent.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/qk_positive_zero_extent.c",
+      "sha256": "40d28d6d214d5239e2ac33ceda8a277c2e1bcdc27762543a3dffaf864d90704c",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/silu_effects_probe.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/silu_effects_probe.cpp",
+      "sha256": "d9b0b21ea40cd578495d3c26eb551e4cdf421b3e3532f6b466aa2a582af8d74a",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/silu_effects_reference.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/silu_effects_reference.cpp",
+      "sha256": "995cf154a2a37d3e764759659e831673ca7b9275837bc50245b5f137e8b8e7b1",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/zero_tail_fma_law.mlir",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/zero_tail_fma_law.mlir",
+      "sha256": "c2f8f49a1d9b58c877116b4d9c1d3930fae4133ee4cfae6a7d1198cda446e726",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/zero_tail_fma_law_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/zero_tail_fma_law_probe.c",
+      "sha256": "83e91c58c96e1a43afe8d384a3560a159aa965c761d983fcd60f6abd341badcb",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/zero_tail_hvx_guard.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/zero_tail_hvx_guard.c",
+      "sha256": "f2f5ff1e586e2072167d4942444e676fa82296022f719046a2c0e379075efe16",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/zero_tail_law_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/zero_tail_law_reference.c",
+      "sha256": "c39b63d3e33eda3fcfa90d339a91fc8e7d5c69ae63a78be81de32f8ba994019a",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/zero_tail_physical_probe.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/zero_tail_physical_probe.c",
+      "sha256": "f4017746d78886b8f73a5a20326761db53681c2a404b77af25d732e1c65fbf2f",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/zero_tail_physical_reference.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/zero_tail_physical_reference.c",
+      "sha256": "27421ec3eb4fd802e70bf9b5d99dfff69658023bbd8f73bc300c2e4d83f5b1d8",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/profile/zero_tail_pv_host_law.c",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/profile/zero_tail_pv_host_law.c",
+      "sha256": "9f892ed7f3795b8206aeecc4854b0ffb0f59e82ea41a5297d92aec6516b07cb2",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/qwen3_sleef_exp_candidate.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/qwen3_sleef_exp_candidate.h",
+      "sha256": "0e4c1bcc6df416dc3d26329308a9074aa1ddb741a01d5d50a5e95d8ec9892e29",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/reference-wrapper.cpp",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/reference-wrapper.cpp",
+      "sha256": "7bc5406ee28e8508e2fd8fe353080a036fc9ec4ac7b21a252b86a87c042708f5",
+      "owner": "compiler"
+    },
+    {
+      "path": "third_party/hexagon-mlir/tools/qwen3/runtime/silu_effects_guard.h",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/runtime/silu_effects_guard.h",
+      "sha256": "6895dde99c6e5860b91878f0112b4c99acf962b9b86bf2fdf94774ee6e914947",
+      "owner": "compiler"
+    },
+    {
+      "path": "tools/qwen3/select_q2_dispatch_release.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/select_q2_dispatch_release.py",
+      "sha256": "1289dfc2e3f6fe04a66454b18e38e79765dab8b9453ab01b554f3d65449496ae",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/split_constant_load_segments.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/split_constant_load_segments.py",
+      "sha256": "1ec4902e70a1ac7323731494114bf59c9f57bc02550c238a261fa6fc0300bb26",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/startup_timing.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/startup_timing.py",
+      "sha256": "ac3915105c767b99e0a87f94424689cd51d6a74be17163c87c5c2daff0ee1ca5",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/summarize_helper_effects.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/summarize_helper_effects.py",
+      "sha256": "2dd14ea2877f337abae8fdf03ac423da8e6d69d9091aa74b93cf66be57a9b218",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/supervise_q1_runtime_closure.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/supervise_q1_runtime_closure.py",
+      "sha256": "985c5b01a7fd5d3287dc7a095a1b22710a307c5c8b3949f198a66c90818244be",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/terminal_reports.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/terminal_reports.py",
+      "sha256": "731aae39fe7e473ff9698840c96a51be38fe0b12b9cc85ef26fa1449997fe8f2",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/test_constant_load_segments.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/test_constant_load_segments.py",
+      "sha256": "9c29ce5e6d1ee1a5682753a20aa262d78e83450cb99cc97db6cfbb662a1d25d0",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/test_exact_parameter_bytes.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/test_exact_parameter_bytes.py",
+      "sha256": "678ca92f2da59e9bf56535de25d20283e5f15aad7f622ddcaa96cf3ee141877c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/test_guarded_module_constants.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/test_guarded_module_constants.py",
+      "sha256": "d09e0522a3dbe4ccc2e02c170918858f7f6e93ba9c6e5ad513b30f440abd00f2",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/test_joined_input_packet.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/test_joined_input_packet.py",
+      "sha256": "d92ca198e43065623c3acd9d0939217c32e4eb8b210d2781662a6348dc85d9a9",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/test_native_aot_generation_args.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/test_native_aot_generation_args.py",
+      "sha256": "15182c62e31429b8cc697ad6d745cecb01746f706fa7ebc19ac32107b0e78ad2",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/test_native_aot_generation_protocol.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/test_native_aot_generation_protocol.py",
+      "sha256": "93a15f6df8619b1cf06d7db4eef3cd1ba30f61410505f08651ddb9084fad40fc",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/test_native_aot_output.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/test_native_aot_output.py",
+      "sha256": "e7602c0244146c939d110c0f153e8d7b0bf7c28a5a560801a327b22043b8802c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/test_runtime_dependencies.py",
+      "origin": "delivery-7ec9936",
+      "original_path": "tools/qwen3/test_runtime_dependencies.py",
+      "sha256": "8a6006d4f72763449ae531da28201352e623f00b1e8ae79178bd5c868b73ed7e",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/trace_fastrpc_mapping_arm.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/trace_fastrpc_mapping_arm.py",
+      "sha256": "a2c6ac37d88d449f8f286074de82b3bfac4e9f9ff213273d8dcd3282f7b3b26c",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/verify.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/verify.py",
+      "sha256": "9e73f4436adc332eacd4fa33d7978166bead7b261e4b2df15fa934f74c82f0b0",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/verify_board.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/verify_board.py",
+      "sha256": "29e71c8005867edd7c57664ed62ee86634fd9ae7067409d89851c38256d534ed",
+      "owner": "application"
+    },
+    {
+      "path": "tools/qwen3/zero_tail_release.py",
+      "origin": "runtime-feb45fd",
+      "original_path": "tools/qwen3/zero_tail_release.py",
+      "sha256": "fa1fe696369428efd9b5ff6c6a336e508e4af50ccf30c60d3503c1398a054bd2",
+      "owner": "application"
+    }
+  ],
+  "removed_experimental_files": 1874,
+  "compiler_source": "Existing development compiler retained at archive revision; not overwritten by the older accepted runtime checkout.",
+  "source_paths_relocated_from": "test/python/torch-mlir",
+  "source_paths_relocated_to": "qwen3/runtime/arm",
+  "ownership": "Application source imported from 1db3dae; compiler C/C++ sources are now owned by the separate compiler dependency."
+}

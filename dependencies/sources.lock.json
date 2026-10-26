@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "transformers": {
+    "version": "5.0.0rc1",
+    "patch": "patches/transformers-prefill-position.patch",
+    "scope": "Pinned generation patch; exact executed Python files are in the runtime bundle"
+  }
+}

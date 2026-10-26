@@ -1,0 +1,8 @@
+{
+  "prompts": [
+    "The capital of France is Paris. The capital of Germany is Berlin.",
+    "Complete this Python function:\ndef add(a, b):\n    return"
+  ],
+  "max_new_tokens": 8,
+  "chunk_size": 32
+}

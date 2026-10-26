@@ -1,0 +1,45 @@
+{
+  "python": "<absolute path: python>",
+  "host_clang": "<absolute path: host_clang>",
+  "host_clangxx": "<absolute path: host_clangxx>",
+  "llvm_source": "<absolute path: llvm_source>",
+  "llvm_build": "<absolute path: llvm_build>",
+  "compiler": "<absolute path: compiler>",
+  "lld": "<absolute path: lld>",
+  "triton_python": "<absolute path: triton_python>",
+  "hexagon_tools": "<absolute path: hexagon_tools>",
+  "hexagon_sdk": "<absolute path: hexagon_sdk>",
+  "hexkl": "<absolute path: hexkl>",
+  "hexagon_clang": "<absolute path: hexagon_clang>",
+  "hexagon_clangxx": "<absolute path: hexagon_clangxx>",
+  "lowering_opt": "<absolute path: lowering_opt>",
+  "constants_dir": "<absolute path: constants_dir>",
+  "library_path": [
+    "<library directory>"
+  ],
+  "compat_root": "<absolute path: compat_root>",
+  "context": "<absolute path: context>",
+  "hf": "<absolute path: hf>",
+  "catalog": "<absolute path: catalog>",
+  "python_packages": "<absolute path: python_packages>",
+  "filecheck": "<absolute path: filecheck>",
+  "cmake": "<absolute path: cmake>",
+  "ninja": "<absolute path: ninja>",
+  "observations": "<absolute path: observations>",
+  "prompts": [
+    "The capital of France is Paris. The capital of Germany is Berlin.",
+    "你好，请用一句话介绍自己。"
+  ],
+  "max_new_tokens": 4,
+  "board": {
+    "ssh_target": "<absolute path or SSH target: ssh_target>",
+    "observations": "<absolute path or SSH target: observations>",
+    "pythonpath": "<absolute path or SSH target: pythonpath>",
+    "python": "<absolute path or SSH target: python>",
+    "catalog": "<absolute path or SSH target: catalog>",
+    "context": "<absolute path or SSH target: context>",
+    "hf": "<absolute path or SSH target: hf>",
+    "decompositions": "<absolute path or SSH target: decompositions>"
+  },
+  "system_root": "/"
+}

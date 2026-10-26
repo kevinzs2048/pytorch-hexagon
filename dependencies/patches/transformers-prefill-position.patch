@@ -1,0 +1,12 @@
+--- a/transformers/generation/utils.py
++++ b/transformers/generation/utils.py
+@@ -3886,7 +3886,8 @@
+                 past_length = current_length
+ 
+             model_kwargs["attention_mask"] = attention_mask
+-            model_kwargs["cache_position"] = model_kwargs["cache_position"][-1:] + 1
++            # Preserve the last consumed position: the generation loop advances it once.
++            model_kwargs["cache_position"] = model_kwargs["cache_position"][-1:]
+             _ = model_kwargs.pop("position_ids", None)
+             # Latest outputs contain next token logits
+             return outputs

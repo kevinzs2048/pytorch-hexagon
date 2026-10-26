@@ -1,0 +1,16 @@
+{
+  "catalog": "accepted/catalog.json",
+  "context": "model/context.json",
+  "hf": "model/hf",
+  "decompositions": "model/policy/fx_decomp_util.py",
+  "constants": "compiled/constants",
+  "libraries": {
+    "eb5184d295c42d7d8beb2ae12d63c39bd9c6634b50ad7b2ff650a6985a0e52a0": "compiled/decode.so",
+    "25f69afd8cdc16de12404bdccbcce758420a378e1d484e8f9c74b9c4f3462f17": "compiled/prefill.so"
+  },
+  "runtime": {
+    "buffer_stream": "runtime/buffer_stream",
+    "libhexagon_buffer_runner_skel.so": "runtime/libhexagon_buffer_runner_skel.so"
+  },
+  "python_packages": ["arm-environment/site-packages", "arm-environment/patched-packages"]
+}

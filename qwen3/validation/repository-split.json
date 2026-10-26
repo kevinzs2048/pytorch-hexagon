@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "status": "separate_application_and_compiler_execution_verified",
+  "completed_utc": "2026-10-26T14:08:52.369968+00:00",
+  "compiler_revision": "e593bd292fa4136ef142187c7c4337cfc73ad1e5",
+  "compiler_source_files_checked": 751,
+  "application_implementation_sha256": "aea5b65bb63149a6e901c22eb839b832d3c316541c7cba1f5f614ed4773c7af0",
+  "host_tests": {
+    "passed": 169,
+    "failed": 0,
+    "warnings": 24
+  },
+  "device": {
+    "system_python": true,
+    "old_PYTHONPATH_unset": true,
+    "comparison": {
+      "status": "identical",
+      "forwards": 16,
+      "compared": "all input/output packet hashes (logits + all KV), positions, tokens, FNV",
+      "reference_sha256": "d13e6ceac6c252b93b4db5b59390a21b86c8e66fd3090d51e379f7c56e04fcc3",
+      "candidate_sha256": "dd5a002e0dfae99bed3bb410e79fd602cddf5ff99d66fbda29018fecc4b4cd23"
+    },
+    "AOT_protocol": {
+      "captures": 2,
+      "hits": 0,
+      "misses": 2,
+      "guard_misses": 0
+    }
+  },
+  "removed_obsolete_machine_specific_launchers": 3,
+  "clean_compiler_rebuild_verified": false
+}

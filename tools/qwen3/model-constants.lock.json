@@ -1,0 +1,25 @@
+{
+  "libraries": [
+    {
+      "index": 3,
+      "name": "lib_mlir_ciface_Qwen3DynamicBoundProbe-consts-3.so",
+      "bytes": 155781816,
+      "sha256": "66be6d41ea56fcec9d82571551460a8c53caf4fa4200ef1d9c87fa956ed83bde",
+      "input_object_sha256": "556d94c9ad724d6e510ac0ebefdb85fde29264dfe84f9068aebe8685420f9a55"
+    },
+    {
+      "index": 2,
+      "name": "lib_mlir_ciface_Qwen3DynamicBoundProbe-consts-2.so",
+      "bytes": 442850308,
+      "sha256": "1700a01446763de1fbee46de08cd8dccb8d35ce3ee93eaab79483e6cb145b6a9",
+      "input_object_sha256": "ada1718801d49a393eed2ed52f835afcdae363ca5b72f4a915c7422c38203b82"
+    },
+    {
+      "index": 1,
+      "name": "lib_mlir_ciface_Qwen3DynamicBoundProbe-consts-1.so",
+      "bytes": 622529208,
+      "sha256": "0d1b1298eb7339ed0d4324884d0cf1e7727fb63c7f02dc52cae8c4bcd0bf867c",
+      "input_object_sha256": "95c79a1afa1e42be3e63eea9faa3d4840d474b439b34120c5a87f1cf2119e19b"
+    }
+  ]
+}
