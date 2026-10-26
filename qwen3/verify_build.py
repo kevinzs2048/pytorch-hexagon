@@ -12,6 +12,26 @@ import struct
 from .bundle import sha, write
 
 
+def reference_generation_options(reference):
+    """Replay the requested budget, including when EOS stopped a request early."""
+    options = reference.get('generation_options')
+    if options is not None:
+        budget, chunk = options['max_new_tokens'], options['prefill_chunk_size']
+        if options.get('do_sample') is not False:
+            raise ValueError('The reference must use deterministic native generation')
+    else:
+        # The compact reference16 intentionally omits generation_options. Its
+        # completed requests all reached the same original token limit.
+        budgets = {len(row['generated_ids']) for row in reference['requests']}
+        if (len(budgets) != 1 or not all(row['terminal_observation'].get(
+                'reached_requested_token_limit') is True for row in reference['requests'])):
+            raise ValueError('Early-EOS references must retain their original generation_options')
+        budget, chunk = budgets.pop(), 32
+    if type(budget) is not int or budget < 1 or type(chunk) is not int or not 1 <= chunk <= 32:
+        raise ValueError('Positive generation budget and supported prefill chunk required')
+    return budget, chunk
+
+
 def stage_candidates(catalog_path, libraries):
     catalog = json.loads(catalog_path.read_text())
     if not libraries or not set(libraries) <= {'q1', 'q2'}:
@@ -55,16 +75,14 @@ def main():
     args = parser.parse_args()
     reference = json.loads(args.reference.read_text())
     libraries = json.loads(args.libraries.read_text()) if args.libraries else {}
-    budgets = {len(request['generated_ids']) for request in reference['requests']}
-    if len(budgets) != 1:
-        parser.error('This comparison requires a reference with a common generation budget')
+    budget, chunk = reference_generation_options(reference)
     from .cli import generate
     from .runtime_checks import compare_integer
     args.requests_json = json.dumps([r['prompt_ids'] for r in reference['requests']])
     args.prompt = args.prompts_json = None
     args.chat_template = False
-    args.max_new_tokens = budgets.pop()
-    args.chunk_size = reference.get('generation_options', {}).get('prefill_chunk_size', 32)
+    args.max_new_tokens = budget
+    args.chunk_size = chunk
     args.cache_dir = args.output.parent / 'candidate-aot-cache'
     if args.capture_output is not None:
         args.cache_dir = args.output.parent / (args.output.name+'-capture-cache')
