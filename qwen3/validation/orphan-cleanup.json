@@ -107,14 +107,28 @@
       "path": "qwen3/runtime/arm/qwen3_long_decode_corpus.py",
       "removed_file": true,
       "original_sha256": "848bdb808edcd4c7fc78204a9a7463254a9dd2ce34c05c64728fa799e5583497"
+    },
+    {
+      "path": "tools/qwen3/q2_dispatch_contract.py",
+      "removed_functions": [
+        "require_qk_model_review"
+      ],
+      "original_sha256": "3f8946061b6c232ccaa612e1626c56be79c61b9645967e57d5ae836b3a5c5d5c"
+    },
+    {
+      "path": "tools/qwen3/key_forward_model_contract.py",
+      "removed_functions": [
+        "validate_primitive_admission"
+      ],
+      "original_sha256": "a0de72223bff124977495e2992aacad4ab425a0ae8df5ce10416d86a79067a3c"
     }
   ],
   "host_validation": {
-    "tests": 696,
+    "tests": 699,
     "skipped": 0,
     "failures": 0,
     "IR_checks": 9,
-    "result_sha256": "08afc7424fd488624198c4b607ae7427067ede79469b7006a1d6d70c100b9963"
+    "result_sha256": "456c558de680e04fc5590bc2f9fa66b9f23a54713244d27d60538e4720afd443"
   },
   "board_validation": "pending final source-built library regression"
 }

@@ -1,9 +1,8 @@
 """Bind the dispatch prototype to the previously target-reviewed recurrence."""
 from qwen3.compiler_dependency import compiler_tools
 import json
-import subprocess
 from pathlib import Path
-from build import HERE, entry
+from build import entry
 from profile_model_memory import checked
 from revisit_native_compile_session_abba import require_normal_owner
 
@@ -39,35 +38,4 @@ def require_proven_qk(proof_path, controller, base):
     for ref in proof['controls']:
         path = checked(ref)
         require_normal_owner(path, read(path)['authorized_deadline_unix'])
-    return proof
-
-
-def require_qk_model_review(review_path, controller):
-    read = lambda path: json.loads(Path(path).read_text())
-    proof = read(review_path); owner = read(controller)
-    require_normal_owner(controller,owner['authorized_deadline_unix'])
-    source = checked(proof['reviewer_source']); reviewer = source.parents[2]
-    if (proof['status'] != 'zero_tail_original393_independently_revisited'
-            or proof['DSP_calls'] != 393 or proof['model_inference_acceptance'] is not True
-            or proof.get('QK_guard_candidate') is not True
-            or proof['newly_executed_DSP_calls'] != 384 or proof['reused_independently_verified_DSP_calls'] != 9
-            or proof['positive_native_callback_gain'] is not True
-            or proof['ordered_FMA_precision_and_owned_lifetimes_preserved'] is not True
-            or owner['source_root'] != str(reviewer) or owner['source_revision'] != proof['reviewer_revision']
-            or owner['command'][1] != str(source)
-            or owner['command'][owner['command'].index('--output')+1] != str(review_path)):
-        raise ValueError('Exact complete QK393 independent model prerequisite and normal reviewer required')
-    blob = subprocess.check_output(['git','-C',str(reviewer),'show',
-        owner['source_revision']+':'+str(source.relative_to(reviewer))])
-    import hashlib
-    if hashlib.sha256(blob).hexdigest() != proof['reviewer_source']['sha256']:
-        raise ValueError('Actual model reviewer differs from its committed source')
-    closure = checked(proof['closure']); result = read(closure)
-    model_owner = read(checked(proof['controller']))
-    require_normal_owner(proof['controller']['path'],model_owner['authorized_deadline_unix'])
-    if (result['status'] != 'zero_tail_original393_complete_NOT_independently_accepted'
-            or result['DSP_calls'] != 393 or result.get('QK_guard_candidate') is not True
-            or model_owner['source_revision'] != result['source_revision']
-            or model_owner['command'][model_owner['command'].index('--output')+1] != str(closure.parent)):
-        raise ValueError('Complete original model producer and actual normal whole-queue owner required')
     return proof

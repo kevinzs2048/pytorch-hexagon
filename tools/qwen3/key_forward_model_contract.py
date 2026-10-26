@@ -7,18 +7,6 @@ SDK_STATUS = 'isolated_scalar_K_forward_and_original_dead_repeat_SDK_built_NOT_m
 MODEL_STATUS = 'immutable_K_scalar_source_forward_query1_model_built_NOT_device_or_state_acceptance'
 RUN_STATUS = 'actual_same_input_q1_K_scalar_forward_model_full_packet_gate_passed'
 CHANGE = 'replace all proved pure K scalar reads by exact immutable source coordinates retaining original ordered FP consumers and V dead cleanup'
-PRIMITIVE_PERFORMANCE_GATE = 'ordered_K_source_FMA_N1024_and_N127_128_129_nonregression_v2'
-
-
-def validate_primitive_admission(proof):
-    if (proof.get('status') != 'K_scalar_forward_bits36_and_ordered_FMA32_raw_owners_independently_revisited_NOT_model_acceptance'
-            or any(type(proof.get(k)) is not int or proof[k] != n for k,n in (('DSP_calls',68),('new_DSP_calls',0)))
-            or proof.get('all_source_words_preserved') is not True or proof.get('ordered_FMA_bitexact') is not True
-            or proof.get('primitive_gain_for_physical_N1024') is not True
-            or proof.get('performance_gate_kind') != PRIMITIVE_PERFORMANCE_GATE
-            or proof.get('copy_bits_timing_is_layout_diagnostic_not_model_admission') is not True
-            or proof.get('model_inference_acceptance') is not False):
-        raise ValueError('Complete all-bits precision, actual ordered FMA gain and distinct model admission required')
 
 
 def validate_key_forward(sdk, diagnostics):
