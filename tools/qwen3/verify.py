@@ -10,11 +10,25 @@ import sys
 import xml.etree.ElementTree as ET
 
 from build import ROOT, entry, write
+from qwen3.build import source_identity
 
 FIXTURES = ['arm-rmsnorm-order.mlir', 'bounded-dynamic-rmsnorm.mlir',
             'bounded-dynamic-k-norm.mlir', 'bounded-dynamic-softmax.mlir',
             'arm-silu-order.mlir', 'arm-rope-trig-order.mlir',
             'bounded-dynamic-rmsnorm-invalid.mlir', 'bounded-dynamic-softmax-invalid.mlir']
+
+
+def require_matching_test_checkout(source):
+    """The retained suite resolves C/C++ helpers through the pinned checkout."""
+    pinned = compiler_root().resolve()
+    if source.resolve() != pinned and source_identity(source) != source_identity(pinned):
+        raise ValueError(
+            'The retained suite would mix compiler checkouts: optimizer source='
+            + str(source.resolve()) + ', test helper source=' + str(pinned)
+            + '. Use a separate application checkout pinned to the compiler under test; '
+              'or a byte-identical copy. Passing --compiler-source alone does not '
+              'retarget its helper tests.')
+    return pinned
 
 
 def main():
@@ -26,6 +40,7 @@ def main():
     a = p.parse_args()
     c = json.loads(a.config.read_text())
     source = a.compiler_source.resolve() if a.compiler_source else compiler_root()
+    require_matching_test_checkout(source)
     a.build = a.build.resolve()
     from qwen3.build import verify_products
     verify_products(a.build, source, a.config)
@@ -41,7 +56,8 @@ def main():
         QWEN_SINGLETON_SUM_OPT=sums, QWEN_SINGLETON_ATTENTION_OPT=first,
         QWEN_HEXAGON_LOWERING_OPT=lowering, QWEN_MLIR_OPT=str(llvm_bin/'mlir-opt'),
         QWEN_SILU_EFFECT_OPT=str(a.build/'policy/qwen-silu-effects-opt'))
-    result = dict(status='checking', source_root=str(ROOT), tests={}, filechecks=[])
+    result = dict(status='checking', source_root=str(ROOT), compiler_source=str(source),
+                  tests={}, filechecks=[])
     try:
         name = 'retained-suite'
         command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',

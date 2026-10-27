@@ -8,6 +8,40 @@ import pytest
 from qwen3.build import export_source, product_paths, sha, source_identity, verify_products
 
 
+def test_verification_rejects_mixed_optimizer_and_helper_checkouts(tmp_path, monkeypatch):
+    from tools.qwen3 import verify
+    pinned, candidate = tmp_path / 'pinned', tmp_path / 'candidate'
+    pinned.mkdir()
+    candidate.mkdir()
+    for path in (pinned, candidate):
+        subprocess.run(['git', 'init', '-q', str(path)], check=True)
+    (pinned / 'helper.c').write_text('old implementation')
+    (candidate / 'helper.c').write_text('candidate implementation')
+    monkeypatch.setattr(verify, 'compiler_root', lambda: pinned)
+    with pytest.raises(ValueError, match='would mix compiler checkouts'):
+        verify.require_matching_test_checkout(candidate)
+
+
+def test_verification_accepts_same_checkout_through_symlink(tmp_path, monkeypatch):
+    from tools.qwen3 import verify
+    pinned, alias = tmp_path / 'pinned', tmp_path / 'alias'
+    pinned.mkdir()
+    alias.symlink_to(pinned, target_is_directory=True)
+    monkeypatch.setattr(verify, 'compiler_root', lambda: pinned)
+    assert verify.require_matching_test_checkout(alias) == pinned.resolve()
+
+
+def test_verification_accepts_identical_checkout_copy(tmp_path, monkeypatch):
+    from tools.qwen3 import verify
+    pinned, candidate = tmp_path / 'pinned', tmp_path / 'candidate'
+    for path in (pinned, candidate):
+        path.mkdir()
+        subprocess.run(['git', 'init', '-q', str(path)], check=True)
+        (path / 'helper.c').write_text('same implementation')
+    monkeypatch.setattr(verify, 'compiler_root', lambda: pinned)
+    assert verify.require_matching_test_checkout(candidate) == pinned.resolve()
+
+
 @pytest.fixture
 def source(tmp_path):
     repo = tmp_path/'repo'

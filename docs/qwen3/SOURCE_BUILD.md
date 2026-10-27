@@ -83,9 +83,19 @@ existing model files are not overwritten. The frontend cache validates its
 source and artifact hashes before reuse.
 
 For development against a separate compiler checkout, pass
-`--compiler-source /absolute/path/to/hexagon-mlir` to build and verification.
+`--compiler-source /absolute/path/to/hexagon-mlir` to the build.
 The receipt records that checkout's source contents and rejects changed build
 products. Without this flag, the checked submodule is used.
+
+The retained application verification suite also reads C/C++ helpers and
+fixtures through its pinned compiler submodule. Verification therefore rejects
+a different-content `--compiler-source` (byte-identical copies are allowed);
+it must not combine a candidate optimizer
+with helper tests from the old checkout. For a candidate compiler, use its
+own tests first and a separate application checkout with the compiler
+dependency and source lock deliberately updated. If that checkout is missing
+historical diagnostic helpers, resolve their scope explicitly before claiming
+the complete retained suite passed.
 
 The output has one layout:
 
