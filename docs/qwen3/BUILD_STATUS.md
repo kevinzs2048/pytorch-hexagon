@@ -23,6 +23,50 @@ The pinned toolchain remains SDK 6.5.0.0 and Hexagon Tools 19.0.02. A newer publ
 SDK, LLVM or framework release is a separate configuration and is not silently
 substituted.
 
+## Reviewed compiler and cleaned application
+
+The review branch pins compiler `b4008a5`, consisting of the 12 inference-support
+commits through `de8c2c2` and one optional diagnostic-source commit. Tests needing
+Qwen-specific fixtures now read them from the application; the five retained C
+diagnostic sources stay in the compiler fork. Old recipe and experimental
+reference consumers have been retired. No missing compiler helper is hidden by
+a skipped test.
+
+The paired sources pass 588 configured host tests and nine IR checks, with no
+failures or skips. The new q1 and q2 models were built from the trusted captures
+and the reviewed compiler. Adding the optional diagnostic files leaves all 22
+compiler/policy/production-runtime products byte-identical; they are not linked
+into either model. Both rebuilt model libraries passed the complete 336-forward
+QCS9075 suite: cold and warm processes (16 each), chunk tails (6), EOS (9),
+32-token generation (33), 1024-position prefill (33), decode from a 993-token
+prompt through the capacity boundary and reset (95), and two 64-token requests
+(128). Whole logits/KV packet hashes, all input checksums, positions, request
+boundaries, tokens and stopping matched the accepted references. No CPU model
+forward fallback was used. The first process had two AOT misses; the second had
+two hits and no misses. Existing accepted assets remain the independent reference.
+
+The 588 host tests and nine IR checks also passed in an independent offline
+Git-bundle clone, without failures or skips. Board deployment preceded the final
+documentation and two test-fixture fixes; all 46 runtime manifest entries and
+the build/production sources are identical to the qualified source snapshot.
+The fixture fixes preserve 84 cases: memref-copy uses the maintained reference
+implementation, and SiLU guards use a small independent caller fixture.
+
+Local qualification evidence is under
+`.local/submission-review-20261028/`: `candidate-regression.json` (336 forwards,
+SHA256 `c1ea5e877853761caf5b855a0e7049b4df996ddac85df45ed840e803f446b7c0`),
+`candidate-host-fixed-verification/`, `offline-host-verification/`, and
+`delivery/models/artifacts.json`. Large build intermediates are not delivery
+requirements; the retained model libraries, primary objects, callers and receipts
+are in `delivery/models/`. The constants are byte-identical to the original asset
+bundle. This qualification makes no new model, platform or performance claim.
+
+Current application/runtime Python: 65 files, 8,197 physical lines. Maintainer
+Python: 14 files, 2,217 lines. The previous tree had 261 Python files and 32,716
+lines in these two groups. Counts include comments and blank lines, exclude tests
+and JSON, and do not assert that every retained line executes during inference.
+The execution manifest remains 46 files, including five compiler Python files.
+
 ## Previously qualified compiler (`ce317a3`)
 
 The existing execution bundle remains the numerical reference. Its `doctor`

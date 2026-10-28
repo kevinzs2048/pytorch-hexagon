@@ -9,9 +9,24 @@ from hexagon_silu_helper_effects import guard_wrapper,guard_caller,ORIGINAL_HEAD
 
 RUNTIME=compiler_root()/'tools/qwen3/runtime'
 
+# Independent source-editing fixture. Full generated caller ABI and execution
+# are checked by the model build and board regression, not this unit test.
+WRAPPER = '''#pragma clang fp contract(off)
+#include "qwen3_sleef_exp_candidate.h"
+extern "C" int hexagon_forward_buffers(const unsigned char *input, int input_len,
+    unsigned char *output, int output_len, uint64_t *kernel_us) {
+  if (!input || !output || !kernel_us || input_len < 16) return 2;
+  *kernel_us = 0;
+  *kernel_us = benchmark_time_us(1, [&]() {
+    _mlir_ciface_Qwen3DynamicBoundProbe(r, dt0, dt1, 1024, 1);
+  });
+  return 0;
+}
+'''
+
 
 def fixture_caller(tmp_path):
-    wrapper=tmp_path/'qwen_captured_q1_wrapper.cpp';wrapper.write_bytes((RUNTIME/'reference-wrapper.cpp').read_bytes())
+    wrapper=tmp_path/'qwen_captured_q1_wrapper.cpp';wrapper.write_text(WRAPPER)
     header=tmp_path/'qwen3_sleef_exp_candidate.h';header.write_bytes((RUNTIME/header.name).read_bytes())
     return dict(query_specialization=1,input_bytes=234885520,output_bytes=235488768,
         wrapper=dict(path=str(wrapper),sha256=digest_file(wrapper)),
@@ -19,7 +34,7 @@ def fixture_caller(tmp_path):
 
 
 def test_guard_precedes_original_model_call_and_preserves_all_original_source():
-    original=(RUNTIME/'reference-wrapper.cpp').read_text();changed=guard_wrapper(original)
+    original=WRAPPER;changed=guard_wrapper(original)
     include='#include "silu_effects_guard.h"\n'
     check='  if (!qwen3_silu_effects_runtime_matches()) return 6;\n'
     assert changed.count(include)==changed.count(check)==1
@@ -54,7 +69,7 @@ def test_guard_rejects_modified_original_math_or_source(tmp_path,name):
 
 
 def test_wrapper_rejects_second_model_call_or_preexisting_guard():
-    text=(RUNTIME/'reference-wrapper.cpp').read_text()
+    text=WRAPPER
     with pytest.raises(ValueError,match='unique guarded'):
         guard_wrapper(guard_wrapper(text))
     text=text.replace('  *kernel_us = 0;\n','  *kernel_us = 0;\n_mlir_ciface_Qwen3DynamicBoundProbe();\n',1)

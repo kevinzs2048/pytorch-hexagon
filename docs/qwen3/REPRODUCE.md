@@ -2,7 +2,7 @@
 
 ## Required inputs
 
-1. This application repository, branch `main`, with the pinned `third_party/hexagon-mlir` submodule initialized (see the root README).
+1. This application repository at the supplied delivery revision, with the pinned `third_party/hexagon-mlir` submodule initialized (see the root README).
 2. The matching `qwen3-hexagon-bundle-v1` execution asset directory.
 3. QCS9075 with the qualified Linux/FastRPC/DSP environment, ARM64 Python 3.12.3,
    `flock`, `pgrep`, and writable shared memory. A host-only machine can inspect

@@ -29,7 +29,7 @@ policy and exact ARM Python packages; binaries do not belong in Git.
 For the current offline delivery (the new commits have not been pushed):
 
 ```bash
-git clone -b main /path/to/application-source.bundle qwen3-hexagon-runtime
+git clone -b review/qwen3-runtime-audit /path/to/application-source.bundle qwen3-hexagon-runtime
 cd qwen3-hexagon-runtime
 git config submodule.hexagon-mlir.url /absolute/path/to/compiler-source.bundle
 git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
@@ -72,6 +72,16 @@ compiler scatter lowering and bufferization belong there.
 
 ## Validation and current limits
 
+The review branch pins compiler `b4008a5`: the 12 inference-support commits through
+`de8c2c2` plus a separate optional diagnostic-source commit. The paired application
+passes 588 host tests and nine IR checks, also repeated in an offline clone.
+Both rebuilt model domains passed 336 complete DSP forwards against the accepted
+references: full logits/KV packet hashes, inputs, tokens and stopping all matched.
+Coverage includes cold/warm processes, chunk tails, EOS, 64-token generation,
+capacity boundaries and request reset. This qualifies the reviewed sources;
+the existing execution bundle remains the independent reference.
+
+
 ```bash
 python -m qwen3 test
 ```
@@ -81,7 +91,7 @@ policy tests. Tests requiring an explicit compiler/SDK skip when those tools are
 not configured; a skipped test is not numerical qualification. Repository
 separation has its historical record in `qwen3/validation/repository-split.json`.
 
-The unified source build passed 699 configured host tests and nine IR checks in
+The earlier source build using compiler `ce317a3` passed 699 configured host tests and nine IR checks in
 both the development tree and an offline clone. Its two newly built model
 libraries passed 336 complete DSP forwards: cold/warm processes, chunk tails,
 EOS, long generation, capacity boundaries and request reset. All input/output

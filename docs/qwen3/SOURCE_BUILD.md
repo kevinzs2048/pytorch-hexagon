@@ -211,3 +211,11 @@ The test count changed from 702: 117 retired recipe/worker/standalone-caller
 checks were removed and three maintainer-command rejection cases were added.
 Eight query-bound checks moved to the maintained shape-policy suite. No numerical
 test was converted to a skip and no tensor comparison tolerance was relaxed.
+
+When switching to the reviewed compiler, the complete host run also exposed two
+constructed legacy fixture paths that the initial literal-path scan missed.
+The strided-copy reference now uses the compiler's maintained
+`HexagonMemrefCopy.cpp`, byte-identical to the removed saved copy. SiLU guard
+source-editing tests use a small independent wrapper fixture instead of a saved
+generated model wrapper. All 84 affected cases are retained. The complete caller
+continues to be generated from the actual captured ABI and checked on DSP.

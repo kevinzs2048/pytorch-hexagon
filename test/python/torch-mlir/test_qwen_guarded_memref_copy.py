@@ -23,8 +23,11 @@ def libraries(tmp_path_factory):
     result=[]
     for name in ('original_memref_copy','guarded_memref_copy'):
         target=folder/(name+'.so')
+        # The former saved reference was byte-identical to this maintained ABI implementation.
+        source = (compiler_root()/'qcom_hexagon_backend/bin/runtime/src/HexagonMemrefCopy.cpp'
+                  if name == 'original_memref_copy' else RUNTIME/(name+'.cpp'))
         subprocess.run([compiler,'-O2','-Wall','-Wextra','-Werror','-fPIC','-shared','-DQWEN_COPY_CHECKS_TEST_ONLY',
-            str(RUNTIME/(name+'.cpp')),'-o',str(target)],check=True,capture_output=True)
+            str(source),'-o',str(target)],check=True,capture_output=True)
         lib=ctypes.CDLL(str(target));copy=getattr(lib,'memrefCopy' if name.startswith('original') else '__wrap_memrefCopy')
         copy.argtypes=[ctypes.c_int64,ctypes.POINTER(Unranked),ctypes.POINTER(Unranked)];copy.restype=None
         result.append((lib,copy))
