@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "repository": "git@github.com:kevinzs2048/hexagon-mlir.git",
-  "revision": "b4008a5345dc9037fc73e696459548084d107904",
+  "revision": "839af5a096f3721c3385bd7703dd540eb2b16325",
   "checkout": "third_party/hexagon-mlir",
   "files": {
     ".github/ISSUE_TEMPLATE/bug_report.md": "f741dba3345bde10b928cff4ba97d36d9f4ae23e61295fa484639f34ef16858f",
@@ -350,7 +350,7 @@
     "qcom_hexagon_backend/lib/Transforms/Transforms.cpp": "9319e5a6d89b6eee890682f408d70c08cf6053b531afc620a33fc826df038131",
     "qcom_hexagon_backend/lib/Transforms/UseHexagonRoutines.cpp": "d4692ad886d9a47502e7a71b2784c390206840014bb10f9e493c9a7f47f5f682",
     "qcom_hexagon_backend/lib/Transforms/VectorLoweringPass.cpp": "46b8c9fa68c0e2701759353603c6b01bf12e292be2b3eae17010bee6d74f07bb",
-    "qcom_hexagon_backend/python/triton_qcom_hexagon_backend.cc": "7fba4508319c9e661981639f0d1d8b2cc91ce07a56741e9b65af3ba2eabcc93d",
+    "qcom_hexagon_backend/python/triton_qcom_hexagon_backend.cc": "2db37f107a21f9d55878c8f3779b275270aee9b0bcd1cc455c269604893fbf90",
     "qcom_hexagon_backend/python/triton_qcom_hexagon_backend_api.cc": "ec14311ac92299a90fe7c7d18c9ad231bd4030623c1383ba446e1d76871734ab",
     "qcom_hexagon_backend/python/triton_qcom_hexagon_backend_api.h": "76fbd251e92a4c7adce4b9fd3f89053bbb85f42833e0d04d304ad91428dd5cde",
     "qcom_hexagon_backend/test/CMakeLists.txt": "637ea7a5c8ddc5ed829dc2e68189b112c87f96f60df73bf07c2aff3b18ef1fc7",
@@ -574,6 +574,7 @@
     "test/python/torch-mlir/test_hexkl_macro_matmul.py": "e7b1a1e17ea8329cf8107a328192913d2b1f76875ead2f865a0c42ff0772d09d",
     "test/python/torch-mlir/test_layernorm_torch.py": "43a2f87dea5d201d965ffca7685635fe21799f1853fca27264ccb586f242fc4d",
     "test/python/torch-mlir/test_matmul_schedule_safety.py": "913ecf0114270a52c6fc8c40f438998bc8104b8d3a9a094a7be8053ef09935f7",
+    "test/python/torch-mlir/test_process_codegen_policy.py": "1ef79d37094c205660182b397c03cbf6e1390e0111e4c638ca7db73d31a24325",
     "test/python/torch-mlir/test_returned_memref_owner.py": "6694d645b9b82eb5a3453b6e35defb89dfbecb65c792ae843fadf709d39a04e0",
     "test/python/torch-mlir/test_sleef_dependency.py": "e110a0b77f475d51a28547b8533cbaccdd98655b348732c4ce0c5ae85bd7428b",
     "test/python/torch-mlir/test_softmax_torch.py": "86e011339352c6f35d6a70b723a883297f5c6021cbd02b002e0a57c453c3f3b2",

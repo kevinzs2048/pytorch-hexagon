@@ -63,6 +63,26 @@ def resolve_options(defaults, reference, overrides):
     return options, provenance
 
 
+def codegen_options(backend, options, policy):
+    """Use the official process switch only in this standalone AOT worker."""
+    effective = options.copy()
+    if policy == "function":
+        return effective, {"scope": "function_attribute"}
+    value = options["enableHexagonGenInsert"]
+    if value not in ("True", "False"):
+        raise ValueError("enableHexagonGenInsert must be True or False")
+    configure = getattr(backend, "configure_process_geninsert", None)
+    if configure is None:
+        raise ValueError("Selected compiler lacks the process codegen policy API")
+    enabled = value == "True"
+    configure(enabled)
+    # The process switch now controls all code generation, including linked
+    # helpers. Do not also emit the private LLVM function attribute.
+    effective["enableHexagonGenInsert"] = "True"
+    return effective, {"scope": "isolated_process", "llvm_option": "hexagon-insert",
+                       "enabled": enabled}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
@@ -81,6 +101,8 @@ def main():
     parser.add_argument("--progress", action="store_true", help="Print compiler phase boundaries without dumping model weights")
     parser.add_argument("--mlir-progress", action="store_true", help="Trace individual MLIR passes without dumping operations or weights")
     parser.add_argument("--codegen-timing", action="store_true", help="Report LLVM machine-code pass timings")
+    parser.add_argument("--geninsert-policy", choices=("function", "process"),
+                        default="function", help="Use the legacy function attribute or official process-wide LLVM switch")
     args = parser.parse_args()
     if args.output_bundle is not None and args.emit != "obj":
         parser.error("Object bundles require --emit obj")
@@ -123,6 +145,8 @@ def main():
     try:
         options, option_source = resolve_options(
             HexagonOptions().__dict__, args.options_from, args.option)
+        effective_options, codegen_policy = codegen_options(
+            backend, options, args.geninsert_policy)
     except (ValueError, OSError) as error:
         parser.error(str(error))
 
@@ -139,6 +163,8 @@ def main():
         "codegen_timing": args.codegen_timing,
         "mlir_progress": args.mlir_progress,
         "options": options,
+        "effective_options": effective_options,
+        "codegen_policy": codegen_policy,
         "options_from": option_source,
         "emit": args.emit,
         "scope": "Python backend AOT compilation only; not device validation",
@@ -155,16 +181,18 @@ def main():
     metadata["parse_seconds"] = time.monotonic() - parse_started
     started = time.monotonic()
     if args.emit == "llvmir":
-        output = backend.translate_linalg_to_llvmir(module, options)
+        output = backend.translate_linalg_to_llvmir(module, effective_options)
         data = output.encode("utf-8")
         if options.get("enableHexagonBitCopyGeneration") == "False":
             if '"hexagon-no-bit-copy-generation"' not in output:
                 raise RuntimeError("Requested safety attribute was not emitted")
-        if options.get("enableHexagonGenInsert") == "False":
+        if effective_options.get("enableHexagonGenInsert") == "False":
             if '"hexagon-no-gen-insert"' not in output:
                 raise RuntimeError("Requested GenInsert policy was not emitted")
+        elif args.geninsert_policy == "process" and '"hexagon-no-gen-insert"' in output:
+            raise RuntimeError("Process policy must not emit the private GenInsert attribute")
     else:
-        objects = backend.translate_linalg_to_obj(module, options)
+        objects = backend.translate_linalg_to_obj(module, effective_options)
         if args.output_bundle is not None:
             from qwen3_object_bundle import write_bundle
             metadata["compile_seconds"] = time.monotonic() - started

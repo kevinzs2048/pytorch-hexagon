@@ -55,14 +55,19 @@ def main():
         LD_LIBRARY_PATH=':'.join(c['library_path']), QWEN_MATMUL_SCHEDULE_OPT=lowering,
         QWEN_SINGLETON_SUM_OPT=sums, QWEN_SINGLETON_ATTENTION_OPT=first,
         QWEN_HEXAGON_LOWERING_OPT=lowering, QWEN_MLIR_OPT=str(llvm_bin/'mlir-opt'),
-        QWEN_SILU_EFFECT_OPT=str(a.build/'policy/qwen-silu-effects-opt'))
+        QWEN_SILU_EFFECT_OPT=str(a.build/'policy/qwen-silu-effects-opt'),
+        HEXAGON_TEST_LIBTRITON=str(a.build/'compiler/libtriton.so'),
+        HEXAGON_ARCH_VERSION='73', HEXAGON_MLIR_ROOT=str(source),
+        HEXAGON_TOOLS_ROOT=c['hexagon_tools'], HEXAGON_SDK_ROOT=c['hexagon_sdk'],
+        HEXKL_DIR=c['hexkl'])
     result = dict(status='checking', source_root=str(ROOT), compiler_source=str(source),
                   tests={}, filechecks=[])
     try:
         name = 'retained-suite'
         command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
                    '--junitxml='+str(a.output/(name+'.xml')),
-                   str(ROOT/'test/python/qwen3'), str(ROOT/'test/python/torch-mlir')]
+                   str(ROOT/'test/python/qwen3'), str(ROOT/'test/python/torch-mlir'),
+                   str(source/'test/python/torch-mlir/test_process_codegen_policy.py')]
         with (a.output/(name+'.log')).open('xb') as log:
             subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
         suite = ET.parse(a.output/(name+'.xml')).getroot()

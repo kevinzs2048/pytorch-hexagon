@@ -9,6 +9,11 @@ official Hexagon-MLIR repository and does not own a copied compiler source tree.
 | **qwen3-hexagon-runtime** (this repository) | PyTorch/Qwen3 integration, native generation, logical KV lifecycle, deployment, profiling orchestration and application regression |
 | **Hexagon-MLIR downstream fork** | MLIR dialects/passes, lowering/codegen, generic buffer ABI, DSP kernels and numerical compiler extensions |
 
+The application integrates PyTorch/Transformers with Hexagon DSP: PyTorch
+supplies the model forward and parameters, Transformers drives generation on
+ARM, and this repository captures, compiles and invokes the DSP forward while
+managing inputs and KV state. The current model integration is Qwen3-0.6B.
+
 The compiler dependency is a Git submodule at `third_party/hexagon-mlir`, pinned
 by both its gitlink and `dependencies/hexagon-mlir.lock.json`. That directory is
 a separate repository checkout, not application-owned compiler code. Our local
@@ -29,7 +34,7 @@ policy and exact ARM Python packages; binaries do not belong in Git.
 For the current offline delivery (the new commits have not been pushed):
 
 ```bash
-git clone -b review/qwen3-runtime-audit /path/to/application-source.bundle qwen3-hexagon-runtime
+git clone -b review/qwen3-official-codegen-policy /path/to/application-source.bundle qwen3-hexagon-runtime
 cd qwen3-hexagon-runtime
 git config submodule.hexagon-mlir.url /absolute/path/to/compiler-source.bundle
 git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
@@ -72,7 +77,14 @@ compiler scatter lowering and bufferization belong there.
 
 ## Validation and current limits
 
-The review branch pins compiler `b4008a5`: the 12 inference-support commits through
+The current branch pins compiler `839af5a` and uses LLVM's official process-wide
+GenInsert switch in isolated model-compilation workers. Its 598 configured host
+tests, nine IR checks and the complete 336-forward DSP regression pass. The
+model objects are unchanged; an SDK helper rebuild changed q2 instruction bytes,
+so both final libraries were fully requalified. See
+[build status](docs/qwen3/BUILD_STATUS.md) for evidence and the SDK reproducibility finding.
+
+The previously qualified branch pins compiler `b4008a5`: the 12 inference-support commits through
 `de8c2c2` plus a separate optional diagnostic-source commit. The paired application
 passes 588 host tests and nine IR checks, also repeated in an offline clone.
 Both rebuilt model domains passed 336 complete DSP forwards against the accepted

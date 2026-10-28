@@ -211,9 +211,13 @@ def main():
             '--input', str(output/'prepared/hexagon-linalg.mlirbc'), '--output-bundle', str(output/'objects'),
             '--libtriton', str(build/'compiler/profiles'/profile/'libtriton.so'),
             '--backend-source', str(source), '--options-from', str(ROOT/'qwen3/config/compiler-options.json'),
-            '--progress'])
+            '--geninsert-policy', 'process', '--progress'])
         from qwen3_object_bundle import load_bundle
         metadata, objects = load_bundle(output/'objects')
+        if metadata.get('codegen_policy') != dict(scope='isolated_process',
+                llvm_option='hexagon-insert', enabled=False):
+            raise ValueError('Model compilation did not use the required process codegen policy')
+        record['codegen_policy'] = metadata['codegen_policy']
         if len(objects) != 4:
             raise ValueError('Expected main code and three constant objects')
         constants = output/'constants'

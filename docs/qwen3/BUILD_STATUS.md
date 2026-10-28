@@ -23,9 +23,44 @@ The pinned toolchain remains SDK 6.5.0.0 and Hexagon Tools 19.0.02. A newer publ
 SDK, LLVM or framework release is a separate configuration and is not silently
 substituted.
 
-## Reviewed compiler and cleaned application
+## Official LLVM GenInsert policy
 
-The review branch pins compiler `b4008a5`, consisting of the 12 inference-support
+The current branch pins compiler `839af5a`. Each model compilation runs in an
+isolated worker configured with LLVM's official `-hexagon-insert=false` switch.
+The model builder no longer needs the private `hexagon-no-gen-insert` function
+attribute. The compiler rejects late or conflicting configuration; the legacy
+function policy remains available for comparison. Other LLVM dependencies have
+not been removed, and this is not qualification of an unpatched LLVM release.
+
+The paired sources pass 598 configured host tests and nine IR checks without
+failures or skips, including five tests of the actual compiler extension and
+its LLVM machine-pass pipeline. Both full model objects, generated callers and
+constant libraries match the preceding qualified build byte-for-byte. The q1
+library differs only in non-loaded build-path comments. The q2 library also
+differs in 143 instruction bytes inside the unchanged SDK-compiled multi-token
+INT8 helper. Four repetitions of an identical Hexagon Clang 19.0.02 command
+produced different instruction bytes; this is an observed reproducibility issue,
+not evidence of a functional compiler failure.
+
+With the new q1 library and the original q2 library, EOS and 32-token generation
+passed 42 complete output comparisons. The full 336-forward suite using both
+new libraries also passed: cold/warm processes, chunk tails, EOS, 32-token and
+64-token generation, 1024-position prefill, decode to the capacity boundary and
+request reset. Complete logits/KV packet hashes, inputs, positions, tokens and
+stopping matched the references. Cold execution had two AOT misses; warm
+execution had two hits and no misses. No CPU model forward fallback was used.
+The qualified baseline below remains available.
+
+Evidence is under `.local/submission-review-20261028/process-codegen/`:
+`host-verification/result.json`, `candidate-regression.json`,
+`binary-comparison.json`, `sdk-repro/result.json`, and
+`delivery/models/artifacts.json`. Large model intermediates and the frontend
+tensor cache have been removed after checking the retained delivery and compressed
+build evidence. Compiler products remain available for repeat verification.
+
+## Previously reviewed compiler and cleaned application
+
+The previously qualified branch pins compiler `b4008a5`, consisting of the 12 inference-support
 commits through `de8c2c2` and one optional diagnostic-source commit. Tests needing
 Qwen-specific fixtures now read them from the application; the five retained C
 diagnostic sources stay in the compiler fork. Old recipe and experimental
@@ -61,8 +96,8 @@ requirements; the retained model libraries, primary objects, callers and receipt
 are in `delivery/models/`. The constants are byte-identical to the original asset
 bundle. This qualification makes no new model, platform or performance claim.
 
-Current application/runtime Python: 65 files, 8,197 physical lines. Maintainer
-Python: 14 files, 2,217 lines. The previous tree had 261 Python files and 32,716
+Current application/runtime Python: 65 files, 8,229 physical lines. Maintainer
+Python: 14 files, 2,222 lines. The previous tree had 261 Python files and 32,716
 lines in these two groups. Counts include comments and blank lines, exclude tests
 and JSON, and do not assert that every retained line executes during inference.
 The execution manifest remains 46 files, including five compiler Python files.

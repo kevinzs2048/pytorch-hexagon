@@ -82,6 +82,19 @@ reuses unchanged compiler outputs. Model outputs require fresh directories;
 existing model files are not overwritten. The frontend cache validates its
 source and artifact hashes before reuse.
 
+Each model profile compiles in a fresh Python subprocess. The current builder
+selects `--geninsert-policy process`, which uses LLVM's official
+`-hexagon-insert=false` switch for that worker, including linked helpers. It
+requires the compiler's `configure_process_geninsert` API, refuses late or
+conflicting configuration, and avoids emitting the private
+`hexagon-no-gen-insert` function attribute. Object receipts record both requested
+and effective backend options and the process policy. The standalone compilation
+driver retains `--geninsert-policy function` for comparison with the accepted
+build. The unified verification command exercises this API against the built
+generic extension and checks LLVM's actual machine-pass pipeline in fresh workers.
+This migration does not by itself remove the other LLVM dependencies or
+constitute complete model qualification; see the current build status.
+
 For development against a separate compiler checkout, pass
 `--compiler-source /absolute/path/to/hexagon-mlir` to the build.
 The receipt records that checkout's source contents and rejects changed build
@@ -115,6 +128,13 @@ Each model directory contains a `result.json` with commands, stage results and
 artifact hashes. A successful build reports `source_model_built_NOT_DSP_qualified`;
 compilation alone is not numerical acceptance. Compiler options are explicitly
 versioned in `qwen3/config/compiler-options.json`.
+
+Rebuilding identical sources is not a guarantee of identical SDK helper code.
+Hexagon Clang 19.0.02 produced different instruction bytes for the unchanged
+multi-token INT8 helper in four consecutive runs of the same command. Compare
+the final libraries as well as the model objects. A difference confined to the
+non-loaded `.comment` section can be separated from changed instructions; a
+changed `.text` section requires numerical validation of that actual library.
 
 ## Check the new libraries on DSP
 
