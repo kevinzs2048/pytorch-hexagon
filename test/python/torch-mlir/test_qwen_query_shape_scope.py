@@ -2,7 +2,8 @@
 import pytest
 import torch
 
-from hexagon_qwen_shape_policy import annotate_query_inputs, compiled_query_scope
+from hexagon_qwen_shape_policy import (annotate_query_inputs, compiled_query_scope,
+                                      query_bounds, contract_query_bounds)
 
 
 def inputs(query, past=0):
@@ -70,3 +71,17 @@ def test_bad_native_axes_rejected_before_compilation(fault):
         kwargs['input_ids'] = kwargs['input_ids'].flatten()
     with pytest.raises(ValueError):
         annotate_query_inputs(kwargs)
+
+
+@pytest.mark.parametrize('value', [0, 33, True])
+def test_invalid_fixed_query_rejected(value):
+    with pytest.raises(ValueError):
+        query_bounds(value)
+
+
+@pytest.mark.parametrize('variables', [{'query': [0, 8]}, {'query': [1, 33]},
+                                      {'query': [True, 8]}, {'query': [8, 7]},
+                                      {'query': [1, 8], 'other': [1, 1]}])
+def test_caller_resource_policy_rejects_invalid_bounds(variables):
+    with pytest.raises(ValueError):
+        contract_query_bounds({'variables': variables})

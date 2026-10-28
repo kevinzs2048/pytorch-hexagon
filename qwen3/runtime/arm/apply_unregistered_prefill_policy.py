@@ -12,7 +12,7 @@ import signal
 import subprocess
 import threading
 
-from capture_unregistered_native_prefill import sha
+from hexagon_compiled_artifact_cache import digest_file as sha
 
 
 def annotate_prefix(prefix):

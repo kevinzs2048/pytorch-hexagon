@@ -125,7 +125,7 @@ def test_live_producer_admission_before_pickle(tmp_path, monkeypatch, fault):
 
 
 def test_worker_lifetime_follows_session_not_predicted_graph_count(tmp_path):
-    from serve_qwen_compile_mailbox import session_closed
+    from audit_arm_dynamic_warm_run import session_closed
     assert session_closed(tmp_path, 0) is False
     atomic_json(tmp_path/'session-closed.json', dict(schema=1, requests_submitted=2,
         status='ARM_native_dynamic_compiler_handoff_generate_completed'))
@@ -136,7 +136,7 @@ def test_worker_lifetime_follows_session_not_predicted_graph_count(tmp_path):
 
 @pytest.mark.parametrize('fault', ['failed', 'bool_count', 'schema', 'symlink'])
 def test_session_close_does_not_hide_failure_or_missing_transactions(tmp_path, fault):
-    from serve_qwen_compile_mailbox import session_closed
+    from audit_arm_dynamic_warm_run import session_closed
     marker = tmp_path/'session-closed.json'
     record = dict(schema=1, requests_submitted=1,
         status='ARM_native_dynamic_compiler_handoff_generate_completed')
@@ -156,128 +156,11 @@ def test_session_close_does_not_hide_failure_or_missing_transactions(tmp_path, f
         session_closed(tmp_path, 1)
 
 
-@pytest.mark.parametrize('failure', [None, 'nonzero', 'timeout', 'interrupt'])
-def test_compiler_cleanup_owns_only_its_spawned_process_group(monkeypatch, failure):
-    import signal
-    import subprocess
-    import serve_qwen_compile_mailbox as worker
-    started, killed = [], []
-    class Process:
-        pid = 123456
-        calls = 0
-        def wait(self, timeout):
-            self.calls += 1
-            if self.calls == 1:
-                if failure == 'timeout':
-                    raise subprocess.TimeoutExpired(['compiler'], timeout)
-                if failure == 'interrupt':
-                    raise KeyboardInterrupt()
-                return 7 if failure == 'nonzero' else 0
-            assert timeout == 10
-            return -9
-    process = Process()
-    def spawn(command, **kwargs):
-        started.append((command, kwargs))
-        return process
-    monkeypatch.setattr(worker.subprocess, 'Popen', spawn)
-    monkeypatch.setattr(worker.os, 'killpg', lambda pid, sig: killed.append((pid, sig)))
-    if failure is None:
-        worker.run_compiler(['compiler'], None, 1)
-        assert killed == []
-    else:
-        expected = {'nonzero': subprocess.CalledProcessError,
-                    'timeout': subprocess.TimeoutExpired, 'interrupt': KeyboardInterrupt}[failure]
-        with pytest.raises(expected):
-            worker.run_compiler(['compiler'], None, 1)
-        assert killed == [(process.pid, signal.SIGKILL)]
-    assert started[0][1]['start_new_session'] is True
-    assert 'shell' not in started[0][1]
-
-
 def test_completion_cannot_conceal_an_unserved_ready_request(tmp_path):
-    from serve_qwen_compile_mailbox import session_closed
+    from audit_arm_dynamic_warm_run import session_closed
     atomic_json(tmp_path/'session-closed.json', dict(schema=1, requests_submitted=0,
         status='ARM_native_dynamic_compiler_handoff_generate_completed'))
     (tmp_path/'capture-00').mkdir()
     atomic_json(tmp_path/'capture-00'/'ready.json', {'schema': 1})
     with pytest.raises(ValueError, match='accounting'):
         session_closed(tmp_path, 0)
-
-
-def test_worker_follows_close_marker_and_uses_local_compiler_command(tmp_path, monkeypatch):
-    """Fake compiler process only; no model, pickle or DSP acceptance."""
-    import serve_qwen_compile_mailbox as worker
-    folder = tmp_path/'capture-00'
-    folder.mkdir()
-    atomic_json(folder/'result.json', {'synthetic_request': True})
-    atomic_json(folder/'ready.json', dict(schema=1, producer_sha256=sha(folder/'result.json'),
-                                        command='untrusted-command-is-not-executed'))
-    arguments = ['worker', '--mailbox', str(tmp_path), '--trusted-local-producer', '--until-session-close']
-    for name in ('context', 'catalog', 'frontend-cache', 'machine-cache', 'machine-recipe'):
-        arguments += ['--'+name, str(tmp_path/name)]
-    arguments += ['--catalog-sha256', 'a'*64, '--machine-recipe-sha256', 'b'*64]
-    seen = []
-    def fake_compile(command, log, timeout):
-        seen.append(command)
-        assert command[1].endswith('/compile_qwen_symbolic_carrier.py')
-        assert 'untrusted-command-is-not-executed' not in command
-        assert command[command.index('--producer')+1] == str(folder/'result.json')
-        output = folder/'compiled'
-        output.mkdir()
-        cache = tmp_path/'machine-cache'
-        cache.mkdir()
-        library = cache/'code.so'
-        library.write_bytes(b'synthetic compiler result')
-        atomic_json(output/'result.json', {'compiled_entry': {'library': {
-            'relative_to_machine_cache': 'code.so', 'sha256': sha(library)}}})
-    publish = worker.atomic_json
-    def publish_and_finish(path, value):
-        publish(path, value)
-        if path.name == 'response.json':
-            publish(tmp_path/'session-closed.json', dict(schema=1, requests_submitted=1,
-                status='ARM_native_dynamic_compiler_handoff_generate_completed'))
-    monkeypatch.setattr(worker.sys, 'argv', arguments)
-    monkeypatch.setattr(worker, 'run_compiler', fake_compile)
-    monkeypatch.setattr(worker, 'atomic_json', publish_and_finish)
-    worker.main()
-    assert len(seen) == 1
-    assert json.loads((folder/'response.json').read_text())['status'] == 'compiled'
-    assert (folder/'compiled'/'returned-library.so').read_bytes() == b'synthetic compiler result'
-
-
-@pytest.mark.parametrize('fault', ['compiler_exit', 'wrong_library_bytes', 'missing_library'])
-def test_worker_publishes_failure_not_a_usable_entry(tmp_path, monkeypatch, fault):
-    import subprocess
-    import serve_qwen_compile_mailbox as worker
-    folder = tmp_path/'capture-00'
-    folder.mkdir()
-    atomic_json(folder/'result.json', {'synthetic_request': True})
-    request_sha = sha(folder/'result.json')
-    atomic_json(folder/'ready.json', dict(schema=1, producer_sha256=request_sha))
-    arguments = ['worker', '--mailbox', str(tmp_path), '--trusted-local-producer', '--requests', '1']
-    for name in ('context', 'catalog', 'frontend-cache', 'machine-cache', 'machine-recipe'):
-        arguments += ['--'+name, str(tmp_path/name)]
-    arguments += ['--catalog-sha256', 'a'*64, '--machine-recipe-sha256', 'b'*64]
-
-    def fail_compilation(command, log, timeout):
-        if fault == 'compiler_exit':
-            raise subprocess.CalledProcessError(7, command)
-        output = folder/'compiled'
-        output.mkdir()
-        cache = tmp_path/'machine-cache'
-        cache.mkdir()
-        if fault == 'wrong_library_bytes':
-            (cache/'code.so').write_bytes(b'wrong bytes')
-        atomic_json(output/'result.json', {'compiled_entry': {'library': {
-            'relative_to_machine_cache': 'code.so', 'sha256': 'a'*64}}})
-
-    monkeypatch.setattr(worker.sys, 'argv', arguments)
-    monkeypatch.setattr(worker, 'run_compiler', fail_compilation)
-    with pytest.raises((subprocess.CalledProcessError, ValueError, FileNotFoundError)):
-        worker.main()
-    response = json.loads((folder/'response.json').read_text())
-    assert response['status'] == 'failed'
-    assert response['producer_sha256'] == request_sha
-    assert 'returned_library' not in response
-    with pytest.raises(RuntimeError, match='transaction failed'):
-        wait_for_compilation(folder, request_sha, timeout=1)

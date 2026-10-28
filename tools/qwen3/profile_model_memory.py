@@ -11,9 +11,8 @@ import sys
 import tempfile
 import time
 
-from build import ROOT, verify_dependencies
+from build import ROOT, verify_dependencies, sha
 from qwen3.compiler_dependency import compiler_tools
-from inspect_integer_matmul import sha
 
 
 def instrument(text,inspect_fmaf=False):
@@ -224,7 +223,7 @@ def main():
         if '-Wl,--wrap='+symbol not in command]
     effects_command=None
     if args.inspect_fmaf:
-        effects=Path(__file__).parent/'runtime/profile/model_fmaf_effects.c'
+        effects=runtime.with_name('model_fmaf_effects.c')
         effects_source=args.output/effects.name;effects_source.write_bytes(effects.read_bytes())
         effects_object=args.output/'fmaf-effects.o'
         effects_command=compile_command[:]

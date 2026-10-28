@@ -7,9 +7,8 @@ import sys
 
 import pytest
 
-from qwen3.compiler_dependency import compiler_root
 
-_fixture_path = compiler_root() / 'test/python/torch-mlir/qwen_silu_fixture.py'
+_fixture_path = Path(__file__).with_name('qwen_silu_fixture.py')
 _spec = importlib.util.spec_from_file_location('qwen_silu_fixture', _fixture_path)
 _fixture = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_fixture)

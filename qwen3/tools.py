@@ -12,16 +12,21 @@ import sys
 from .compiler_dependency import compiler_root
 
 ROOT = Path(__file__).resolve().parents[1]
+# Public maintainer commands. Helper modules and retired recipe launchers are
+# deliberately not executable through this entry.
+COMMANDS = (
+    "build", "verify", "analyze_performance", "compare_performance",
+    "profile_model_memory", "probe_model_memory_arm", "run_staged_probe",
+    "probe_guarded_copy_arm", "probe_helper_effects_arm",
+)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("tool", help="Script name in tools/qwen3, without .py")
+    parser.add_argument("tool", choices=COMMANDS, help="Maintained build or diagnostic command")
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     script = ROOT / "tools/qwen3" / (args.tool + ".py")
-    if not args.tool.isidentifier() or args.tool.startswith("test_") or not script.is_file():
-        parser.error("Choose an existing maintainer script in tools/qwen3")
     paths = [str(ROOT / p) for p in ("tools/qwen3", "qwen3/runtime/arm", ".")]
     paths.append(str(compiler_root()))
     previous_path, previous_argv = sys.path[:], sys.argv

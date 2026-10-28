@@ -174,8 +174,40 @@ targets. Callers are generated directly from the captured ABI; they no longer
 require a saved reference wrapper or its standalone file-I/O test program. A
 minimal `main` symbol remains because the SDK loader requires it.
 
-The old `bind_recipe` implementation, its three exclusive templates and the
-separate RoPE build launcher were removed. Their sources remain in Git history
-at application revision `9a5ce27`. Older recipe consumers and numerical diagnostic
-tools remain for reading historical evidence; they are not dependencies of this
-source-build path.
+Historical recipe construction, reuse of old compiler objects, remote recipe
+compilation workers, experiment supervisors and their release-index chains have
+been retired. Recover them from application commit `c7b3f8f` in a separate
+checkout when investigating old evidence. They are not alternative build routes.
+The public generate/export/doctor/regress/compare commands, source build,
+capture export and full-output verification remain the supported workflow.
+
+Tests specific to the retired recipe cache and remote worker were removed with
+those implementations. Generation protocol checks now import `qwen3.runtime_checks`
+directly. Query-domain rejection checks, mailbox admission checks, numerical
+operator tests and the complete included DSP references remain. The diagnostic
+session-completion audit keeps its validation without importing a retired worker.
+
+The old prefill hashing import was also detached from its capture launcher,
+allowing the unused early KV layout/bundle prototypes to be retired. Shared
+caller rewriting is unchanged; only its unused recipe validators/link mutators
+were removed.
+
+The remaining maintainer commands are explicitly enumerated in `qwen3.tools`.
+They cover building, host verification, performance analysis, optional model
+instrumentation and bounded primitive probes. Parser/helper modules cannot be
+launched as commands. The two `tools/qwen3-review` scripts support compiler-team
+performance investigations; neither belongs to the normal inference path.
+Qwen-specific test fixtures live beside application tests. Optional C diagnostic
+wrappers live in the compiler repository and are linked only by profiling tools.
+
+The retirement change was checked with 588 configured host tests and nine IR
+checks against the previously qualified compiler. A separate board run using
+the cleaned application and the original accepted model passed all 16 complete
+forward comparisons. The runtime source manifest and every file in it were
+byte-identical to the pre-cleanup application. This establishes the cleanup
+baseline; candidate compiler/model qualification is recorded separately.
+
+The test count changed from 702: 117 retired recipe/worker/standalone-caller
+checks were removed and three maintainer-command rejection cases were added.
+Eight query-bound checks moved to the maintained shape-policy suite. No numerical
+test was converted to a skip and no tensor comparison tolerance was relaxed.

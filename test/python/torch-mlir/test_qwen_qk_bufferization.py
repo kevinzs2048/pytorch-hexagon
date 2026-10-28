@@ -5,7 +5,6 @@ import shutil
 import subprocess
 
 import pytest
-from qwen3.compiler_dependency import compiler_root
 
 
 def lower(source, cse):
@@ -28,7 +27,7 @@ def lower(source, cse):
 
 
 def fixture():
-    return (compiler_root() / 'test/python/torch-mlir/qwen3_qk_bufferization.mlir').read_text()
+    return (Path(__file__).with_name('qwen3_qk_bufferization.mlir')).read_text()
 
 
 def test_duplicate_slices_cause_per_tile_copy():

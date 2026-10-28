@@ -76,7 +76,7 @@ compiler scatter lowering and bufferization belong there.
 python -m qwen3 test
 ```
 
-The host command collects all retained application tests, including the numerical
+The host command collects the maintained application tests, including the numerical
 policy tests. Tests requiring an explicit compiler/SDK skip when those tools are
 not configured; a skipped test is not numerical qualification. Repository
 separation has its historical record in `qwen3/validation/repository-split.json`.
@@ -100,11 +100,11 @@ python -m qwen3.tools verify --help
 python -m qwen3.tools profile_model_memory --help
 ```
 
-The public inference entry imports no Python code from `tools/`. Historical
-build/review tools remain for reading prior evidence and targeted diagnostics.
-The maintained source-build route is `python -m qwen3.build`; historical recipe
-consumers are outside that route and may require their original source revision
-and artifacts.
+The public inference entry imports no Python code from `tools/`. The retained tools cover targeted diagnostics and performance analysis.
+The source-build route is `python -m qwen3.build`. Historical recipe builders,
+object-reuse launchers and experiment supervisors were retired; recover their
+original source and artifacts from application commit `c7b3f8f` when needed.
+See [retirement scope](docs/qwen3/SOURCE_BUILD.md#what-was-replaced).
 
 The [source-build workflow](docs/qwen3/SOURCE_BUILD.md) builds the compiler profiles,
 numerical tools, DSP helpers and both model domains in one output tree. LLVM and

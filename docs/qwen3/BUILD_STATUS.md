@@ -23,7 +23,7 @@ The pinned toolchain remains SDK 6.5.0.0 and Hexagon Tools 19.0.02. A newer publ
 SDK, LLVM or framework release is a separate configuration and is not silently
 substituted.
 
-## Validation boundaries
+## Previously qualified compiler (`ce317a3`)
 
 The existing execution bundle remains the numerical reference. Its `doctor`
 output still reports `clean_compiler_rebuild_verified: false`, because that bundle
@@ -75,18 +75,20 @@ executed at `6701f22`. The retained build functions were checked for AST equalit
 across that cleanup. This qualifies the existing Qwen3-0.6B scope, not another
 model, hardware platform or performance result.
 
-## Retained historical code
+## Earlier cleanup and recovery record
 
-Old recipe consumers and diagnostic tools remain available for inspecting prior
-evidence and targeted numerical diagnosis. Some require their historical source
-revision and artifacts. They are outside the new source-build dependency path.
+Old recipe consumers and experiment supervisors are now retired. Use application
+commit `c7b3f8f` and its original artifacts to inspect their historical execution.
+The supported workflow and retained diagnostics are described in
+[SOURCE_BUILD.md](SOURCE_BUILD.md#what-was-replaced). The counts and generated-data
+cleanup below describe the earlier qualification, before this retirement.
 The removed reference-wrapper recipe, its three exclusive templates and the
 redundant RoPE build launcher are recoverable from application revision `9a5ce27`.
 Nine disconnected runtime modules and unused functions were removed separately;
 their identities and validation are in
 [the cleanup record](../../qwen3/validation/orphan-cleanup.json).
 
-The explicit runtime dependency list decreased from 49 to 46 files. Including
+During that earlier cleanup, the explicit runtime dependency list decreased from 49 to 46 files. Including
 the new build entry, application/runtime/maintainer Python decreased from 268
 files and 33,174 physical lines to 261 files and 32,700 lines. These counts include
 comments and blank lines, and exclude tests and reference data. The added state

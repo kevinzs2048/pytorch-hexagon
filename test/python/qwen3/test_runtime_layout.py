@@ -99,7 +99,7 @@ for module in list(sys.modules.values()):
     assert result.returncode == 0, result.stderr
 
 
-@pytest.mark.parametrize('tool', ['build', 'verify', 'build_q2_tail_model_sdk', 'profile_model_memory'])
+@pytest.mark.parametrize('tool', ['build', 'verify', 'profile_model_memory'])
 def test_maintainer_entry_needs_no_private_pythonpath(tool):
     result = subprocess.run([sys.executable, '-m', 'qwen3.tools', tool, '--help'], cwd=ROOT,
                             env={k: v for k, v in os.environ.items() if k != 'PYTHONPATH'},
@@ -117,3 +117,11 @@ def test_comparison_still_rejects_changed_full_output(tmp_path):
     path.write_text(json.dumps(candidate))
     with pytest.raises(ValueError, match='output_sha256'):
         cli.compare(reference, path)
+
+
+@pytest.mark.parametrize('tool', ['build_q2_tail_model_sdk', 'generate_native_aot', 'packet_trace'])
+def test_retired_launchers_and_helper_modules_are_not_commands(tool):
+    result = subprocess.run([sys.executable, '-m', 'qwen3.tools', tool], cwd=ROOT,
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 2
+    assert 'invalid choice' in result.stderr

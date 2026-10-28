@@ -141,6 +141,21 @@ def audit_rebuilt_artifacts(compiled, producer, capture):
         raise ValueError('Actual executed library differs from rebuilt linker product')
 
 
+def session_closed(mailbox, completed):
+    marker = Path(mailbox)/'session-closed.json'
+    if not marker.exists():
+        return False
+    if marker.is_symlink() or marker.stat().st_size > 16384:
+        raise ValueError('Bounded session completion marker required')
+    record = json.loads(marker.read_text())
+    if (record.get('schema') != 1 or type(record.get('requests_submitted')) is not int
+            or record['requests_submitted'] != completed
+            or record.get('status') != 'ARM_native_dynamic_compiler_handoff_generate_completed'
+            or (Path(mailbox)/f'capture-{completed:02d}'/'ready.json').exists()):
+        raise ValueError('ARM run failed or compiler request accounting differs at completion')
+    return True
+
+
 def audit_compile_handoff(current, mailbox, *, rebuilt=False):
     """Read independent request/response artifacts, not just driver summaries."""
     from hexagon_live_compile_mailbox import validate_response, LIVE_STATUS
@@ -190,7 +205,6 @@ def audit_compile_handoff(current, mailbox, *, rebuilt=False):
         raise ValueError('Compiler transaction total differs')
     completion_checked = False
     if 'compile_requests_submitted' in current:
-        from serve_qwen_compile_mailbox import session_closed
         if (current['compile_requests_submitted'] != len(transactions)
                 or not session_closed(mailbox, len(transactions))):
             raise ValueError('Actual live compiler session did not close consistently')

@@ -1,7 +1,7 @@
 """Check one-bin generation, genuine cache fallback and incomplete reports."""
 import copy
 import pytest
-from run_native_aot_generate_arm import require_generation_protocol, require_original_guard_configuration
+from qwen3.runtime_checks import require_generation_protocol, require_original_guard_configuration
 
 
 def test_original_guard_configuration():
