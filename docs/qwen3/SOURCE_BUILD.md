@@ -16,8 +16,8 @@ There is no copy of those C/C++ sources in the application.
 - The pinned Triton Git revision recorded in the compiler's
   `dependencies/sources.lock.json`. The builder exports that Git tree; local
   changes in the supplied Triton checkout are not used.
-- A configured LLVM/MLIR installation matching that source lock and its local
-  patch, the host compiler, Hexagon SDK 6.5.0.0, Hexagon Tools 19.0.02, HexKL and
+- A configured LLVM/MLIR installation matching the complete dependency recipe,
+  its `llvm_receipt`, the host compiler, Hexagon SDK 6.5.0.0, Hexagon Tools 19.0.02, HexKL and
   the qualified `ld.lld`. These are explicit prebuilt toolchain dependencies;
   this command does **not** rebuild LLVM or Qualcomm's SDK.
 - The pinned host Python environment: PyTorch `2.12.0+cpu`, torch-mlir
@@ -36,6 +36,25 @@ Copy `qwen3/config/build.example.json` into a local configuration and replace al
 paths. Keep the linker basename `ld.lld`; the Hexagon compiler driver uses it to
 select the linker argument dialect. The old, broad profiling configuration in
 `tools/qwen3/config.example.json` is not a source-build configuration.
+
+### Prepare LLVM once
+
+The compiler dependency includes the full qualified LLVM patch and its rebuild
+entry. Follow [the LLVM dependency instructions](../../third_party/hexagon-mlir/dependencies/llvm/README.md)
+to prepare a separate source checkout and build LLVM/MLIR/LLD. Set `llvm_receipt`
+in the same toolchain JSON to the generated identity receipt. The application
+checks actual patched sources, libraries, generated headers, CMake metadata,
+tools and resolved host libraries before using them; a matching Git revision
+alone is insufficient. The compiler build receipt retains this LLVM identity,
+and model builds reject a later dependency replacement.
+
+An existing qualified installation can be explicitly recorded with the dependency
+tool's `seal-existing` command. That receipt is labelled
+`qualified_prebuilt_snapshot`, not `source_build`; recording hashes does not
+prove how historical binaries were built. Missing or mismatched identities do
+not trigger automatic adoption. After intentionally selecting a new identity,
+rerun the unified compiler build in its existing directory and compare products.
+Retain unchanged SDK helper objects; SDK recompilation can change their code.
 
 ## Capture the build inputs on ARM
 

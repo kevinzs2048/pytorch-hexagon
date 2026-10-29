@@ -77,7 +77,15 @@ compiler scatter lowering and bufferization belong there.
 
 ## Validation and current limits
 
-The current branch pins compiler `839af5a` and uses LLVM's official process-wide
+The current branch pins compiler `23cb318`, which adds the complete LLVM dependency
+patch, a source-build recipe and product identity checks. An independent LLVM
+rebuild passes 1,381 Hexagon tests; the backend passes 611 host tests and nine IR
+checks. Both freshly compiled model libraries are byte-identical to the preceding
+336-forward-qualified pair. See [build status](docs/qwen3/BUILD_STATUS.md) for the
+qualification evidence and the distinction between a rebuilt dependency and
+an existing binary snapshot.
+
+The preceding qualified branch pins compiler `839af5a` and uses LLVM's official process-wide
 GenInsert switch in isolated model-compilation workers. Its 598 configured host
 tests, nine IR checks and the complete 336-forward DSP regression pass. The
 model objects are unchanged; an SDK helper rebuild changed q2 instruction bytes,
@@ -129,8 +137,10 @@ original source and artifacts from application commit `c7b3f8f` when needed.
 See [retirement scope](docs/qwen3/SOURCE_BUILD.md#what-was-replaced).
 
 The [source-build workflow](docs/qwen3/SOURCE_BUILD.md) builds the compiler profiles,
-numerical tools, DSP helpers and both model domains in one output tree. LLVM and
-the Qualcomm SDK remain explicit prebuilt dependencies. A build and a DSP
+numerical tools, DSP helpers and both model domains in one output tree. The compiler
+dependency includes a separate LLVM/MLIR/LLD source-build recipe; the application
+checks its source and product receipt. Qualcomm SDK / Tools / HexKL remain
+external dependencies. A build and a DSP
 numerical qualification have separate receipts; see
 [build status](docs/qwen3/BUILD_STATUS.md). Existing execution assets remain intact.
 

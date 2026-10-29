@@ -67,7 +67,8 @@ def main():
         command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
                    '--junitxml='+str(a.output/(name+'.xml')),
                    str(ROOT/'test/python/qwen3'), str(ROOT/'test/python/torch-mlir'),
-                   str(source/'test/python/torch-mlir/test_process_codegen_policy.py')]
+                   str(source/'test/python/torch-mlir/test_process_codegen_policy.py'),
+                   str(source/'test/python/torch-mlir/test_llvm_dependency_identity.py')]
         with (a.output/(name+'.log')).open('xb') as log:
             subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
         suite = ET.parse(a.output/(name+'.xml')).getroot()

@@ -5,6 +5,7 @@ The accepted execution bundle is a reference, never a source of object files.
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -12,9 +13,29 @@ import subprocess
 import sys
 import tarfile
 import time
+from functools import lru_cache
 
 from .bundle import write
 from .compiler_dependency import compiler_root
+
+
+@lru_cache(maxsize=2)
+def _llvm_validator(path, digest):
+    spec = importlib.util.spec_from_file_location('qwen_llvm_dependency', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def llvm_identity(source, config):
+    path = source/'dependencies/llvm/toolchain.py'
+    if not path.is_file():
+        raise ValueError('Compiler dependency lacks the LLVM identity verifier')
+    lock = json.loads((source/'dependencies/sources.lock.json').read_text())['llvm']
+    if (lock.get('recipe') != 'llvm/recipe.json'
+            or sha(source/'dependencies'/lock['recipe']) != lock.get('recipe_sha256')):
+        raise ValueError('LLVM recipe differs from the compiler dependency lock')
+    return _llvm_validator(str(path), sha(path)).verify(json.loads(config.read_text()))
 
 
 def product_paths(output):
@@ -41,6 +62,8 @@ def verify_products(output, source, config):
     actual = {str(p.relative_to(output)): sha(p) for p in product_paths(output)}
     if actual != record.get('products'):
         raise ValueError('Compiler build products changed or are not sealed')
+    if record.get('LLVM_identity') != llvm_identity(source, config):
+        raise ValueError('LLVM dependency identity differs from this compiler build')
     return record
 
 
@@ -143,8 +166,8 @@ def main():
         raise ValueError('Expected a Hexagon-MLIR source checkout')
     llvm = Path(config['llvm_build']).resolve()
     locks = json.loads((source/'dependencies/sources.lock.json').read_text())
-    llvm_revision = subprocess.check_output(['git', '-C', config['llvm_source'],
-                                            'rev-parse', 'HEAD'], text=True).strip()
+    dependency = llvm_identity(source, args.config)
+    llvm_revision = dependency['base_revision']
     if llvm_revision != locks['llvm']['revision']:
         raise ValueError('LLVM source revision differs from the compiler lock')
     triton_revision = locks['triton']['revision']
@@ -195,6 +218,7 @@ def main():
     record['LLVM_rebuilt'] = False
     record['LLVM_build'] = str(llvm)
     record['LLVM_revision'] = llvm_revision
+    record['LLVM_identity'] = dependency
     def run(name, command):
         row = dict(stage=name, argv=command, started_unix=time.time())
         record['commands'].append(row)
@@ -233,6 +257,8 @@ def main():
         record['status'] = 'configured' if args.configure_only else 'compiler_built_NOT_qualified'
         if source_identity(source) != identity:
             raise ValueError('Compiler sources changed during the build; rerun before qualification')
+        if llvm_identity(source, args.config) != dependency:
+            raise ValueError('LLVM dependency changed during compiler construction')
         if not args.configure_only:
             record['products'] = {str(p.relative_to(output)): sha(p) for p in product_paths(output)}
     except BaseException as error:

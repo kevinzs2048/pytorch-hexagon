@@ -17,15 +17,62 @@ for the same implementation.
 | DSP helpers | Explicit production targets in `build/runtime`, including INT8, RoPE, attention guards and copy helpers |
 | PyTorch → torch-mlir | Actual ARM AOT captures, locally verified immutable weights and a checked frontend cache |
 | Model objects, callers and constants | Generated and linked in `build/models/q1` and `build/models/q2` |
-| LLVM/MLIR and Qualcomm SDK | Explicit prebuilt toolchain dependencies; LLVM is not rebuilt by this command |
+| LLVM/MLIR/LLD | Complete pinned source patch and separate source-build recipe; the application verifies the resulting toolchain receipt |
+| Qualcomm SDK / Tools / HexKL | Explicit external dependencies |
 
 The pinned toolchain remains SDK 6.5.0.0 and Hexagon Tools 19.0.02. A newer public
 SDK, LLVM or framework release is a separate configuration and is not silently
 substituted.
 
+## Reproducible LLVM dependency
+
+Compiler `23cb318` packages the complete 29-file LLVM source patch, pinned
+upstream revision and patched tree, CMake recipe, and build/identity verifier.
+The application requires a matching receipt for actual libraries, generated
+headers, compiler/linker executables and resolved host shared libraries. A Git
+revision alone is no longer accepted as dependency verification.
+
+The existing qualified installation remains untouched. Its explicit
+`qualified_prebuilt_snapshot` receipt records the accepted binaries without
+claiming historical source-to-binary provenance. A separate checkout has been
+prepared from the pinned base, patched, and fully built into a new directory;
+its receipt is labelled `source_build`. The source tree exactly matches the
+qualified checkout, including its local changes. This complete compatibility
+snapshot is separate from the four selected upstream correctness fixes; it is
+not a claim that all historical LLVM changes are needed or ready for upstream.
+
+The rebuilt LLVM passes 1,381 Hexagon code-generation tests, with nine expected
+failures and two unsupported tests, and the Hexagon LLD preemptible-thunk test.
+The backend built against it passes 611 configured host tests and nine IR
+checks without failures or skips. All 14 DSP helper products are byte-identical
+to the preceding build; the eight host compiler/policy binaries were rebuilt.
+All 46 execution-source files remain unchanged.
+
+Both complete model domains were compiled from the retained trusted ARM captures
+using the rebuilt compiler and linker. For q1 and q2, the model object, generated
+caller, all three constant libraries and final DSP library match the preceding
+qualified delivery byte-for-byte. The final model SHA256 values remain
+`c2d7f0176b803a9aee45177cfff96adc7b7cfc2a25ea7f4f829084a6693331ee` (q1) and
+`fc6a73f8205f4b75770aa78216cd3f643b29c243f3d36b24fa974178290b249a` (q2).
+The preceding 336-forward acceptance therefore covers these exact binaries;
+it is not counted as a newly executed full regression.
+A fresh QCS9075 process using the current execution sources and both rebuilt
+libraries additionally passed 16 complete forwards: logits, all 56 KV tensors,
+inputs, positions, tokens and stopping matched. Its fresh AOT namespace recorded
+two misses and no hits. No CPU model forward fallback was used.
+
+Evidence is retained in `.local/llvm-toolchain-20261030/`, including the LLVM
+build/identity receipt, LLVM and host test results, `binary-comparison.json`,
+compressed build evidence, and `delivery/models/artifacts.json`. The canonical
+local toolchain configuration now selects the source-built dependency. The
+original installation, original configuration and qualified model delivery
+remain available for rollback. Large intermediate model/weight copies are
+removed after verifying the retained delivery; the LLVM and backend build
+products remain available for incremental work.
+
 ## Official LLVM GenInsert policy
 
-The current branch pins compiler `839af5a`. Each model compilation runs in an
+The preceding qualified branch pins compiler `839af5a`. Each model compilation runs in an
 isolated worker configured with LLVM's official `-hexagon-insert=false` switch.
 The model builder no longer needs the private `hexagon-no-gen-insert` function
 attribute. The compiler rejects late or conflicting configuration; the legacy
@@ -56,7 +103,9 @@ Evidence is under `.local/submission-review-20261028/process-codegen/`:
 `binary-comparison.json`, `sdk-repro/result.json`, and
 `delivery/models/artifacts.json`. Large model intermediates and the frontend
 tensor cache have been removed after checking the retained delivery and compressed
-build evidence. Compiler products remain available for repeat verification.
+build evidence. The compiler build directory was subsequently retargeted to the
+source-built LLVM dependency described above; the preceding model delivery and
+qualification receipts remain intact.
 
 ## Previously reviewed compiler and cleaned application
 

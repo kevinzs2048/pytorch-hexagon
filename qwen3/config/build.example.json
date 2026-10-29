@@ -4,6 +4,7 @@
   "host_clangxx": "/absolute/path/to/host-clang++",
   "llvm_source": "/absolute/path/to/pinned-llvm-source",
   "llvm_build": "/absolute/path/to/pinned-llvm-build",
+  "llvm_receipt": "/absolute/path/to/llvm-toolchain-receipt.json",
   "triton_source": "/absolute/path/to/triton-git-checkout",
   "hexagon_tools": "/absolute/path/to/Hexagon_Tools",
   "hexagon_sdk": "/absolute/path/to/Hexagon_SDK",

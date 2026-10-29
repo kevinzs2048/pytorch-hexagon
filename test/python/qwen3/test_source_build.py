@@ -74,20 +74,27 @@ def test_resume_rejects_injected_source(source):
         export_source(repo, revision, output)
 
 
-def test_model_build_rejects_changed_compiler_products(source, tmp_path):
+def test_model_build_rejects_changed_compiler_products(source, tmp_path, monkeypatch):
     repo, _, _ = source
     output = tmp_path/'build'
     output.mkdir()
     config = tmp_path/'toolchain.json'
     config.write_text('{}')
+    dependency = {'receipt_sha256': 'qualified LLVM identity'}
+    monkeypatch.setattr('qwen3.build.llvm_identity', lambda *args: dependency)
     for path in product_paths(output):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(b'original build product')
     record = dict(status='compiler_built_NOT_qualified', configuration_sha256=sha(config),
                   compiler_source=str(repo), compiler_sources_sha256=source_identity(repo)['sha256'],
-                  products={str(p.relative_to(output)): sha(p) for p in product_paths(output)})
+                  products={str(p.relative_to(output)): sha(p) for p in product_paths(output)},
+                  LLVM_identity=dependency)
     (output/'build.json').write_text(json.dumps(record))
     assert verify_products(output, repo, config) == record
+    monkeypatch.setattr('qwen3.build.llvm_identity', lambda *args: {'receipt_sha256': 'other LLVM'})
+    with pytest.raises(ValueError, match='LLVM dependency identity differs'):
+        verify_products(output, repo, config)
+    monkeypatch.setattr('qwen3.build.llvm_identity', lambda *args: dependency)
     product_paths(output)[0].write_bytes(b'replaced compiler')
     with pytest.raises(ValueError, match='products changed'):
         verify_products(output, repo, config)
