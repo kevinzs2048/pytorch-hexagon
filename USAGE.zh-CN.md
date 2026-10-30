@@ -51,6 +51,8 @@ python3 -m qwen3 generate \
 
 `doctor` 校验资源包、编译器源码和板端 Python 环境。成功时输出中有 `bundle_valid: true` 和 `execution_environment_checked: true`。当前板端使用 ARM64 Python **3.12.3**，运行器自行加载资源包中的 Python 依赖，无需临时安装最新版 PyTorch 或 Transformers。
 
+其中 `clean_compiler_rebuild_verified: false` 表示这个命令没有执行编译器源码重建，不是环境检查失败；源码构建验收看第 5 节的构建和验证记录。
+
 生成结束后，终端打印生成结果和结果目录。主要文件是：
 
 | 文件 | 内容 |
@@ -176,6 +178,8 @@ qwen_build="$PWD/.local/submission-review-20261028/process-codegen/build"
 
 ## 6. 换一台主机从头构建
 
+本节以获得相应 SDK、固定版本的主机 Python 环境及其补丁为前提，是构建准备清单。它尚不是从干净操作系统自动安装全部依赖的脚本；在现有开发机上的复现不能替代新主机或新板卡的环境验收。
+
 现有 `.local/` 配置和产物不在 Git 中，主机绝对路径不能照搬。需要准备：
 
 1. 应用及固定版本的编译器子模块、固定版本的 Triton 源码。
@@ -201,3 +205,21 @@ qwen_build="$PWD/.local/submission-review-20261028/process-codegen/build"
 主机上的当前验证总记录：`.local/llvm-toolchain-20261030/review.json`。其中记录了源码提交、LLVM 重建、主机/离线检查、模型产物一致性和板端结果。详细验收范围见 [构建状态](docs/qwen3/BUILD_STATUS.md)。
 
 运行结果放在 `results/`、`.local/` 或仓库外；权重、SDK、编译产物和一次性日志不提交到 Git。应用逻辑在本仓库维护，编译器变换与 DSP 内核在编译器仓库维护。
+
+## 8. 按本文命令实际执行的结果（2026-10-30）
+
+已在开发板上从上述离线包重新克隆应用、初始化编译器子模块，并在新源码目录、独立缓存和结果目录下执行。没有设置额外的 `PYTHONPATH`，使用的是现有已验收资源包和板端系统。
+
+| 操作 | 本轮实际结果 |
+| --- | --- |
+| `doctor --execution` | 资源包、源码和框架检查通过 |
+| 中文示例，最多 32 token | 成功生成“我是AI助手，可以为您提供帮助和支持。”；10 次 DSP 前向，EOS 提前结束 |
+| 北京介绍 + Python 加法函数，最多各 64 token | 两个请求完成，共 82 次 DSP 前向；生成了北京介绍和包含 `return a + b` 的函数 |
+| `regress` | 16 次完整前向对照一致，生成 `comparison.json` |
+| 第 5 节源码构建 | 后端增量构建成功；新生成的 q1 对象、调用代码、三个常量库及最终 DSP 库均与已验收产物逐字节一致 |
+
+合计 **108 次 DSP 前向**，执行记录均确认没有 CPU 模型前向回退。普通生成示例验证命令和生成流程可用；完整数值对照来自 `regress`，不把普通生成样例算成新增参考对照。
+
+按要求控制重复验证量，本轮停止了后续 q2 重编译、整套主机测试和追加板端测试，没有将取消项记为通过。完整 LLVM、q1/q2 重建及主机验收仍由第 7 节列出的上一轮记录支持。本轮也没有验证全新操作系统的依赖安装。
+
+本轮运行记录保存在主机 `.local/usage-repro-20261030/`；板端对应目录为 `/mnt/nvme/qwen3-work/usage-repro-20261030/`。其 `qwen3-hexagon-runtime/` 是此次实际运行的独立源码副本，`results/` 保存生成与回归结果。
