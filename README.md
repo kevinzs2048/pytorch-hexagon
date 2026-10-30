@@ -1,5 +1,7 @@
 # Qwen3 Hexagon Runtime
 
+中文操作入口：[使用指南](USAGE.zh-CN.md)（现有开发板试跑、回归、离线源码交付和重新编译）。
+
 This is the **Qwen3 application and integration repository**. It uses a pinned
 fork of Qualcomm Hexagon-MLIR as a compiler/backend dependency. It is not the
 official Hexagon-MLIR repository and does not own a copied compiler source tree.
@@ -34,7 +36,7 @@ policy and exact ARM Python packages; binaries do not belong in Git.
 For the current offline delivery (the new commits have not been pushed):
 
 ```bash
-git clone -b review/qwen3-official-codegen-policy /path/to/application-source.bundle qwen3-hexagon-runtime
+git clone -b review/qwen3-llvm-toolchain /path/to/application-source.bundle qwen3-hexagon-runtime
 cd qwen3-hexagon-runtime
 git config submodule.hexagon-mlir.url /absolute/path/to/compiler-source.bundle
 git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
