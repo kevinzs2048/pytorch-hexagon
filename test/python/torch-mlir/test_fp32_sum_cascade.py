@@ -24,7 +24,7 @@ def module(k=128,outer=(4,),keepdim=True,dtype='f32',body=None,buffer=False):
     }}'''
 
 
-def transform(text):return run(text,'--pass-pipeline=builtin.module(func.func(stabilize-fp32-sum))',schedule=False)
+def transform(text):return run(text,'--pass-pipeline=builtin.module(func.func(stabilize-fp32-sum))',schedule=False, optimizer_env='QWEN_SINGLETON_SUM_OPT')
 
 
 @pytest.mark.parametrize('k',[128,1024])

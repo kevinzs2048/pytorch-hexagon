@@ -6,21 +6,20 @@ This split supersedes that layout.
 
 | Owner | Maintained code |
 | --- | --- |
-| `qwen3-hexagon-runtime` application | PyTorch model capture/adaptation, native generation, logical KV lifecycle, deployment, Python orchestration, application tests and reports |
-| Hexagon-MLIR compiler fork | Dialects/passes, scatter/bufferization/codegen, generic tensor ABI, DSP numerical kernels, LLVM/torch-mlir patches and compiler tests |
+| `qwen3-hexagon-runtime` application | PyTorch model capture/adaptation, native generation, logical KV lifecycle, deployment, Python orchestration, Qwen-specific native compiler/DSP extensions, toolchain reproduction, application tests and reports |
+| Hexagon-MLIR compiler fork | General dialect/lowering/codegen support, generic tensor ABI, runtime correctness fixes and compiler tests |
 
 The compiler lives in its own Git repository and is consumed as the
-`third_party/hexagon-mlir` submodule. The application locks commit
-`aad5959e00e95ec5ffdec6595260969c6e08174c` and hashes all 753 ordinary tracked
-compiler files. There are no application-owned copies of `qcom_hexagon_backend/`,
-compiler policy C++ or DSP kernel sources. Application build orchestration resolves
-those files through `qwen3/compiler_dependency.py`.
+`third_party/hexagon-mlir` submodule, pinned by the current application lock.
+The application owns `native/` and `dependencies/llvm/`; source language does
+not determine repository ownership. The historical placement of all numerical
+policies and DSP helpers in the compiler fork is superseded by this boundary.
 
 The dependency commit is local, not pushed. The offline delivery includes separate
 application and compiler Git bundles; the root README gives the standard submodule
 initialization commands. Do not claim the GitHub remote already contains this commit.
 
-## Dead-code cleanup
+## Historical cleanup record
 
 The reusable audit module imported three historical device-launch scripts only to
 obtain a context hash and caller path. Those imports pulled in absolute host/board

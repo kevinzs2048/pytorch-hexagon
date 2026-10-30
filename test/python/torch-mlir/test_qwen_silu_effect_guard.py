@@ -1,4 +1,4 @@
-from qwen3.compiler_dependency import compiler_root
+from qwen3.compiler_dependency import native_root
 import copy
 from pathlib import Path
 
@@ -7,7 +7,7 @@ import pytest
 from hexagon_compiled_artifact_cache import digest_file
 from hexagon_silu_helper_effects import guard_wrapper,guard_caller,ORIGINAL_HEADER_SHA256,CONTRACT
 
-RUNTIME=compiler_root()/'tools/qwen3/runtime'
+RUNTIME=native_root()/'runtime'
 
 # Independent source-editing fixture. Full generated caller ABI and execution
 # are checked by the model build and board regression, not this unit test.

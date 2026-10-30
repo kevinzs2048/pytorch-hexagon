@@ -1,0 +1,1329 @@
+diff --git a/lld/ELF/Arch/Hexagon.cpp b/lld/ELF/Arch/Hexagon.cpp
+index 9b33e78731c973e9aba851048b526fa1ee58caf9..ff519ab1dfa9d4b9eea8174aa5b97cf430ddb615 100644
+--- a/lld/ELF/Arch/Hexagon.cpp
++++ b/lld/ELF/Arch/Hexagon.cpp
+@@ -299,7 +299,10 @@ bool Hexagon::needsThunk(RelExpr expr, RelType type, const InputFile *file,
+   case R_HEX_B15_PCREL:
+   case R_HEX_B13_PCREL:
+   case R_HEX_B9_PCREL:
+-    return !ctx.target->inBranchRange(type, branchAddr, s.getVA(ctx, a));
++    // A preemptible definition can be nearby while its PLT entry is out of
++    // range. Check the destination selected by the relocation expression.
++    return !ctx.target->inBranchRange(
++        type, branchAddr, expr == R_PLT_PC ? s.getPltVA(ctx) : s.getVA(ctx, a));
+   default:
+     return false;
+   }
+diff --git a/lld/test/ELF/hexagon-thunk-preemptible-defined.s b/lld/test/ELF/hexagon-thunk-preemptible-defined.s
+new file mode 100644
+index 0000000000000000000000000000000000000000..45adc0906c3f4bad8c9b6e996d234840a5c22956
+--- /dev/null
++++ b/lld/test/ELF/hexagon-thunk-preemptible-defined.s
+@@ -0,0 +1,25 @@
++# REQUIRES: hexagon
++# RUN: llvm-mc -filetype=obj -triple=hexagon-unknown-elf %s -o %t.o
++# RUN: ld.lld -shared %t.o -o %t.so
++# RUN: llvm-objdump -d --no-show-raw-insn --disassemble-symbols=caller %t.so | FileCheck %s
++#
++# The preemptible definition is nearby, but its PLT entry is beyond B22 range.
++# Range checking must use the effective PLT destination, not the definition.
++# CHECK-LABEL: <caller>:
++# CHECK: call {{.*}}<__hexagon_thunk_target_from_{{.*}}>
++
++.section .text.start,"ax",@progbits
++.globl caller
++.type caller,@function
++caller:
++  call target
++  jumpr r31
++.size caller, .-caller
++.globl target
++.type target,@function
++target:
++  jumpr r31
++.size target, .-target
++
++.section .text.padding,"ax",@progbits
++.space 9000000
+diff --git a/llvm/lib/Analysis/ScalarEvolution.cpp b/llvm/lib/Analysis/ScalarEvolution.cpp
+index d2c445f1ffaa0bebbd46384c69d5f4ed22cd370c..0017edf03718002c86fa962ad49beb234cc7e014 100644
+--- a/llvm/lib/Analysis/ScalarEvolution.cpp
++++ b/llvm/lib/Analysis/ScalarEvolution.cpp
+@@ -14053,6 +14053,10 @@ void ScalarEvolution::print(raw_ostream &OS) const {
+ 
+ ScalarEvolution::LoopDisposition
+ ScalarEvolution::getLoopDisposition(const SCEV *S, const Loop *L) {
++  // These expressions have the same disposition in every loop. Avoid growing
++  // and linearly searching a per-expression list for each loop in large IR.
++  if (isa<SCEVConstant, SCEVVScale>(S))
++    return LoopInvariant;
+   auto &Values = LoopDispositions[S];
+   for (auto &V : Values) {
+     if (V.getPointer() == L)
+@@ -14152,6 +14156,10 @@ bool ScalarEvolution::hasComputableLoopEvolution(const SCEV *S, const Loop *L) {
+ 
+ ScalarEvolution::BlockDisposition
+ ScalarEvolution::getBlockDisposition(const SCEV *S, const BasicBlock *BB) {
++  // Constants and vscale properly dominate every block, independently of the
++  // CFG. They do not need per-block cache entries or invalidation.
++  if (isa<SCEVConstant, SCEVVScale>(S))
++    return ProperlyDominatesBlock;
+   auto &Values = BlockDispositions[S];
+   for (auto &V : Values) {
+     if (V.getPointer() == BB)
+diff --git a/llvm/lib/Target/Hexagon/BitTracker.cpp b/llvm/lib/Target/Hexagon/BitTracker.cpp
+index 80eedabb0d038077084e3fa428b57485f8f46b2b..ec8f9111ab7cd0b31fdb193f3d67c22cd18a7df4 100644
+--- a/llvm/lib/Target/Hexagon/BitTracker.cpp
++++ b/llvm/lib/Target/Hexagon/BitTracker.cpp
+@@ -757,6 +757,15 @@ bool BT::MachineEvaluator::evaluate(const MachineInstr &MI,
+   return true;
+ }
+ 
++void BT::UseQueueType::prepareRun(const MachineFunction &MF) {
++  for (const MachineBasicBlock &B : MF) {
++    unsigned Distance = 0;
++    for (const MachineInstr &MI : B)
++      // Preserve previously cached entries exactly as the lazy lookup does.
++      Dist.try_emplace(&MI, Distance++);
++  }
++}
++
+ bool BT::UseQueueType::Cmp::operator()(const MachineInstr *InstA,
+                                        const MachineInstr *InstB) const {
+   // This is a comparison function for a priority queue: give higher priority
+@@ -1112,6 +1121,7 @@ void BT::runUseQueue() {
+ void BT::run() {
+   reset();
+   assert(FlowQ.empty());
++  UseQ.prepareRun(MF);
+ 
+   using MachineFlowGraphTraits = GraphTraits<const MachineFunction*>;
+   const MachineBasicBlock *Entry = MachineFlowGraphTraits::getEntryNode(&MF);
+diff --git a/llvm/lib/Target/Hexagon/BitTracker.h b/llvm/lib/Target/Hexagon/BitTracker.h
+index 67ae29b21085d406d495b17fa89055bba4db26d7..162801156ddffdb1d5eea2080cd84a63b0c6c705 100644
+--- a/llvm/lib/Target/Hexagon/BitTracker.h
++++ b/llvm/lib/Target/Hexagon/BitTracker.h
+@@ -91,6 +91,10 @@ private:
+     void reset() {
+       Dist.clear();
+     }
++    // run() does not mutate instruction order. Pre-fill its distance cache
++    // once, rather than walking from the block start for every first query.
++    // Incremental visit() keeps the existing lazy comparator behavior.
++    void prepareRun(const MachineFunction &MF);
+   private:
+     struct Cmp {
+       Cmp(DenseMap<const MachineInstr*,unsigned> &Map) : Dist(Map) {}
+diff --git a/llvm/lib/Target/Hexagon/HexagonBitSimplify.cpp b/llvm/lib/Target/Hexagon/HexagonBitSimplify.cpp
+index 3b7bd1cd1ba94057a3f318b6491cfdb16c974046..bd40b6661d65f049b029ec385a9589263e1bad7b 100644
+--- a/llvm/lib/Target/Hexagon/HexagonBitSimplify.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonBitSimplify.cpp
+@@ -47,10 +47,38 @@ static unsigned CountExtract = 0;
+ static cl::opt<unsigned> MaxBitSplit("hexbit-max-bitsplit", cl::Hidden,
+   cl::init(std::numeric_limits<unsigned>::max()));
+ static unsigned CountBitSplit = 0;
++static cl::opt<unsigned> MaxCopyGeneration(
++  "hexbit-max-copy-generation", cl::Hidden,
++  cl::init(std::numeric_limits<unsigned>::max()),
++  cl::desc("Limit copies introduced by Hexagon bit simplification"));
++static cl::opt<bool> ReportCopyGeneration(
++  "hexbit-report-copy-generation", cl::Hidden, cl::init(false),
++  cl::desc("Report copies introduced by Hexagon bit simplification"));
++static cl::opt<bool> TraceCopyGeneration(
++  "hexbit-trace-copy-generation", cl::Hidden, cl::init(false),
++  cl::desc("Trace instructions replaced by Hexagon copy generation"));
++static cl::opt<unsigned> TraceCopyGenerationStart(
++  "hexbit-trace-copy-generation-start", cl::Hidden, cl::init(1),
++  cl::desc("First one-based copy generation event to trace"));
+ 
+ static cl::opt<unsigned> RegisterSetLimit("hexbit-registerset-limit",
+   cl::Hidden, cl::init(1000));
+ 
++// Keep the major phases independently switchable. Besides making failures in
++// this target-specific pass bisectable, these controls allow a downstream
++// compiler to avoid disabling the useful phases when one transformation is
++// known to be unsafe for a particular generated function.
++static cl::opt<bool> EnableConstGeneration("hexbit-const-generation",
++  cl::Hidden, cl::init(true));
++static cl::opt<bool> EnableRedundantInstrElimination(
++  "hexbit-redundant-instr-elimination", cl::Hidden, cl::init(true));
++static cl::opt<bool> EnableCopyGeneration("hexbit-copy-generation",
++  cl::Hidden, cl::init(true));
++static cl::opt<bool> EnableCopyPropagation("hexbit-copy-propagation",
++  cl::Hidden, cl::init(true));
++static cl::opt<bool> EnableBitTransform("hexbit-bit-transform",
++  cl::Hidden, cl::init(true));
++
+ namespace {
+ 
+   // Set of virtual registers, based on BitVector.
+@@ -58,6 +86,7 @@ namespace {
+     RegisterSet() = default;
+     explicit RegisterSet(unsigned s, bool t = false) : Bits(s, t) {}
+     RegisterSet(const RegisterSet &RS) = default;
++    RegisterSet &operator=(const RegisterSet &RS) = default;
+ 
+     void clear() {
+       Bits.clear();
+@@ -270,22 +299,46 @@ INITIALIZE_PASS_END(HexagonBitSimplify, "hexagon-bit-simplify",
+ bool HexagonBitSimplify::visitBlock(MachineBasicBlock &B, Transformation &T,
+       RegisterSet &AVs) {
+   bool Changed = false;
+-
+-  if (T.TopDown)
+-    Changed = T.processBlock(B, AVs);
+-
+-  RegisterSet Defs;
+-  for (auto &I : B)
+-    getInstrDefs(I, Defs);
+-  RegisterSet NewAVs = AVs;
+-  NewAVs.insert(Defs);
+-
+-  for (auto *DTN : children<MachineDomTreeNode*>(MDT->getNode(&B)))
+-    Changed |= visitBlock(*(DTN->getBlock()), T, NewAVs);
+-
+-  if (!T.TopDown)
+-    Changed |= T.processBlock(B, AVs);
+-
++  // These generated functions can contain a dominator chain deeper than the
++  // host process stack. Keep the old child order and top-down/bottom-up timing
++  // while storing each active frame and its available-register set on the heap.
++  struct Frame {
++    MachineDomTreeNode *Node;
++    RegisterSet Available;
++    RegisterSet ChildAvailable;
++    SmallVector<MachineDomTreeNode *, 8> Children;
++    size_t NextChild = 0;
++    bool Entered = false;
++
++    Frame(MachineDomTreeNode *Node, const RegisterSet &Available)
++        : Node(Node), Available(Available) {}
++  };
++  SmallVector<Frame, 64> Stack;
++  Stack.emplace_back(MDT->getNode(&B), AVs);
++  while (!Stack.empty()) {
++    Frame &Current = Stack.back();
++    MachineBasicBlock &Block = *Current.Node->getBlock();
++    if (!Current.Entered) {
++      if (T.TopDown)
++        Changed |= T.processBlock(Block, Current.Available);
++      RegisterSet Defs;
++      for (auto &I : Block)
++        getInstrDefs(I, Defs);
++      Current.ChildAvailable = Current.Available;
++      Current.ChildAvailable.insert(Defs);
++      for (auto *Child : children<MachineDomTreeNode *>(Current.Node))
++        Current.Children.push_back(Child);
++      Current.Entered = true;
++    }
++    if (Current.NextChild < Current.Children.size()) {
++      MachineDomTreeNode *Child = Current.Children[Current.NextChild++];
++      Stack.emplace_back(Child, Current.ChildAvailable);
++      continue;
++    }
++    if (!T.TopDown)
++      Changed |= T.processBlock(Block, Current.Available);
++    Stack.pop_back();
++  }
+   return Changed;
+ }
+ 
+@@ -1514,6 +1567,7 @@ namespace {
+       : Transformation(true), HII(hii), HRI(hri), MRI(mri), BT(bt) {}
+ 
+     bool processBlock(MachineBasicBlock &B, const RegisterSet &AVs) override;
++    unsigned getGeneratedCopyCount() const { return GeneratedCopies; }
+ 
+   private:
+     bool findMatch(const BitTracker::RegisterRef &Inp,
+@@ -1524,6 +1578,7 @@ namespace {
+     MachineRegisterInfo &MRI;
+     BitTracker &BT;
+     RegisterSet Forbidden;
++    unsigned GeneratedCopies = 0;
+   };
+ 
+ // Eliminate register copies RD = RS, by replacing the uses of RD with
+@@ -1616,16 +1671,28 @@ bool CopyGeneration::processBlock(MachineBasicBlock &B,
+     auto At = I->isPHI() ? B.getFirstNonPHI() : I;
+ 
+     for (Register R = Defs.find_first(); R; R = Defs.find_next(R)) {
++      if (GeneratedCopies >= MaxCopyGeneration)
++        break;
++
+       BitTracker::RegisterRef MR;
+       auto *FRC = HBS::getFinalVRegClass(R, MRI);
+ 
+       if (findMatch(R, MR, AVB)) {
++        if (TraceCopyGeneration &&
++            GeneratedCopies + 1 >= TraceCopyGenerationStart) {
++          llvm::errs() << "copygen[" << GeneratedCopies + 1 << "] bb."
++                       << B.getNumber() << " replace: ";
++          I->print(llvm::errs());
++          llvm::errs() << "  source subreg " << MR.Sub << ": ";
++          MRI.getVRegDef(MR.Reg)->print(llvm::errs());
++        }
+         Register NewR = MRI.createVirtualRegister(FRC);
+         BuildMI(B, At, DL, HII.get(TargetOpcode::COPY), NewR)
+           .addReg(MR.Reg, 0, MR.Sub);
+         BT.put(BitTracker::RegisterRef(NewR), BT.get(MR));
+         HBS::replaceReg(R, NewR, MRI);
+         Forbidden.insert(R);
++        ++GeneratedCopies;
+         continue;
+       }
+ 
+@@ -1638,6 +1705,16 @@ bool CopyGeneration::processBlock(MachineBasicBlock &B,
+         BitTracker::RegisterRef TH = { R, SubHi };
+         BitTracker::RegisterRef ML, MH;
+         if (findMatch(TL, ML, AVB) && findMatch(TH, MH, AVB)) {
++          if (TraceCopyGeneration &&
++              GeneratedCopies + 1 >= TraceCopyGenerationStart) {
++            llvm::errs() << "copygen[" << GeneratedCopies + 1 << "] bb."
++                         << B.getNumber() << " replace pair: ";
++            I->print(llvm::errs());
++            llvm::errs() << "  low subreg " << ML.Sub << ": ";
++            MRI.getVRegDef(ML.Reg)->print(llvm::errs());
++            llvm::errs() << "  high subreg " << MH.Sub << ": ";
++            MRI.getVRegDef(MH.Reg)->print(llvm::errs());
++          }
+           auto *FRC = HBS::getFinalVRegClass(R, MRI);
+           Register NewR = MRI.createVirtualRegister(FRC);
+           BuildMI(B, At, DL, HII.get(TargetOpcode::REG_SEQUENCE), NewR)
+@@ -1648,6 +1725,7 @@ bool CopyGeneration::processBlock(MachineBasicBlock &B,
+           BT.put(BitTracker::RegisterRef(NewR), BT.get(R));
+           HBS::replaceReg(R, NewR, MRI);
+           Forbidden.insert(R);
++          ++GeneratedCopies;
+         }
+       }
+     }
+@@ -2793,11 +2871,12 @@ bool HexagonBitSimplify::runOnMachineFunction(MachineFunction &MF) {
+ 
+   RegisterSet AIG;  // Available registers for IG.
+   ConstGeneration ImmG(BT, HII, MRI);
+-  Changed |= visitBlock(Entry, ImmG, AIG);
++  if (EnableConstGeneration)
++    Changed |= visitBlock(Entry, ImmG, AIG);
+ 
+   RegisterSet ARE;  // Available registers for RIE.
+   RedundantInstrElimination RIE(BT, HII, HRI, MRI);
+-  bool Ried = visitBlock(Entry, RIE, ARE);
++  bool Ried = EnableRedundantInstrElimination && visitBlock(Entry, RIE, ARE);
+   if (Ried) {
+     Changed = true;
+     BT.run();
+@@ -2805,18 +2884,30 @@ bool HexagonBitSimplify::runOnMachineFunction(MachineFunction &MF) {
+ 
+   RegisterSet ACG;  // Available registers for CG.
+   CopyGeneration CopyG(BT, HII, HRI, MRI);
+-  Changed |= visitBlock(Entry, CopyG, ACG);
++  // Allow frontends to disable only CopyGeneration for functions that hit a
++  // target-specific correctness issue, without discarding the remaining bit
++  // simplifications for the whole module.
++  bool FunctionAllowsCopyGeneration =
++      !MF.getFunction().hasFnAttribute("hexagon-no-bit-copy-generation");
++  if (EnableCopyGeneration && FunctionAllowsCopyGeneration)
++    Changed |= visitBlock(Entry, CopyG, ACG);
++  if (ReportCopyGeneration)
++    llvm::errs() << "HexagonBitSimplify CopyGeneration: "
++                 << MF.getName() << ": "
++                 << CopyG.getGeneratedCopyCount() << " copies\n";
+ 
+   RegisterSet ACP;  // Available registers for CP.
+   CopyPropagation CopyP(HRI, MRI);
+-  Changed |= visitBlock(Entry, CopyP, ACP);
++  if (EnableCopyPropagation)
++    Changed |= visitBlock(Entry, CopyP, ACP);
+ 
+   Changed = DeadCodeElimination(MF, *MDT).run() || Changed;
+ 
+   BT.run();
+   RegisterSet ABS;  // Available registers for BS.
+   BitSimplification BitS(BT, *MDT, HII, HRI, MRI, MF);
+-  Changed |= visitBlock(Entry, BitS, ABS);
++  if (EnableBitTransform)
++    Changed |= visitBlock(Entry, BitS, ABS);
+ 
+   Changed = DeadCodeElimination(MF, *MDT).run() || Changed;
+ 
+diff --git a/llvm/lib/Target/Hexagon/HexagonBlockRanges.cpp b/llvm/lib/Target/Hexagon/HexagonBlockRanges.cpp
+index eca5ac140f3c3cb42a1bfd4e1599de92613871ea..bb8461e0ba1153af7384207e7a08ae62751b8568 100644
+--- a/llvm/lib/Target/Hexagon/HexagonBlockRanges.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonBlockRanges.cpp
+@@ -162,6 +162,7 @@ HexagonBlockRanges::InstrIndexMap::InstrIndexMap(MachineBasicBlock &B)
+       continue;
+     assert(getIndex(&In) == IndexType::None && "Instruction already in map");
+     Map.insert(std::make_pair(Idx, &In));
++    ReverseMap[&In].push_back(Idx);
+     ++Idx;
+   }
+   Last = B.empty() ? IndexType::None : unsigned(Idx)-1;
+@@ -174,10 +175,8 @@ MachineInstr *HexagonBlockRanges::InstrIndexMap::getInstr(IndexType Idx) const {
+ 
+ HexagonBlockRanges::IndexType HexagonBlockRanges::InstrIndexMap::getIndex(
+       MachineInstr *MI) const {
+-  for (const auto &I : Map)
+-    if (I.second == MI)
+-      return I.first;
+-  return IndexType::None;
++  auto Found = ReverseMap.find(MI);
++  return Found == ReverseMap.end() ? IndexType::None : Found->second.front();
+ }
+ 
+ HexagonBlockRanges::IndexType HexagonBlockRanges::InstrIndexMap::getPrevIndex(
+@@ -204,14 +203,19 @@ HexagonBlockRanges::IndexType HexagonBlockRanges::InstrIndexMap::getNextIndex(
+ 
+ void HexagonBlockRanges::InstrIndexMap::replaceInstr(MachineInstr *OldMI,
+       MachineInstr *NewMI) {
+-  for (auto &I : Map) {
+-    if (I.second != OldMI)
+-      continue;
+-    if (NewMI != nullptr)
+-      I.second = NewMI;
+-    else
+-      Map.erase(I.first);
+-    break;
++  auto Found = ReverseMap.find(OldMI);
++  if (Found == ReverseMap.end() || OldMI == NewMI)
++    return;
++  IndexType Idx = Found->second.front();
++  Found->second.erase(Found->second.begin());
++  if (Found->second.empty())
++    ReverseMap.erase(Found);
++  if (NewMI) {
++    Map[Idx] = NewMI;
++    auto &Indices = ReverseMap[NewMI];
++    Indices.insert(llvm::lower_bound(Indices, Idx), Idx);
++  } else {
++    Map.erase(Idx);
+   }
+ }
+ 
+diff --git a/llvm/lib/Target/Hexagon/HexagonBlockRanges.h b/llvm/lib/Target/Hexagon/HexagonBlockRanges.h
+index e152dbf764c97672496883c179f0a5dfe76b8ddb..a61452a0801776f8e4fda448771e5da1da2937ac 100644
+--- a/llvm/lib/Target/Hexagon/HexagonBlockRanges.h
++++ b/llvm/lib/Target/Hexagon/HexagonBlockRanges.h
+@@ -10,6 +10,8 @@
+ #define LLVM_LIB_TARGET_HEXAGON_HEXAGONBLOCKRANGES_H
+ 
+ #include "llvm/ADT/BitVector.h"
++#include "llvm/ADT/DenseMap.h"
++#include "llvm/ADT/SmallVector.h"
+ #include "llvm/CodeGen/Register.h"
+ #include <cassert>
+ #include <map>
+@@ -140,6 +142,10 @@ struct HexagonBlockRanges {
+   private:
+     MachineBasicBlock &Block;
+     std::map<IndexType,MachineInstr*> Map;
++    // Keep ordered indices for the uncommon case where replaceInstr makes
++    // several indices refer to one instruction. getIndex still returns the
++    // first one, exactly as the forward-map scan did.
++    DenseMap<MachineInstr *, SmallVector<IndexType, 1>> ReverseMap;
+   };
+ 
+   using RegToRangeMap = std::map<RegisterRef, RangeList>;
+diff --git a/llvm/lib/Target/Hexagon/HexagonCommonGEP.cpp b/llvm/lib/Target/Hexagon/HexagonCommonGEP.cpp
+index 14b6bb318e3b27aa840e47fe584d0988993d2733..1401769ea68b62445807243fefef59d1a12c6ce5 100644
+--- a/llvm/lib/Target/Hexagon/HexagonCommonGEP.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonCommonGEP.cpp
+@@ -42,6 +42,7 @@
+ #include <cassert>
+ #include <cstddef>
+ #include <cstdint>
++#include <functional>
+ #include <iterator>
+ #include <map>
+ #include <set>
+@@ -586,7 +587,9 @@ void HexagonCommonGEP::common() {
+   using ProjMap = std::map<const NodeSet *, GepNode *>;
+   ProjMap PM;
+   for (const NodeSet &S : EqRel) {
+-    GepNode *Min = *llvm::min_element(S, NodeOrder);
++    // The numbering is unchanged during selection. Avoid copying the whole
++    // function's ordering map for every equivalence class.
++    GepNode *Min = *llvm::min_element(S, std::cref(NodeOrder));
+     std::pair<ProjMap::iterator,bool> Ins = PM.insert(std::make_pair(&S, Min));
+     (void)Ins;
+     assert(Ins.second && "Cannot add minimal element");
+diff --git a/llvm/lib/Target/Hexagon/HexagonFrameLowering.cpp b/llvm/lib/Target/Hexagon/HexagonFrameLowering.cpp
+index b3c61e1829bf9c069183f78683e8a796f8c9c106..60ee5fae5569011ca55ab033838594bd5b93a79c 100644
+--- a/llvm/lib/Target/Hexagon/HexagonFrameLowering.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonFrameLowering.cpp
+@@ -1394,6 +1394,15 @@ bool HexagonFrameLowering::insertCSRSpillsInBlock(MachineBasicBlock &MBB,
+     // Add live in registers.
+     for (const CalleeSavedInfo &I : CSI)
+       MBB.addLiveIn(I.getReg());
++
++    // Keep the AP definition after the save stub, but before any ordinary
++    // instruction that register allocation may have inserted ahead of it.
++    if (MachineInstr *Aligna =
++            const_cast<MachineInstr *>(getAlignaInstr(MF))) {
++      assert(Aligna->getParent() == &MBB &&
++             "PS_aligna must be in the prologue block");
++      MBB.splice(MI, &MBB, Aligna->getIterator());
++    }
+     return true;
+   }
+ 
+@@ -1409,6 +1418,18 @@ bool HexagonFrameLowering::insertCSRSpillsInBlock(MachineBasicBlock &MBB,
+     if (IsKill)
+       MBB.addLiveIn(Reg);
+   }
++
++  // Register allocation can create ordinary spill slots before PS_aligna,
++  // and frame-index elimination may then use AP for those slots.  Move the AP
++  // definition directly after the callee-saved spills inserted above.  AP is
++  // itself callee-saved, so moving it any earlier would save the new aligned
++  // value instead of the caller's incoming register value.
++  if (MachineInstr *Aligna =
++          const_cast<MachineInstr *>(getAlignaInstr(MF))) {
++    assert(Aligna->getParent() == &MBB &&
++           "PS_aligna must be in the prologue block");
++    MBB.splice(MI, &MBB, Aligna->getIterator());
++  }
+   return true;
+ }
+ 
+@@ -1502,8 +1523,15 @@ void HexagonFrameLowering::processFunctionBeforeFrameFinalized(
+ 
+   // Set the physical aligned-stack base address register.
+   MCRegister AP;
+-  if (const MachineInstr *AI = getAlignaInstr(MF))
++  if (MachineInstr *AI = const_cast<MachineInstr *>(getAlignaInstr(MF))) {
+     AP = AI->getOperand(0).getReg();
++    // Selection fixes the initial AP alignment before register allocation.
++    // Later HVX spills can increase the required alignment: updating SP in
++    // the prologue is insufficient when frame indices use this AP instead.
++    // Preserve any stronger explicit alignment already on the instruction.
++    AI->getOperand(1).setImm(std::max<int64_t>(
++        AI->getOperand(1).getImm(), MFI.getMaxAlign().value()));
++  }
+   auto &HMFI = *MF.getInfo<HexagonMachineFunctionInfo>();
+   assert(!AP.isValid() || AP.isPhysical());
+   HMFI.setStackAlignBaseReg(AP);
+diff --git a/llvm/lib/Target/Hexagon/HexagonGenExtract.cpp b/llvm/lib/Target/Hexagon/HexagonGenExtract.cpp
+index 1322c627ecfb7dfa719c01b4843fbd76c8478a51..90d808b7bd1e9087a7f934b84e1a35d4beb946a4 100644
+--- a/llvm/lib/Target/Hexagon/HexagonGenExtract.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonGenExtract.cpp
+@@ -9,6 +9,7 @@
+ #include "Hexagon.h"
+ #include "llvm/ADT/APInt.h"
+ #include "llvm/ADT/GraphTraits.h"
++#include "llvm/ADT/SmallVector.h"
+ #include "llvm/IR/BasicBlock.h"
+ #include "llvm/IR/CFG.h"
+ #include "llvm/IR/Constants.h"
+@@ -28,6 +29,7 @@
+ #include <algorithm>
+ #include <cstdint>
+ #include <iterator>
++#include <utility>
+ 
+ using namespace llvm;
+ 
+@@ -210,30 +212,46 @@ bool HexagonGenExtract::convert(Instruction *In) {
+ 
+ bool HexagonGenExtract::visitBlock(BasicBlock *B) {
+   bool Changed = false;
+-
+-  // Depth-first, bottom-up traversal.
+-  for (auto *DTN : children<DomTreeNode*>(DT->getNode(B)))
+-    Changed |= visitBlock(DTN->getBlock());
++  // Depth-first, bottom-up traversal. Large generated functions may have a
++  // very deep dominator tree; an explicit postorder stack avoids overflowing
++  // the host process stack while preserving the previous child order.
++  SmallVector<std::pair<DomTreeNode *, bool>, 64> Pending;
++  Pending.emplace_back(DT->getNode(B), false);
+ 
+   // Allow limiting the number of generated extracts for debugging purposes.
+   bool HasCutoff = ExtractCutoff.getPosition();
+   unsigned Cutoff = ExtractCutoff;
+ 
+-  BasicBlock::iterator I = std::prev(B->end()), NextI, Begin = B->begin();
+-  while (true) {
+-    if (HasCutoff && (ExtractCount >= Cutoff))
+-      return Changed;
+-    bool Last = (I == Begin);
+-    if (!Last)
+-      NextI = std::prev(I);
+-    Instruction *In = &*I;
+-    bool Done = convert(In);
+-    if (HasCutoff && Done)
+-      ExtractCount++;
+-    Changed |= Done;
+-    if (Last)
+-      break;
+-    I = NextI;
++  while (!Pending.empty()) {
++    auto [Node, VisitNow] = Pending.pop_back_val();
++    if (!VisitNow) {
++      Pending.emplace_back(Node, true);
++      SmallVector<DomTreeNode *, 8> Children;
++      for (auto *Child : children<DomTreeNode *>(Node))
++        Children.push_back(Child);
++      for (auto It = Children.rbegin(), End = Children.rend(); It != End; ++It)
++        Pending.emplace_back(*It, false);
++      continue;
++    }
++
++    BasicBlock *Current = Node->getBlock();
++    BasicBlock::iterator I = std::prev(Current->end()), NextI;
++    BasicBlock::iterator Begin = Current->begin();
++    while (true) {
++      if (HasCutoff && ExtractCount >= Cutoff)
++        return Changed;
++      bool Last = I == Begin;
++      if (!Last)
++        NextI = std::prev(I);
++      Instruction *In = &*I;
++      bool Done = convert(In);
++      if (HasCutoff && Done)
++        ExtractCount++;
++      Changed |= Done;
++      if (Last)
++        break;
++      I = NextI;
++    }
+   }
+   return Changed;
+ }
+diff --git a/llvm/lib/Target/Hexagon/HexagonGenInsert.cpp b/llvm/lib/Target/Hexagon/HexagonGenInsert.cpp
+index b2218abcaaa3c9939b0c630a209b2b2aaeb456d4..a8e356a07e6f40d54954fb4dd55c9bea4e2b0150 100644
+--- a/llvm/lib/Target/Hexagon/HexagonGenInsert.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonGenInsert.cpp
+@@ -775,6 +775,11 @@ unsigned HexagonGenInsert::distance(MachineBasicBlock::const_iterator FromI,
+ 
+ bool HexagonGenInsert::findRecordInsertForms(unsigned VR,
+       OrderedRegisterList &AVs) {
++  // insert only produces scalar 32-/64-bit integer registers. Reject other
++  // destinations before searching their (potentially HVX-wide) bit cells;
++  // isValidInsertForm would reject every candidate for them anyway.
++  if (!isIntClass(MRI->getRegClass(VR)))
++    return false;
+   if (isDebug()) {
+     dbgs() << __func__ << ": " << printReg(VR, HRI)
+            << "  AVs: " << PrintORL(AVs, HRI) << "\n";
+@@ -1471,7 +1476,8 @@ bool HexagonGenInsert::removeDeadCode(MachineDomTreeNode *N) {
+ }
+ 
+ bool HexagonGenInsert::runOnMachineFunction(MachineFunction &MF) {
+-  if (skipFunction(MF.getFunction()))
++  if (skipFunction(MF.getFunction()) ||
++      MF.getFunction().hasFnAttribute("hexagon-no-gen-insert"))
+     return false;
+ 
+   bool Timing = OptTiming, TimingDetail = Timing && OptTimingDetail;
+diff --git a/llvm/lib/Target/Hexagon/HexagonISelLowering.cpp b/llvm/lib/Target/Hexagon/HexagonISelLowering.cpp
+index facea646d4b68411283709ce9aa6148f011114d6..062a7af30eefa5e676ece93e3ce02d3e24c79a35 100644
+--- a/llvm/lib/Target/Hexagon/HexagonISelLowering.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonISelLowering.cpp
+@@ -738,6 +738,38 @@ SDValue HexagonTargetLowering::LowerFDIV(SDValue Op, SelectionDAG &DAG) const {
+     return Op;
+ }
+ 
++SDValue HexagonTargetLowering::LowerFP_TO_BF16(SDValue Op,
++                                                SelectionDAG &DAG) const {
++  SDLoc DL(Op);
++  SDValue Bits = DAG.getNode(ISD::BITCAST, DL, MVT::i32, Op.getOperand(0));
++  SDValue Shift = DAG.getConstant(16, DL, MVT::i32);
++  SDValue Upper = DAG.getNode(ISD::SRL, DL, MVT::i32, Bits, Shift);
++
++  // Round finite values and infinities to nearest, ties to even.  Adding the
++  // retained low bit to 0x7fff implements the tie-breaking rule before the
++  // low 16 bits are discarded.
++  SDValue LowBit = DAG.getNode(ISD::AND, DL, MVT::i32, Upper,
++                               DAG.getConstant(1, DL, MVT::i32));
++  SDValue Bias = DAG.getNode(ISD::ADD, DL, MVT::i32, LowBit,
++                             DAG.getConstant(0x7fff, DL, MVT::i32));
++  SDValue Rounded = DAG.getNode(ISD::ADD, DL, MVT::i32, Bits, Bias);
++  Rounded = DAG.getNode(ISD::SRL, DL, MVT::i32, Rounded, Shift);
++
++  // A plain rounded shift can turn a NaN with a small payload into infinity.
++  // Preserve the upper payload bits and force the quiet-NaN bit instead.
++  SDValue Magnitude = DAG.getNode(ISD::AND, DL, MVT::i32, Bits,
++                                  DAG.getConstant(0x7fffffff, DL, MVT::i32));
++  SDValue IsNaN = DAG.getSetCC(
++      DL, MVT::i1, Magnitude, DAG.getConstant(0x7f800000, DL, MVT::i32),
++      ISD::SETUGT);
++  SDValue QuietNaN = DAG.getNode(ISD::OR, DL, MVT::i32, Upper,
++                                 DAG.getConstant(0x40, DL, MVT::i32));
++  SDValue Result =
++      DAG.getNode(ISD::SELECT, DL, MVT::i32, IsNaN, QuietNaN, Rounded);
++  // Hexagon promotes the softened i16 bfloat payload to i32 registers.
++  return DAG.getAnyExtOrTrunc(Result, DL, Op.getValueType());
++}
++
+ SDValue
+ HexagonTargetLowering::LowerINLINEASM(SDValue Op, SelectionDAG &DAG) const {
+   MachineFunction &MF = DAG.getMachineFunction();
+@@ -1894,10 +1926,22 @@ HexagonTargetLowering::HexagonTargetLowering(const TargetMachine &TM,
+   setOperationAction(ISD::FP_TO_FP16, MVT::f32, Expand);
+   setOperationAction(ISD::FP_TO_FP16, MVT::f64, Expand);
+ 
++  // Hexagon has no scalar bfloat instructions.  Expand bfloat conversions to
++  // their integer shift/bitcast sequences instead of leaving BF16_TO_FP and
++  // FP_TO_BF16 for instruction selection, where they cannot be selected.
++  setOperationAction(ISD::BF16_TO_FP, MVT::f32, Expand);
++  setOperationAction(ISD::BF16_TO_FP, MVT::f64, Expand);
++  setOperationAction(ISD::FP_TO_BF16, MVT::f32, Custom);
++  setOperationAction(ISD::FP_TO_BF16, MVT::f64, Expand);
++
+   setLoadExtAction(ISD::EXTLOAD, MVT::f32, MVT::f16, Expand);
+   setLoadExtAction(ISD::EXTLOAD, MVT::f64, MVT::f16, Expand);
++  setLoadExtAction(ISD::EXTLOAD, MVT::f32, MVT::bf16, Expand);
++  setLoadExtAction(ISD::EXTLOAD, MVT::f64, MVT::bf16, Expand);
+   setTruncStoreAction(MVT::f32, MVT::f16, Expand);
+   setTruncStoreAction(MVT::f64, MVT::f16, Expand);
++  setTruncStoreAction(MVT::f32, MVT::bf16, Expand);
++  setTruncStoreAction(MVT::f64, MVT::bf16, Expand);
+ 
+   // Handling of indexed loads/stores: default is "expand".
+   //
+@@ -3395,6 +3439,8 @@ HexagonTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
+ 
+     case ISD::FDIV:
+       return LowerFDIV(Op, DAG);
++    case ISD::FP_TO_BF16:
++      return LowerFP_TO_BF16(Op, DAG);
+     case ISD::CONCAT_VECTORS:       return LowerCONCAT_VECTORS(Op, DAG);
+     case ISD::INSERT_SUBVECTOR:     return LowerINSERT_SUBVECTOR(Op, DAG);
+     case ISD::INSERT_VECTOR_ELT:    return LowerINSERT_VECTOR_ELT(Op, DAG);
+diff --git a/llvm/lib/Target/Hexagon/HexagonISelLowering.h b/llvm/lib/Target/Hexagon/HexagonISelLowering.h
+index 9ebbbc6399b4262bae6bee35ce913958009cbd26..60409b47429481e863fd294042e92cb195dadfa1 100644
+--- a/llvm/lib/Target/Hexagon/HexagonISelLowering.h
++++ b/llvm/lib/Target/Hexagon/HexagonISelLowering.h
+@@ -212,6 +212,7 @@ public:
+   SDValue LowerDYNAMIC_STACKALLOC(SDValue Op, SelectionDAG &DAG) const;
+   SDValue LowerINLINEASM(SDValue Op, SelectionDAG &DAG) const;
+   SDValue LowerFDIV(SDValue Op, SelectionDAG &DAG) const;
++  SDValue LowerFP_TO_BF16(SDValue Op, SelectionDAG &DAG) const;
+   SDValue LowerPREFETCH(SDValue Op, SelectionDAG &DAG) const;
+   SDValue LowerREADCYCLECOUNTER(SDValue Op, SelectionDAG &DAG) const;
+   SDValue LowerREADSTEADYCOUNTER(SDValue Op, SelectionDAG &DAG) const;
+diff --git a/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp b/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp
+index 64bc5ca134c86a6e3688a6057eb2cfa070f04952..8a396d078bdf2a9f898d3567b1bfeb648fd6d4d1 100644
+--- a/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp
+@@ -1739,8 +1739,9 @@ bool HexagonInstrInfo::ClobbersPredicate(MachineInstr &MI,
+     if (MO.isReg()) {
+       if (!MO.isDef())
+         continue;
+-      const TargetRegisterClass* RC = HRI.getMinimalPhysRegClass(MO.getReg());
+-      if (RC == &Hexagon::PredRegsRegClass) {
++      // Some implicit HVX defs (VF*/VFR*) are bookkeeping registers with no
++      // register class. We only need predicate membership, not their class.
++      if (Hexagon::PredRegsRegClass.contains(MO.getReg())) {
+         Pred.push_back(MO);
+         return true;
+       }
+diff --git a/llvm/lib/Target/Hexagon/HexagonVExtract.cpp b/llvm/lib/Target/Hexagon/HexagonVExtract.cpp
+index 3b3d25d4c22c5148c5bac873f11d5b4709325ff0..c2dcff98c7638712b16206893930b5b40a58cb25 100644
+--- a/llvm/lib/Target/Hexagon/HexagonVExtract.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonVExtract.cpp
+@@ -85,7 +85,9 @@ unsigned HexagonVExtract::genElemLoad(MachineInstr *ExtI, unsigned BaseR,
+   Register IdxR = MRI.createVirtualRegister(&Hexagon::IntRegsRegClass);
+   BuildMI(ExtB, ExtI, DL, HII->get(Hexagon::A2_andir), IdxR)
+     .add(ExtI->getOperand(2))
+-    .addImm(-4);
++    // V6_extractw ignores byte-index bits above the hardware vector width,
++    // including for dynamic indices. A scalar load must wrap the same way.
++    .addImm((HST->getVectorLength() - 1) & -4u);
+   BuildMI(ExtB, ExtI, DL, HII->get(Hexagon::L4_loadri_rr), ElemR)
+     .addReg(BaseR)
+     .addReg(IdxR)
+@@ -161,8 +163,10 @@ bool HexagonVExtract::runOnMachineFunction(MachineFunction &MF) {
+       assert(ExtI->getOperand(1).getReg() == VecR);
+ 
+       MachineBasicBlock &ExtB = *ExtI->getParent();
++      assert((SR == 0 || SR == Hexagon::vsub_lo || SR == Hexagon::vsub_hi) &&
++             "Unexpected subregister for a vector extract");
+       Register BaseR = EmitAddr(ExtB, ExtI, ExtI->getDebugLoc(), FI,
+-                                SR == 0 ? 0 : VecSize/2);
++                                SR == Hexagon::vsub_hi ? VecSize/2 : 0);
+ 
+       unsigned ElemR = genElemLoad(ExtI, BaseR, MRI);
+       Register ExtR = ExtI->getOperand(0).getReg();
+diff --git a/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp b/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp
+index bc486cd562bf404a2feb64a154a7114587a69744..344953eaec0b28a588911776a051cefe60de7bc6 100644
+--- a/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp
+@@ -1525,6 +1525,16 @@ bool HexagonPacketizerList::isLegalToPacketizeTogether(SUnit *SUI, SUnit *SUJ) {
+       bool IsVecJ = HII->isHVXVec(J);
+       bool IsVecI = HII->isHVXVec(I);
+ 
++      // Scalar dual-store slot ordering does not preserve program order for
++      // overlapping HVX/scalar stores. In particular, spilling a vector and
++      // then updating one scalar lane in the same packet can lose the update.
++      // Keep possibly overlapping vector stores ordered; disjoint accesses
++      // may still share a packet.
++      if (StoreJ && StoreI && (IsVecJ || IsVecI) && alias(J, I)) {
++        FoundSequentialDependence = true;
++        break;
++      }
++
+       // Don't reorder the loads if there is an order dependence. This would
+       // occur if the first instruction must go in slot0.
+       if (LoadJ && LoadI && HII->isPureSlot0(J)) {
+diff --git a/llvm/lib/Target/Hexagon/RDFCopy.cpp b/llvm/lib/Target/Hexagon/RDFCopy.cpp
+index fafdad08909ddc3938fa0d6774c628f671cf5126..d7c60df4267231cb1934f7fe10dd6313eae75186 100644
+--- a/llvm/lib/Target/Hexagon/RDFCopy.cpp
++++ b/llvm/lib/Target/Hexagon/RDFCopy.cpp
+@@ -191,12 +191,24 @@ bool CopyPropagation::run() {
+ 
+       auto &RDefSR = RDefMap[SR];
+       NodeId RDefSR_SA = RDefSR[SA.Id];
++      // RDefMap stores only the top definition. A source assembled from
++      // separate subregister definitions needs more than one def-use edge;
++      // linking the replacement to just the top one would make DCE discard
++      // the other half. Only propagate when that definition covers all bits.
++      if (RDefSR_SA != 0 &&
++          !RegisterAggr::isCoverOf(
++              DFG.addr<DefNode*>(RDefSR_SA).Addr->getRegRef(DFG), SR, PRI))
++        continue;
+ 
+       for (NodeId N = DA.Addr->getReachedUse(), NextN; N; N = NextN) {
+         auto UA = DFG.addr<UseNode*>(N);
+         NextN = UA.Addr->getSibling();
+         uint16_t F = UA.Addr->getFlags();
+-        if ((F & NodeAttrs::PhiRef) || (F & NodeAttrs::Fixed))
++        // A shadow use has multiple reaching definitions, e.g. a double
++        // register whose high half was overwritten after a full-width COPY.
++        // This edge proves equivalence for only part of the operand. Replacing
++        // the entire MachineOperand would discard the intervening definition.
++        if (F & (NodeAttrs::PhiRef | NodeAttrs::Fixed | NodeAttrs::Shadow))
+           continue;
+         if (!PRI.equal_to(UA.Addr->getRegRef(DFG), DR))
+           continue;
+diff --git a/llvm/test/CodeGen/Hexagon/bf16-conversions.ll b/llvm/test/CodeGen/Hexagon/bf16-conversions.ll
+new file mode 100644
+index 0000000000000000000000000000000000000000..c2c76f23b5e9596a1b8453a2da1d91f91c681843
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/bf16-conversions.ll
+@@ -0,0 +1,39 @@
++; RUN: llc < %s -mtriple=hexagon -mcpu=hexagonv73 -filetype=obj -o /dev/null
++; RUN: llc < %s -mtriple=hexagon -mcpu=hexagonv73 -O0 | FileCheck %s
++
++; Hexagon has no scalar bfloat instructions. These conversions must be
++; expanded before instruction selection instead of reaching the selector as
++; BF16_TO_FP or FP_TO_BF16 nodes.
++
++define float @bf16_to_f32(ptr %input) {
++entry:
++  %value = load bfloat, ptr %input, align 2
++  %result = fpext bfloat %value to float
++  ret float %result
++}
++
++define void @f32_to_bf16(ptr %output, float %value) {
++; CHECK-LABEL: f32_to_bf16:
++; CHECK: tstbit({{r[0-9]+}},#16)
++; CHECK: ##32767
++; CHECK: lsr({{r[0-9]+}},#16)
++; CHECK: cmp.gtu({{r[0-9]+}},{{.*}}2139095040)
++entry:
++  %result = fptrunc float %value to bfloat
++  store bfloat %result, ptr %output, align 2
++  ret void
++}
++
++define double @bf16_to_f64(ptr %input) {
++entry:
++  %value = load bfloat, ptr %input, align 2
++  %result = fpext bfloat %value to double
++  ret double %result
++}
++
++define void @f64_to_bf16(ptr %output, double %value) {
++entry:
++  %result = fptrunc double %value to bfloat
++  store bfloat %result, ptr %output, align 2
++  ret void
++}
+diff --git a/llvm/test/CodeGen/Hexagon/bit-copy-generation-control.mir b/llvm/test/CodeGen/Hexagon/bit-copy-generation-control.mir
+new file mode 100644
+index 0000000000000000000000000000000000000000..0ba13541055edb2f4ee442ef83a0f53f7e2f00e0
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/bit-copy-generation-control.mir
+@@ -0,0 +1,63 @@
++# RUN: llc -mtriple=hexagon -run-pass=hexagon-bit-simplify \
++# RUN:   -hexbit-bit-transform=false -o - %s | FileCheck %s
++# RUN: llc -mtriple=hexagon -run-pass=hexagon-bit-simplify \
++# RUN:   -hexbit-bit-transform=false -hexbit-max-copy-generation=0 \
++# RUN:   -hexbit-report-copy-generation -o /dev/null %s 2>&1 | \
++# RUN:   FileCheck %s --check-prefix=ZERO
++# RUN: llc -mtriple=hexagon -run-pass=hexagon-bit-simplify \
++# RUN:   -hexbit-bit-transform=false -hexbit-trace-copy-generation \
++# RUN:   -o /dev/null %s 2>&1 | FileCheck %s --check-prefix=TRACE
++# ZERO: HexagonBitSimplify CopyGeneration: copygen: 0 copies
++# ZERO: HexagonBitSimplify CopyGeneration: no_copygen: 0 copies
++# TRACE: copygen[1] bb.0 replace:
++# TRACE-SAME: A2_andir
++# TRACE: source subreg 0:
++# TRACE-SAME: A2_andir
++# TRACE-NOT: copygen[
++
++--- |
++  define i32 @copygen(i32 %x) { ret i32 0 }
++  define i32 @no_copygen(i32 %x) #0 { ret i32 0 }
++  attributes #0 = { "hexagon-no-bit-copy-generation" }
++...
++
++# CopyGeneration recognizes the duplicate masks and replaces the second value.
++# CHECK-LABEL: name: copygen
++# CHECK: %[[MASK:[0-9]+]]:intregs = A2_andir %{{[0-9]+}}, 255
++# CHECK-NOT: A2_andir
++# CHECK: A2_add %[[MASK]], %[[MASK]]
++
++---
++name: copygen
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $r0
++    %0:intregs = COPY $r0
++    %1:intregs = A2_andir %0, 255
++    %2:intregs = A2_andir %0, 255
++    %3:intregs = A2_add %1, %2
++    $r0 = COPY %3
++    PS_jmpret $r31, implicit-def dead $pc, implicit $r0
++...
++
++# The per-function safety attribute leaves both independently computed values
++# in place while the other Hexagon bit simplifications remain enabled.
++# CHECK-LABEL: name: no_copygen
++# CHECK: %[[MASK0:[0-9]+]]:intregs = A2_andir %{{[0-9]+}}, 255
++# CHECK: %[[MASK1:[0-9]+]]:intregs = A2_andir %{{[0-9]+}}, 255
++# CHECK: A2_add %[[MASK0]], %[[MASK1]]
++
++---
++name: no_copygen
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $r0
++    %0:intregs = COPY $r0
++    %1:intregs = A2_andir %0, 255
++    %2:intregs = A2_andir %0, 255
++    %3:intregs = A2_add %1, %2
++    $r0 = COPY %3
++    PS_jmpret $r31, implicit-def dead $pc, implicit $r0
++...
+diff --git a/llvm/test/CodeGen/Hexagon/geninsert-function-opt-out.mir b/llvm/test/CodeGen/Hexagon/geninsert-function-opt-out.mir
+new file mode 100644
+index 0000000000000000000000000000000000000000..6fd4ca98126d459f30f020ff64f1d2e7d9119c7d
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/geninsert-function-opt-out.mir
+@@ -0,0 +1,43 @@
++# RUN: llc -mtriple=hexagon -run-pass=hexinsert -verify-machineinstrs %s -o - | FileCheck %s
++# The opt-out is local to a function, not process-global. The same input must
++# still be optimized in the neighboring function with the default policy.
++--- |
++  define void @disabled() "hexagon-no-gen-insert" { ret void }
++  define void @enabled() { ret void }
++...
++---
++name: disabled
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $r0, $r1, $r2
++    %0:intregs = COPY $r0
++    %1:intregs = COPY $r1
++    %2:intregs = COPY $r2
++    %3:intregs = A2_andir %1, -131072
++    %4:intregs = S4_or_andix %3, %2, 131071
++    S2_storeri_io %0, 0, %4
++    PS_jmpret $r31, implicit-def dead $pc
++# CHECK-LABEL: name: disabled
++# CHECK-NOT: S2_insert
++# CHECK: A2_andir
++# CHECK: S4_or_andix
++# CHECK: PS_jmpret
++...
++---
++name: enabled
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $r0, $r1, $r2
++    %0:intregs = COPY $r0
++    %1:intregs = COPY $r1
++    %2:intregs = COPY $r2
++    %3:intregs = A2_andir %1, -131072
++    %4:intregs = S4_or_andix %3, %2, 131071
++    S2_storeri_io %0, 0, %4
++    PS_jmpret $r31, implicit-def dead $pc
++# CHECK-LABEL: name: enabled
++# CHECK: S2_insert
++# CHECK: PS_jmpret
++...
+diff --git a/llvm/test/CodeGen/Hexagon/ifcvt-hvx-fake-def.mir b/llvm/test/CodeGen/Hexagon/ifcvt-hvx-fake-def.mir
+new file mode 100644
+index 0000000000000000000000000000000000000000..d3f9675b658f55bfc399f94d8ea8f1e2103b1f58
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/ifcvt-hvx-fake-def.mir
+@@ -0,0 +1,25 @@
++# RUN: llc -mtriple=hexagon -mattr=+hvxv73,+hvx-length128b -run-pass=if-converter -verify-machineinstrs %s -o - | FileCheck %s
++# VF0 is an implicit HVX register-allocation bookkeeping definition, not an
++# allocatable register with a register class. Predicate-clobber inspection must
++# not try to discover a minimal register class for it.
++# CHECK-LABEL: name: vector_load
++# CHECK: V6_vL32Ub_ai
++# CHECK: implicit-def $vf0
++---
++name: vector_load
++tracksRegLiveness: true
++body: |
++  bb.0:
++    successors: %bb.1, %bb.2
++    liveins: $r0, $r2, $p0
++    J2_jumpf $p0, %bb.2, implicit-def $pc
++    J2_jump %bb.1, implicit-def $pc
++  bb.1:
++    successors: %bb.2
++    liveins: $r0, $r2
++    $v0 = V6_vL32Ub_ai $r2, 256, implicit-def $vf0 :: (load (s1024), align 4)
++    V6_vS32b_ai $r0, 0, $v0 :: (store (s1024), align 128)
++    J2_jump %bb.2, implicit-def $pc
++  bb.2:
++    PS_jmpret $r31, implicit-def dead $pc
++...
+diff --git a/llvm/test/CodeGen/Hexagon/packetize-hvx-scalar-store-alias.mir b/llvm/test/CodeGen/Hexagon/packetize-hvx-scalar-store-alias.mir
+new file mode 100644
+index 0000000000000000000000000000000000000000..c440171325aa920abfe5f208ba7b2b13dfa9dcc6
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/packetize-hvx-scalar-store-alias.mir
+@@ -0,0 +1,56 @@
++# RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -mattr=+hvxv73,+hvx-length128b -run-pass=hexagon-packetizer -verify-machineinstrs %s -o - | FileCheck %s
++
++# Mixed HVX/scalar stores must preserve program order when they may overlap.
++# The scalar update of one lane must not share a packet with the vector spill
++# that precedes it: that loses the scalar update on the target.
++# CHECK-LABEL: name: vector_then_scalar
++# CHECK-NOT: BUNDLE
++# CHECK: V6_vS32b_ai
++# CHECK-NOT: BUNDLE
++# CHECK: S2_storeri_io
++---
++name: vector_then_scalar
++tracksRegLiveness: true
++stack:
++  - { id: 0, type: default, size: 128, alignment: 128 }
++body: |
++  bb.0:
++    liveins: $r0, $r1, $v0
++    V6_vS32b_ai $r0, 0, $v0 :: (store (s1024) into %stack.0, align 128)
++    S2_storeri_io $r0, 64, $r1 :: (store (s32) into %stack.0 + 64)
++...
++
++# CHECK-LABEL: name: scalar_then_vector
++# CHECK-NOT: BUNDLE
++# CHECK: S2_storeri_io
++# CHECK-NOT: BUNDLE
++# CHECK: V6_vS32b_ai
++---
++name: scalar_then_vector
++tracksRegLiveness: true
++stack:
++  - { id: 0, type: default, size: 128, alignment: 128 }
++body: |
++  bb.0:
++    liveins: $r0, $r1, $v0
++    S2_storeri_io $r0, 64, $r1 :: (store (s32) into %stack.0 + 64)
++    V6_vS32b_ai $r0, 0, $v0 :: (store (s1024) into %stack.0, align 128)
++...
++
++# Disjoint stores can still share a packet.
++# CHECK-LABEL: name: disjoint_stores
++# CHECK: BUNDLE
++# CHECK: V6_vS32b_ai
++# CHECK: S2_storeri_io
++---
++name: disjoint_stores
++tracksRegLiveness: true
++stack:
++  - { id: 0, type: default, size: 128, alignment: 128 }
++  - { id: 1, type: default, size: 4, alignment: 4 }
++body: |
++  bb.0:
++    liveins: $r0, $r1, $v0
++    V6_vS32b_ai $r0, 0, $v0 :: (store (s1024) into %stack.0, align 128)
++    S2_storeri_io $r0, 256, $r1 :: (store (s32) into %stack.1)
++...
+diff --git a/llvm/test/CodeGen/Hexagon/rdf-copy-partial-redef.mir b/llvm/test/CodeGen/Hexagon/rdf-copy-partial-redef.mir
+new file mode 100644
+index 0000000000000000000000000000000000000000..ca646ca0b3dc4517bdb4e003879e4ddd8fac241d
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/rdf-copy-partial-redef.mir
+@@ -0,0 +1,76 @@
++# RUN: llc -mtriple=hexagon -run-pass=hexagon-rdf-opt -verify-machineinstrs %s -o - | FileCheck %s
++#
++# A full-width use can be reached by both the original COPY and a newer
++# subregister definition. Propagating the old source through just one of those
++# shadow edges used to change the entire operand and lose the newer half.
++
++# CHECK-LABEL: name: high_half_redefined
++# CHECK: $r1 = A2_tfrsi -27
++# CHECK: $d3 = COPY {{.*}}$d0
++# CHECK: $r0 = COPY {{.*}}$r7
++---
++name: high_half_redefined
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $r6, $r7
++    $d0 = COPY $d3
++    $r1 = A2_tfrsi -27
++    $d3 = COPY $d0
++    $r0 = COPY $r7
++    J2_jumpr $r31, implicit-def $pc, implicit $r0
++...
++
++# CHECK-LABEL: name: low_half_redefined
++# CHECK: $r0 = A2_tfrsi 123
++# CHECK: $d3 = COPY {{.*}}$d0
++# CHECK: $r0 = COPY {{.*}}$r6
++---
++name: low_half_redefined
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $r6, $r7
++    $d0 = COPY $d3
++    $r0 = A2_tfrsi 123
++    $d3 = COPY $d0
++    $r0 = COPY $r6
++    J2_jumpr $r31, implicit-def $pc, implicit $r0
++...
++
++# Still propagate ordinary, uniquely reaching copies.
++# CHECK-LABEL: name: full_copy_allowed
++# CHECK-NOT: COPY
++# CHECK: $r0 = A2_add {{.*}}$r6, {{.*}}$r6
++---
++name: full_copy_allowed
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $r6
++    $r2 = COPY $r6
++    $r0 = A2_add renamable $r2, renamable $r6
++    J2_jumpr $r31, implicit-def $pc, implicit $r0
++...
++
++# The copied source can itself have multiple reaching definitions. Linking a
++# substituted use to only its last (low-half) definition used to let DCE remove
++# the still-live high-half constant, even though the copy substitution alone
++# was equivalent. The returned value must be incoming r4 + 53.
++# CHECK-LABEL: name: source_halves_defined_separately
++# CHECK: $r7 = A2_tfrsi 53
++# CHECK: $d3 = COPY {{.*}}$d0
++---
++name: source_halves_defined_separately
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $r3, $r4, $r5
++    renamable $r7 = A2_tfrsi 53
++    renamable $r6 = A2_addi renamable $r3, -1
++    renamable $d0 = COPY renamable $d3
++    renamable $d3 = COPY renamable $d0
++    renamable $d0 = COPY renamable $d2
++    renamable $r0 = A2_add renamable $r0, renamable $r7
++    J2_jumpr $r31, implicit-def $pc, implicit $r0
++...
+diff --git a/llvm/test/CodeGen/Hexagon/stack-align-ap-entry-spill.ll b/llvm/test/CodeGen/Hexagon/stack-align-ap-entry-spill.ll
+new file mode 100644
+index 0000000000000000000000000000000000000000..3fbd8d118c0d5219c14e74e7775149320c835c41
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/stack-align-ap-entry-spill.ll
+@@ -0,0 +1,87 @@
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -O3 < %s | FileCheck %s
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -O3 -stop-after=prologepilog < %s | FileCheck %s --check-prefix=MIR
++;
++; Register allocation may insert spill slots before PS_aligna. Frame-index
++; elimination can then select AP (r16) as their base, so AP must be initialized
++; before the first AP-based spill access.
++;
++; CHECK-LABEL: ap_entry_spill:
++; CHECK-NOT: memw(r16
++; CHECK-NOT: memd(r16
++; CHECK: r16 = and(r30,#-128)
++; CHECK: memw(r16
++;
++; MIR-LABEL: name: ap_entry_spill
++; MIR: S2_storerd_io $r30, -8, killed $d8
++; MIR: $r16 = PS_aligna 128
++; MIR: S2_storeri_io $r16
++
++target triple = "hexagon"
++
++declare void @clobber(ptr)
++
++define i32 @ap_entry_spill(ptr %src, i32 %n) {
++entry:
++  %dynamic = alloca i8, i32 %n, align 128
++  %p0 = getelementptr i32, ptr %src, i32 0
++  %p1 = getelementptr i32, ptr %src, i32 1
++  %p2 = getelementptr i32, ptr %src, i32 2
++  %p3 = getelementptr i32, ptr %src, i32 3
++  %p4 = getelementptr i32, ptr %src, i32 4
++  %p5 = getelementptr i32, ptr %src, i32 5
++  %p6 = getelementptr i32, ptr %src, i32 6
++  %p7 = getelementptr i32, ptr %src, i32 7
++  %p8 = getelementptr i32, ptr %src, i32 8
++  %p9 = getelementptr i32, ptr %src, i32 9
++  %p10 = getelementptr i32, ptr %src, i32 10
++  %p11 = getelementptr i32, ptr %src, i32 11
++  %p12 = getelementptr i32, ptr %src, i32 12
++  %p13 = getelementptr i32, ptr %src, i32 13
++  %p14 = getelementptr i32, ptr %src, i32 14
++  %p15 = getelementptr i32, ptr %src, i32 15
++  %p16 = getelementptr i32, ptr %src, i32 16
++  %p17 = getelementptr i32, ptr %src, i32 17
++  %p18 = getelementptr i32, ptr %src, i32 18
++  %p19 = getelementptr i32, ptr %src, i32 19
++  %v0 = load volatile i32, ptr %p0
++  %v1 = load volatile i32, ptr %p1
++  %v2 = load volatile i32, ptr %p2
++  %v3 = load volatile i32, ptr %p3
++  %v4 = load volatile i32, ptr %p4
++  %v5 = load volatile i32, ptr %p5
++  %v6 = load volatile i32, ptr %p6
++  %v7 = load volatile i32, ptr %p7
++  %v8 = load volatile i32, ptr %p8
++  %v9 = load volatile i32, ptr %p9
++  %v10 = load volatile i32, ptr %p10
++  %v11 = load volatile i32, ptr %p11
++  %v12 = load volatile i32, ptr %p12
++  %v13 = load volatile i32, ptr %p13
++  %v14 = load volatile i32, ptr %p14
++  %v15 = load volatile i32, ptr %p15
++  %v16 = load volatile i32, ptr %p16
++  %v17 = load volatile i32, ptr %p17
++  %v18 = load volatile i32, ptr %p18
++  %v19 = load volatile i32, ptr %p19
++  call void @clobber(ptr %dynamic)
++  %s0 = add i32 %v0, %v1
++  %s1 = add i32 %v2, %v3
++  %s2 = add i32 %v4, %v5
++  %s3 = add i32 %v6, %v7
++  %s4 = add i32 %v8, %v9
++  %s5 = add i32 %v10, %v11
++  %s6 = add i32 %v12, %v13
++  %s7 = add i32 %v14, %v15
++  %s8 = add i32 %v16, %v17
++  %s9 = add i32 %v18, %v19
++  %t0 = add i32 %s0, %s1
++  %t1 = add i32 %s2, %s3
++  %t2 = add i32 %s4, %s5
++  %t3 = add i32 %s6, %s7
++  %t4 = add i32 %s8, %s9
++  %u0 = add i32 %t0, %t1
++  %u1 = add i32 %t2, %t3
++  %u2 = add i32 %u0, %u1
++  %result = add i32 %u2, %t4
++  ret i32 %result
++}
+diff --git a/llvm/test/CodeGen/Hexagon/stack-align-late-vector-spill.mir b/llvm/test/CodeGen/Hexagon/stack-align-late-vector-spill.mir
+new file mode 100644
+index 0000000000000000000000000000000000000000..9d325b2d41034b3c9234d28f23da9e89dc2dfd39
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/stack-align-late-vector-spill.mir
+@@ -0,0 +1,19 @@
++# RUN: llc -mtriple=hexagon -run-pass prologepilog %s -o - | FileCheck %s
++# Instruction selection only knew about 64-byte-aligned locals. Register
++# allocation then introduced a 128-byte HVX spill. AP must be upgraded too:
++# aligning SP alone cannot make AP-relative vector stores properly aligned.
++# CHECK-LABEL: name: late_vector_spill
++# CHECK: $r16 = PS_aligna 128
++# CHECK: V6_vS32b_ai $r16,
++---
++name: late_vector_spill
++tracksRegLiveness: true
++stack:
++  - { id: 0, type: variable-sized, offset: 0, alignment: 64 }
++  - { id: 1, type: spill-slot, size: 128, alignment: 128 }
++body: |
++  bb.0:
++    liveins: $q0
++    $r16 = PS_aligna 64, implicit $r30
++    PS_vstorerq_ai %stack.1, 0, $q0
++...
+diff --git a/llvm/test/CodeGen/Hexagon/vextract-basic.mir b/llvm/test/CodeGen/Hexagon/vextract-basic.mir
+index 9b1fd9da7e71edb16684bce94a58758aad712dc1..d657cc652bf8e3cbcb85ff1bde49c9e3aef4f380 100644
+--- a/llvm/test/CodeGen/Hexagon/vextract-basic.mir
++++ b/llvm/test/CodeGen/Hexagon/vextract-basic.mir
+@@ -12,10 +12,10 @@ body: |
+     %2:intregs = COPY $r1
+     %3:intregs = A2_tfrsi 5
+     %4:intregs = V6_extractw %0, %1
+-    ; CHECK: %[[A0:[0-9]+]]:intregs = A2_andir %{{[0-9]+}}, -4
++    ; CHECK: %[[A0:[0-9]+]]:intregs = A2_andir %{{[0-9]+}}, 60
+     ; CHECK: L4_loadri_rr %{{[0-9]+}}, %[[A0]], 0
+     %5:intregs = V6_extractw %0, %2
+-    ; CHECK: %[[A1:[0-9]+]]:intregs = A2_andir %{{[0-9]+}}, -4
++    ; CHECK: %[[A1:[0-9]+]]:intregs = A2_andir %{{[0-9]+}}, 60
+     ; CHECK: L4_loadri_rr %{{[0-9]+}}, %[[A1]], 0
+     %6:intregs = V6_extractw %0, %3
+     ; Make sure the offset is 4, not 5.
+@@ -23,4 +23,3 @@ body: |
+ 
+ ...
+ 
+-
+diff --git a/llvm/test/CodeGen/Hexagon/vextract-pair-offset.mir b/llvm/test/CodeGen/Hexagon/vextract-pair-offset.mir
+new file mode 100644
+index 0000000000000000000000000000000000000000..79cfaf1a37910b439588350a21f8fc6fe1cb5de9
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/vextract-pair-offset.mir
+@@ -0,0 +1,30 @@
++# RUN: llc -mtriple=hexagon -mattr=+hvx,+hvx-length64b -run-pass=hexagon-vextract -verify-machineinstrs %s -o - | FileCheck %s --check-prefixes=CHECK,HVX64
++# RUN: llc -mtriple=hexagon -mattr=+hvx,+hvx-length128b -run-pass=hexagon-vextract -verify-machineinstrs %s -o - | FileCheck %s --check-prefixes=CHECK,HVX128
++
++# A vector pair has two nonzero subregister indices. vsub_lo must use the
++# beginning of its spill slot, not the second half. A dynamic byte index must
++# also wrap within one hardware vector, just like V6_extractw itself.
++---
++name: pair_halves
++tracksRegLiveness: true
++body: |
++  bb.0:
++    liveins: $w0, $r0
++    %0:hvxwr = COPY $w0
++    %1:intregs = COPY $r0
++    ; CHECK-LABEL: name: pair_halves
++    ; CHECK: PS_vstorerw_ai
++    ; CHECK: %[[LOW:[0-9]+]]:intregs = PS_fi %stack.0, 0
++    ; HVX64: %[[INDEX0:[0-9]+]]:intregs = A2_andir %1, 60
++    ; HVX128: %[[INDEX0:[0-9]+]]:intregs = A2_andir %1, 124
++    ; CHECK: L4_loadri_rr %[[LOW]], %[[INDEX0]], 0
++    %2:intregs = V6_extractw %0.vsub_lo, %1
++    ; HVX64: %[[HIGH:[0-9]+]]:intregs = PS_fi %stack.0, 64
++    ; HVX128: %[[HIGH:[0-9]+]]:intregs = PS_fi %stack.0, 128
++    ; HVX64: %[[INDEX1:[0-9]+]]:intregs = A2_andir %1, 60
++    ; HVX128: %[[INDEX1:[0-9]+]]:intregs = A2_andir %1, 124
++    ; CHECK: L4_loadri_rr %[[HIGH]], %[[INDEX1]], 0
++    %3:intregs = V6_extractw %0.vsub_hi, %1
++    $r0 = A2_add %2, %3
++    J2_jumpr $r31, implicit-def $pc, implicit $r0
++...
+diff --git a/mlir/lib/Interfaces/ValueBoundsOpInterface.cpp b/mlir/lib/Interfaces/ValueBoundsOpInterface.cpp
+index c9481fb5d9406e7d9c5bdae52d664cf265ad2919..0f8b5149a94d008290e880c9f8518d61252d40d1 100644
+--- a/mlir/lib/Interfaces/ValueBoundsOpInterface.cpp
++++ b/mlir/lib/Interfaces/ValueBoundsOpInterface.cpp
+@@ -823,6 +823,12 @@ FailureOr<bool> ValueBoundsConstraintSet::strongCompare(const Variable &lhs,
+ 
+ FailureOr<bool> ValueBoundsConstraintSet::areEqual(const Variable &var1,
+                                                    const Variable &var2) {
++  // Reflexivity needs no range inference. In particular, repeated comparisons
++  // of identical slice offsets/sizes/strides during bufferization should not
++  // rebuild and solve a Presburger constraint system. Distinct expressions
++  // still use the existing solver, even when they may be equivalent.
++  if (var1.map == var2.map && var1.mapOperands == var2.mapOperands)
++    return true;
+   return strongCompare(var1, ComparisonOperator::EQ, var2);
+ }
+ 

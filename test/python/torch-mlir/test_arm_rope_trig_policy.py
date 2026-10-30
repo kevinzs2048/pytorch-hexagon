@@ -1,5 +1,5 @@
 """Exercise the real rewrite's opt-in, shape and external ABI boundaries."""
-from qwen3.compiler_dependency import compiler_root
+from qwen3.compiler_dependency import native_root
 import os
 from pathlib import Path
 import subprocess
@@ -24,7 +24,7 @@ def optimize(source):
     ('1x0x128', 0), ('2x1x128', 0), ('1x1x64', 0),
 ])
 def test_admitted_shapes_and_idempotence(shape, expected):
-    source = (compiler_root()/'qcom_hexagon_backend/test/Transforms/arm-rope-trig-order.mlir').read_text()
+    source = (native_root()/'policy/test/arm-rope-trig-order.mlir').read_text()
     result = optimize(source.replace('1x1x128', shape))
     assert result.returncode == 0, result.stderr
     assert result.stdout.count('func.call @__hexagon_arm_') == expected
@@ -37,7 +37,7 @@ def test_admitted_shapes_and_idempotence(shape, expected):
     ('missing_ABI', True), ('wrong_ABI', True), ('modified_body', False),
 ])
 def test_no_implicit_or_malformed_rewrite(change, fails):
-    source = (compiler_root()/'qcom_hexagon_backend/test/Transforms/arm-rope-trig-order.mlir').read_text()
+    source = (native_root()/'policy/test/arm-rope-trig-order.mlir').read_text()
     source = '\n'.join(line for line in source.splitlines() if not line.startswith('//'))
     if change == 'no_opt_in':
         source = source.replace(',hexagon.fp32_arm_rope_trig4=true', '')

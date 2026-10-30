@@ -12,7 +12,7 @@ import tempfile
 import time
 
 from build import ROOT, verify_dependencies, sha
-from qwen3.compiler_dependency import compiler_tools
+from qwen3.compiler_dependency import native_root
 
 
 def instrument(text,inspect_fmaf=False):
@@ -180,7 +180,7 @@ def main():
         effect_guard=args.output/guard.name
         effect_guard.write_bytes(guard.read_bytes())
     wrapper=args.output/original.name;wrapper.write_text(instrument(original.read_text(),args.inspect_fmaf))
-    runtime=compiler_tools()/'runtime/profile/model_memory_profile.c'
+    runtime=native_root()/'runtime/profile/model_memory_profile.c'
     (args.output/runtime.name).write_bytes(runtime.read_bytes())
     if args.external_helpers:runtime=runtime.with_name('model_external_profile.c')
     if args.integer_timeline:runtime=runtime.with_name('model_integer_timeline.c')

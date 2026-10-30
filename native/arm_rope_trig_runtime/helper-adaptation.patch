@@ -1,0 +1,39 @@
+--- helperpurec-original.h
++++ helperpurec.h
+@@ -14,6 +14,8 @@
+ #define ENABLE_DP
+ //@#define ENABLE_DP
+ #define ENABLE_SP
++#define ENABLE_FMA_SP
++#define FULL_FP_ROUNDING
+ //@#define ENABLE_SP
+ 
+ #define LOG2VECTLENDP CONFIG
+@@ -337,10 +339,10 @@
+ 
+ static INLINE vfloat vcast_vf_vi2(vint2 vi) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = vi.i[i]; return ret; }
+ static INLINE vint2 vtruncate_vi2_vf(vfloat vf) { vint2 ret; for(int i=0;i<VECTLENSP;i++) ret.i[i] = (int)vf.f[i]; return ret; }
+-static INLINE vint2 vrint_vi2_vf(vfloat vf) { vint ret; for(int i=0;i<VECTLENSP;i++) ret.i[i] = vf.f[i] > 0 ? (int)(vf.f[i] + 0.5) : (int)(vf.f[i] - 0.5); return ret; }
++static INLINE vint2 vrint_vi2_vf(vfloat vf) { vint2 ret; for(int i=0;i<VECTLENSP;i++) ret.i[i] = (int32_t)nearbyintf(vf.f[i]); return ret; }
+ static INLINE vint2 vcast_vi2_i(int j) { vint2 ret; for(int i=0;i<VECTLENSP;i++) ret.i[i] = j; return ret; }
+ static INLINE vfloat vtruncate_vf_vf(vfloat vd) { return vcast_vf_vi2(vtruncate_vi2_vf(vd)); }
+-static INLINE vfloat vrint_vf_vf(vfloat vd) { return vcast_vf_vi2(vrint_vi2_vf(vd)); }
++static INLINE vfloat vrint_vf_vf(vfloat vd) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = nearbyintf(vd.f[i]); return ret; }
+ 
+ static INLINE vfloat vcast_vf_f(float f) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = f; return ret; }
+ static INLINE vmask vreinterpret_vm_vf(vfloat vf) { union { vfloat vf; vmask vm; } cnv; cnv.vf = vf; return cnv.vm; }
+@@ -356,8 +358,12 @@
+ 
+ static INLINE vfloat vabs_vf_vf(vfloat x) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.i[i] = x.i[i] & 0x7fffffff; return ret; }
+ static INLINE vfloat vneg_vf_vf(vfloat x) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = -x.f[i]; return ret; }
+-static INLINE vfloat vmla_vf_vf_vf_vf  (vfloat x, vfloat y, vfloat z) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = x.f[i] * y.f[i] + z.f[i]; return ret; }
+-static INLINE vfloat vmlanp_vf_vf_vf_vf(vfloat x, vfloat y, vfloat z) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = x.f[i] * y.f[i] - z.f[i]; return ret; }
++static INLINE vfloat vmla_vf_vf_vf_vf  (vfloat x, vfloat y, vfloat z) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = fmaf(x.f[i], y.f[i], z.f[i]); return ret; }
++static INLINE vfloat vmlanp_vf_vf_vf_vf(vfloat x, vfloat y, vfloat z) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = fmaf(-x.f[i], y.f[i], z.f[i]); return ret; }
++static INLINE vfloat vmlapn_vf_vf_vf_vf(vfloat x, vfloat y, vfloat z) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = -fmaf(-x.f[i], y.f[i], z.f[i]); return ret; }
++static INLINE vfloat vfma_vf_vf_vf_vf(vfloat x, vfloat y, vfloat z) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = fmaf(x.f[i], y.f[i], z.f[i]); return ret; }
++static INLINE vfloat vfmanp_vf_vf_vf_vf(vfloat x, vfloat y, vfloat z) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = fmaf(-x.f[i], y.f[i], z.f[i]); return ret; }
++static INLINE vfloat vfmapn_vf_vf_vf_vf(vfloat x, vfloat y, vfloat z) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = fmaf(x.f[i], y.f[i], -z.f[i]); return ret; }
+ static INLINE vfloat vmax_vf_vf_vf(vfloat x, vfloat y) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = x.f[i] > y.f[i] ? x.f[i] : y.f[i]; return ret; }
+ static INLINE vfloat vmin_vf_vf_vf(vfloat x, vfloat y) { vfloat ret; for(int i=0;i<VECTLENSP;i++) ret.f[i] = x.f[i] < y.f[i] ? x.f[i] : y.f[i]; return ret; }
+ 

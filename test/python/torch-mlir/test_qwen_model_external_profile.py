@@ -1,5 +1,5 @@
 """Verify diagnostic wrappers preserve actual C ABI bits and nested-call scope."""
-from qwen3.compiler_dependency import compiler_root
+from qwen3.compiler_dependency import native_root
 from pathlib import Path
 import shutil
 import subprocess
@@ -81,7 +81,7 @@ int main(void){
         '__hexagon_divdi3','__hexagon_udivdi3']
     exe=tmp_path/'check'
     subprocess.run([gcc,'-O2','-fno-builtin','-U_FORTIFY_SOURCE','-D_FORTIFY_SOURCE=0',
-        '-I',str(tmp_path),str(compiler_root()/'tools/qwen3/runtime/profile/model_external_profile.c'),
+        '-I',str(tmp_path),str(native_root()/'runtime/profile/model_external_profile.c'),
         str(tmp_path/'harness.c'),str(tmp_path/'helpers.c'),
         *['-Wl,--wrap='+s for s in symbols],'-o',str(exe)],check=True)
     subprocess.run([str(exe)],check=True)

@@ -35,7 +35,7 @@ def module(batch=1,queries=2,width=3072,dtype='f32'):
 
 def transform(text,enabled=True):
     flag='{fp32-silu-exp-compat=true}' if enabled else ''
-    return run(text,'--pass-pipeline=builtin.module(func.func(stabilize-fp32-sum'+flag+'))',schedule=False)
+    return run(text,'--pass-pipeline=builtin.module(func.func(stabilize-fp32-sum'+flag+'))',schedule=False, optimizer_env='QWEN_SINGLETON_SUM_OPT')
 
 
 @pytest.mark.parametrize('batch,queries',[(1,1),(1,2),(28,2)])

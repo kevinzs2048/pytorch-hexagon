@@ -81,6 +81,8 @@ def test_model_build_rejects_changed_compiler_products(source, tmp_path, monkeyp
     config = tmp_path/'toolchain.json'
     config.write_text('{}')
     dependency = {'receipt_sha256': 'qualified LLVM identity'}
+    native = {'native/runtime/helper.c': 'qualified native helper'}
+    monkeypatch.setattr('qwen3.build.native_identity', lambda: native)
     monkeypatch.setattr('qwen3.build.llvm_identity', lambda *args: dependency)
     for path in product_paths(output):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,9 +90,13 @@ def test_model_build_rejects_changed_compiler_products(source, tmp_path, monkeyp
     record = dict(status='compiler_built_NOT_qualified', configuration_sha256=sha(config),
                   compiler_source=str(repo), compiler_sources_sha256=source_identity(repo)['sha256'],
                   products={str(p.relative_to(output)): sha(p) for p in product_paths(output)},
-                  LLVM_identity=dependency)
+                  LLVM_identity=dependency, native_sources=dict(native))
     (output/'build.json').write_text(json.dumps(record))
     assert verify_products(output, repo, config) == record
+    native['native/runtime/helper.c'] = 'changed helper'
+    with pytest.raises(ValueError, match='native extension sources changed'):
+        verify_products(output, repo, config)
+    native['native/runtime/helper.c'] = 'qualified native helper'
     monkeypatch.setattr('qwen3.build.llvm_identity', lambda *args: {'receipt_sha256': 'other LLVM'})
     with pytest.raises(ValueError, match='LLVM dependency identity differs'):
         verify_products(output, repo, config)

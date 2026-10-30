@@ -13,7 +13,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-from qwen3.compiler_dependency import compiler_tools, compiler_root
+from qwen3.compiler_dependency import native_root, compiler_root
 
 
 def sha(path):
@@ -93,11 +93,11 @@ def main():
         wrapper = a.output/original.name
         wrapper.write_text(helpers.instrument(original.read_text()))
         runtime_name = 'model_integer_timeline.c' if a.mode == 'attention' else 'model_external_profile.c'
-        runtime = compiler_tools()/'runtime/profile'/runtime_name
+        runtime = native_root()/'runtime/profile'/runtime_name
         memory_runtime = runtime.with_name('model_memory_profile.c')
         (a.output/memory_runtime.name).write_bytes(memory_runtime.read_bytes())
         if a.mode == 'guard':
-            runtime = compiler_root()/'tools/qwen3-review/guard_profile.c'
+            runtime = native_root()/'diagnostics/guard_profile.c'
         copied = a.output/runtime.name; copied.write_bytes(runtime.read_bytes())
         tools = Path(cfg['hexagon_tools'])/'bin'
         preserved = None if a.mode != 'external' else helpers.preserve_wrapped_memcpy(

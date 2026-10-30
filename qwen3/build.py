@@ -16,7 +16,7 @@ import time
 from functools import lru_cache
 
 from .bundle import write
-from .compiler_dependency import compiler_root
+from .compiler_dependency import ROOT, compiler_root, native_root
 
 
 @lru_cache(maxsize=2)
@@ -27,15 +27,25 @@ def _llvm_validator(path, digest):
     return module
 
 
-def llvm_identity(source, config):
-    path = source/'dependencies/llvm/toolchain.py'
+def llvm_identity(config):
+    path = ROOT/'dependencies/llvm/toolchain.py'
     if not path.is_file():
-        raise ValueError('Compiler dependency lacks the LLVM identity verifier')
-    lock = json.loads((source/'dependencies/sources.lock.json').read_text())['llvm']
+        raise ValueError('Application lacks the LLVM identity verifier')
+    lock = json.loads((ROOT/'dependencies/toolchain.lock.json').read_text())['llvm']
     if (lock.get('recipe') != 'llvm/recipe.json'
-            or sha(source/'dependencies'/lock['recipe']) != lock.get('recipe_sha256')):
-        raise ValueError('LLVM recipe differs from the compiler dependency lock')
+            or sha(ROOT/'dependencies'/lock['recipe']) != lock.get('recipe_sha256')):
+        raise ValueError('LLVM recipe differs from the application toolchain lock')
     return _llvm_validator(str(path), sha(path)).verify(json.loads(config.read_text()))
+
+
+def native_identity():
+    """Seal the application-owned inputs independently of the compiler checkout."""
+    root = native_root()
+    files = {str(p.relative_to(ROOT)): sha(p) for p in sorted(root.rglob('*')) if p.is_file()}
+    if not files:
+        raise ValueError('Application native extension sources are missing')
+    files['dependencies/toolchain.lock.json'] = sha(ROOT/'dependencies/toolchain.lock.json')
+    return files
 
 
 def product_paths(output):
@@ -62,7 +72,9 @@ def verify_products(output, source, config):
     actual = {str(p.relative_to(output)): sha(p) for p in product_paths(output)}
     if actual != record.get('products'):
         raise ValueError('Compiler build products changed or are not sealed')
-    if record.get('LLVM_identity') != llvm_identity(source, config):
+    if record.get('native_sources') != native_identity():
+        raise ValueError('Application native extension sources changed; rerun the source build')
+    if record.get('LLVM_identity') != llvm_identity(config):
         raise ValueError('LLVM dependency identity differs from this compiler build')
     return record
 
@@ -165,11 +177,12 @@ def main():
     if not (source/'qcom_hexagon_backend/CMakeLists.txt').is_file():
         raise ValueError('Expected a Hexagon-MLIR source checkout')
     llvm = Path(config['llvm_build']).resolve()
-    locks = json.loads((source/'dependencies/sources.lock.json').read_text())
-    dependency = llvm_identity(source, args.config)
+    locks = json.loads((ROOT/'dependencies/toolchain.lock.json').read_text())
+    dependency = llvm_identity(args.config)
+    native_sources = native_identity()
     llvm_revision = dependency['base_revision']
     if llvm_revision != locks['llvm']['revision']:
-        raise ValueError('LLVM source revision differs from the compiler lock')
+        raise ValueError('LLVM source revision differs from the application toolchain lock')
     triton_revision = locks['triton']['revision']
     sdk = Path(config['hexagon_sdk']).resolve()
     tools = Path(config['hexagon_tools']).resolve()
@@ -203,7 +216,7 @@ def main():
                  '-DTRITON_PLUGIN_DIRS='+str(source/'qcom_hexagon_backend'),
                  '-DTRITON_WHEEL_DIR='+str(output/'wheel'),
                  '-DTRITON_PARALLEL_LINK_JOBS=1']
-    configure.append('-DQWEN_BUILD_COMPILER_PROFILES=ON')
+    configure.append('-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES='+str(native_root()/'compiler/Profiles.cmake'))
     record = dict(schema=1, status='building', started_unix=time.time(),
                   configuration_sha256=sha(args.config), compiler_source=str(source),
                   compiler_revision=subprocess.check_output(
@@ -219,6 +232,7 @@ def main():
     record['LLVM_build'] = str(llvm)
     record['LLVM_revision'] = llvm_revision
     record['LLVM_identity'] = dependency
+    record['native_sources'] = native_sources
     def run(name, command):
         row = dict(stage=name, argv=command, started_unix=time.time())
         record['commands'].append(row)
@@ -237,7 +251,8 @@ def main():
                              '--parallel', str(args.jobs), '--', '-k', '0'])
             policy = output / 'policy'
             run('policy-configure', [config.get('cmake', 'cmake'),
-                '-S', str(source/'tools/qwen3/policy'), '-B', str(policy), '-G', 'Ninja',
+                '-S', str(native_root()/'policy'), '-B', str(policy), '-G', 'Ninja',
+                '-DHEXAGON_MLIR_SOURCE_DIR='+str(source),
                 '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_CXX_FLAGS_RELEASE=-O2 -g0 -DNDEBUG',
                 '-DCMAKE_C_COMPILER='+config['host_clang'],
                 '-DCMAKE_CXX_COMPILER='+config['host_clangxx'],
@@ -249,7 +264,7 @@ def main():
                            '--parallel', str(args.jobs), '--', '-k', '0'])
             runtime = output / 'runtime'
             run('runtime-configure', [config.get('cmake', 'cmake'),
-                '-S', str(source/'tools/qwen3/runtime'), '-B', str(runtime), '-G', 'Ninja',
+                '-S', str(native_root()/'runtime'), '-B', str(runtime), '-G', 'Ninja',
                 '-DHEXAGON_TOOLS='+str(tools), '-DHEXAGON_SDK='+str(sdk),
                 '-DHEXAGON_LLD='+config['lld']])
             run('runtime', [config.get('cmake', 'cmake'), '--build', str(runtime),
@@ -257,7 +272,9 @@ def main():
         record['status'] = 'configured' if args.configure_only else 'compiler_built_NOT_qualified'
         if source_identity(source) != identity:
             raise ValueError('Compiler sources changed during the build; rerun before qualification')
-        if llvm_identity(source, args.config) != dependency:
+        if native_identity() != native_sources:
+            raise ValueError('Application native extension sources changed during construction')
+        if llvm_identity(args.config) != dependency:
             raise ValueError('LLVM dependency changed during compiler construction')
         if not args.configure_only:
             record['products'] = {str(p.relative_to(output)): sha(p) for p in product_paths(output)}

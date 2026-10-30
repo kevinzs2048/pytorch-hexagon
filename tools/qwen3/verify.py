@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Run the retained host suite and IR checks against the unified source build."""
-from qwen3.compiler_dependency import compiler_root
+from qwen3.compiler_dependency import compiler_root, native_root
 import argparse
 import json
 import os
@@ -60,6 +60,12 @@ def main():
         HEXAGON_ARCH_VERSION='73', HEXAGON_MLIR_ROOT=str(source),
         HEXAGON_TOOLS_ROOT=c['hexagon_tools'], HEXAGON_SDK_ROOT=c['hexagon_sdk'],
         HEXKL_DIR=c['hexkl'])
+    env['QWEN_SLEEF_SOURCE_DIR'] = str(a.build/'runtime/qwen_sleef-src')
+    for line in (a.build/'runtime/CMakeCache.txt').read_text().splitlines():
+        if line.startswith(('QWEN_SLEEF_SOURCE_DIR:PATH=', 'qwen_sleef_SOURCE_DIR:STATIC=')):
+            path = line.split('=', 1)[1]
+            if path:
+                env['QWEN_SLEEF_SOURCE_DIR'] = path
     result = dict(status='checking', source_root=str(ROOT), compiler_source=str(source),
                   tests={}, filechecks=[])
     try:
@@ -67,8 +73,7 @@ def main():
         command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
                    '--junitxml='+str(a.output/(name+'.xml')),
                    str(ROOT/'test/python/qwen3'), str(ROOT/'test/python/torch-mlir'),
-                   str(source/'test/python/torch-mlir/test_process_codegen_policy.py'),
-                   str(source/'test/python/torch-mlir/test_llvm_dependency_identity.py')]
+                   str(source/'test/python/torch-mlir/test_process_codegen_policy.py')]
         with (a.output/(name+'.log')).open('xb') as log:
             subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
         suite = ET.parse(a.output/(name+'.xml')).getroot()
@@ -77,7 +82,7 @@ def main():
         if counts['skipped'] or counts['failures'] or counts['errors']:
             raise ValueError('Verification requires all tests to execute and pass')
         result['tests'][name] = dict(counts, command=command)
-        checks = [(source/'qcom_hexagon_backend/test/Transforms'/name, sums,
+        checks = [(native_root()/'policy/test'/name, sums,
                    'builtin.module(func.func(stabilize-fp32-sum))') for name in FIXTURES]
         checks.append((source/'qcom_hexagon_backend/test/Conversion/LinalgToLLVM/fdiv_sqrt_to_rsqrt_hexagon_routines.mlir',
                        lowering, 'builtin.module(llvm-intr-to-hexagon-routines)'))

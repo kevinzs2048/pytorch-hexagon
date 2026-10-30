@@ -21,8 +21,9 @@ def compiler_root():
     return root
 
 
-def compiler_tools():
-    return compiler_root() / "tools/qwen3"
+def native_root():
+    """Qwen-specific compiler extensions and DSP helpers belong to this app."""
+    return ROOT / "native"
 
 
 def activate():

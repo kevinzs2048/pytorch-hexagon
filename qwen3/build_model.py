@@ -14,6 +14,7 @@ import time
 from types import SimpleNamespace
 
 from .bundle import sha, write
+from .compiler_dependency import native_root
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -83,7 +84,7 @@ def link_command(config, compiler_source, build, profile, caller, model_object,
     if profile not in ('q1', 'q2'):
         raise ValueError('Unknown model profile')
     sdk, tools = Path(config['hexagon_sdk']), Path(config['hexagon_tools'])
-    runtime = compiler_source/'tools/qwen3/runtime'
+    runtime = native_root()/'runtime'
     includes = [runtime/'dsp-include', runtime, sdk/'incs', sdk/'incs/stddef',
                 sdk/'rtos/qurt/computev73/include/qurt', sdk/'rtos/qurt/computev73/include/posix']
     helpers = ['global-hvx-copy', profile+'-qk-guard',

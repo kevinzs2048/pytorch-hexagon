@@ -1,5 +1,5 @@
 """Runtime identity and packet checks; this is not DSP purity acceptance."""
-from qwen3.compiler_dependency import compiler_root
+from qwen3.compiler_dependency import native_root
 import ctypes
 import importlib.util
 from pathlib import Path
@@ -24,7 +24,7 @@ def native_query(tmp_path):
     if not compiler:pytest.skip('Native compiler unavailable')
     lib=tmp_path/'effects.so'
     subprocess.run([compiler,'-O2','-fPIC','-fno-builtin','-shared','-D_GNU_SOURCE',
-        '-Wall','-Wextra','-Werror',str(compiler_root()/'tools/qwen3/runtime/profile/model_fmaf_effects.c'),
+        '-Wall','-Wextra','-Werror',str(native_root()/'runtime/profile/model_fmaf_effects.c'),
         '-lm','-ldl','-o',str(lib)],check=True)
     owner=ctypes.CDLL(str(lib),mode=ctypes.RTLD_GLOBAL,use_errno=True)
     fn=owner.qwen_fmaf_effects_query

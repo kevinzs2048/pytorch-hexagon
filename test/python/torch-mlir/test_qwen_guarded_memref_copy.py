@@ -1,5 +1,5 @@
 """Check exact integer guard equivalence and full strided byte-copy behavior."""
-from qwen3.compiler_dependency import compiler_root
+from qwen3.compiler_dependency import compiler_root, native_root
 import ctypes
 import itertools
 import random
@@ -9,7 +9,7 @@ import subprocess
 
 import pytest
 
-RUNTIME=compiler_root()/'tools/qwen3/runtime/profile'
+RUNTIME=native_root()/'runtime/profile'
 
 
 class Unranked(ctypes.Structure):

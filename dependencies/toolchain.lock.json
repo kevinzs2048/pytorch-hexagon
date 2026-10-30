@@ -1,0 +1,15 @@
+{
+  "llvm": {
+    "url": "https://github.com/llvm/llvm-project.git",
+    "revision": "064f02dac0c81c19350a74415b3245f42fed09dc",
+    "recipe": "llvm/recipe.json",
+    "recipe_sha256": "8f28a10603019c4de19f5039a715c1e8a457da8bc3958d0d74f0bec01e2e75d7"
+  },
+  "triton": {
+    "url": "https://github.com/triton-lang/triton.git",
+    "revision": "e44bd1c83c1c3e8deac7c4f02683cfb3cc395c8b"
+  },
+  "torch_mlir": {
+    "version": "20260908.870"
+  }
+}

@@ -1,5 +1,5 @@
 """Diagnostic isolation and native link-wrapper checks, not DSP acceptance."""
-from qwen3.compiler_dependency import compiler_root
+from qwen3.compiler_dependency import native_root
 import importlib.util
 from pathlib import Path
 import shutil
@@ -9,7 +9,7 @@ import struct
 import pytest
 
 ROOT=Path(__file__).resolve().parents[3]
-SOURCE=compiler_root()/'tools/qwen3/runtime/profile/model_memory_profile.c'
+SOURCE=native_root()/'runtime/profile/model_memory_profile.c'
 spec=importlib.util.spec_from_file_location('qwen_model_memory_profile',ROOT/'tools/qwen3/profile_model_memory.py')
 
 

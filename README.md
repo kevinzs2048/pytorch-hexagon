@@ -8,8 +8,8 @@ official Hexagon-MLIR repository and does not own a copied compiler source tree.
 
 | Repository | Responsibility |
 | --- | --- |
-| **qwen3-hexagon-runtime** (this repository) | PyTorch/Qwen3 integration, native generation, logical KV lifecycle, deployment, profiling orchestration and application regression |
-| **Hexagon-MLIR downstream fork** | MLIR dialects/passes, lowering/codegen, generic buffer ABI, DSP kernels and numerical compiler extensions |
+| **qwen3-hexagon-runtime** (this repository) | PyTorch/Qwen3 integration, generation and KV lifecycle, Qwen-specific compiler/DSP extensions, toolchain reproduction, deployment and regression |
+| **Hexagon-MLIR downstream fork** | General dialect/lowering/codegen support, tensor ABI and compiler/runtime correctness fixes |
 
 The application integrates PyTorch/Transformers with Hexagon DSP: PyTorch
 supplies the model forward and parameters, Transformers drives generation on
@@ -19,8 +19,9 @@ managing inputs and KV state. The current model integration is Qwen3-0.6B.
 The compiler dependency is a Git submodule at `third_party/hexagon-mlir`, pinned
 by both its gitlink and `dependencies/hexagon-mlir.lock.json`. That directory is
 a separate repository checkout, not application-owned compiler code. Our local
-fork directory is named `hexagon-mlir-qwen3` for historical reasons; its package
-names retain upstream compatibility. All compiler changes stay in that fork.
+review checkout is `/home/kevin/hexagon/hexagon-mlir-review`; its package
+names retain upstream compatibility. General backend changes stay in that fork.
+Model-specific compiler extensions are built from this application's `native/` directory.
 
 For compiler and model source builds, use `python -m qwen3.build`; see the
 [source-build instructions](docs/qwen3/SOURCE_BUILD.md). It produces both runtime
@@ -36,7 +37,7 @@ policy and exact ARM Python packages; binaries do not belong in Git.
 For the current offline delivery (the new commits have not been pushed):
 
 ```bash
-git clone -b review/qwen3-llvm-toolchain /path/to/application-source.bundle qwen3-hexagon-runtime
+git clone -b review/qwen3-native-ownership /path/to/application-source.bundle qwen3-hexagon-runtime
 cd qwen3-hexagon-runtime
 git config submodule.hexagon-mlir.url /absolute/path/to/compiler-source.bundle
 git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
@@ -67,20 +68,28 @@ capacity 1024, reusable q1 and q2–32 execution domains. There is no CPU forwar
 - `qwen3/runtime_checks.py`: shared generation and full-output validation; no experiment launchers.
 - `qwen3/runtime-sources.json`: explicit execution-source dependency set for cache invalidation.
 - `qwen3/build.py`, `qwen3/build_model.py`: unified compiler and model source build.
+- `native/`: Qwen compiler profiles, numerical policies, DSP helpers and diagnostics.
 - `tools/qwen3/`: application build/deployment/regression orchestration (Python).
 - `test/`, `qwen3/validation/`: tests and included reference hashes.
-- `dependencies/`: compiler lock and application-side Transformers patch.
+- `dependencies/`: compiler/toolchain locks, LLVM reproduction recipe and Transformers patch.
 - `docs/qwen3/`: reproduction instructions and engineering reports.
 
-Compiler C/C++/MLIR sources, DSP kernels and compiler patches are maintained in
-the compiler repository. The application references those sources through the
-pinned dependency. Logical StaticCache reset/update coordination belongs here;
-compiler scatter lowering and bufferization belong there.
+General compiler C/C++/MLIR sources are maintained in the compiler repository.
+Qwen numerical policies and DSP helpers are application-owned native extensions.
+The full LLVM compatibility recipe is in this application's `dependencies/llvm/`. StaticCache reset/update
+coordination belongs to the application; scatter lowering and bufferization
+belong to the compiler.
 
 ## Validation and current limits
 
-The current branch pins compiler `23cb318`, which adds the complete LLVM dependency
-patch, a source-build recipe and product identity checks. An independent LLVM
+The current native-extension relocation pins compiler `f13109d`. A fresh build
+produces all 22 backend/policy/runtime products; 615 configured host tests and
+nine IR checks pass. Both numerical tools match their preceding outputs on the
+eight moved fixtures. This is build/integration validation; full models were not
+recompiled or rerun on DSP for this relocation.
+
+Before the native-extension relocation, compiler `23cb318` and application
+`426f7f5` qualified the complete LLVM dependency recipe and product identity checks. An independent LLVM
 rebuild passes 1,381 Hexagon tests; the backend passes 611 host tests and nine IR
 checks. Both freshly compiled model libraries are byte-identical to the preceding
 336-forward-qualified pair. See [build status](docs/qwen3/BUILD_STATUS.md) for the
@@ -139,8 +148,8 @@ original source and artifacts from application commit `c7b3f8f` when needed.
 See [retirement scope](docs/qwen3/SOURCE_BUILD.md#what-was-replaced).
 
 The [source-build workflow](docs/qwen3/SOURCE_BUILD.md) builds the compiler profiles,
-numerical tools, DSP helpers and both model domains in one output tree. The compiler
-dependency includes a separate LLVM/MLIR/LLD source-build recipe; the application
+numerical tools, DSP helpers and both model domains in one output tree. This application
+includes a separate LLVM/MLIR/LLD source-build recipe and
 checks its source and product receipt. Qualcomm SDK / Tools / HexKL remain
 external dependencies. A build and a DSP
 numerical qualification have separate receipts; see

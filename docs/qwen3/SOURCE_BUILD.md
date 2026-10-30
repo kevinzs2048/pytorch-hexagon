@@ -6,15 +6,17 @@ helpers. With `--models`, it also lowers the captured PyTorch graphs through
 torch-mlir, compiles the model, generates its callers and links its libraries.
 `python -m qwen3.tools build` invokes the same implementation.
 
-The application owns build orchestration and the model integration. Compiler
-passes and DSP kernels come from the pinned `third_party/hexagon-mlir` repository.
-There is no copy of those C/C++ sources in the application.
+The application owns build orchestration and the model integration. General
+compiler passes come from the pinned `third_party/hexagon-mlir` repository.
+Qwen-specific numerical passes, compiler profiles and DSP helpers belong to
+`native/` in this application. CMake 3.24+ loads `native/compiler/Profiles.cmake`
+through `CMAKE_PROJECT_TOP_LEVEL_INCLUDES`; the compiler has no Qwen build hook.
 
 ## Inputs
 
 - The application checkout and its pinned compiler submodule.
-- The pinned Triton Git revision recorded in the compiler's
-  `dependencies/sources.lock.json`. The builder exports that Git tree; local
+- The pinned Triton Git revision recorded in the application's
+  `dependencies/toolchain.lock.json`. The builder exports that Git tree; local
   changes in the supplied Triton checkout are not used.
 - A configured LLVM/MLIR installation matching the complete dependency recipe,
   its `llvm_receipt`, the host compiler, Hexagon SDK 6.5.0.0, Hexagon Tools 19.0.02, HexKL and
@@ -39,8 +41,8 @@ select the linker argument dialect. The old, broad profiling configuration in
 
 ### Prepare LLVM once
 
-The compiler dependency includes the full qualified LLVM patch and its rebuild
-entry. Follow [the LLVM dependency instructions](../../third_party/hexagon-mlir/dependencies/llvm/README.md)
+This application includes the full qualified LLVM patch and its rebuild
+entry. Follow [the LLVM dependency instructions](../../dependencies/llvm/README.md)
 to prepare a separate source checkout and build LLVM/MLIR/LLD. Set `llvm_receipt`
 in the same toolchain JSON to the generated identity receipt. The application
 checks actual patched sources, libraries, generated headers, CMake metadata,
@@ -116,8 +118,9 @@ constitute complete model qualification; see the current build status.
 
 For development against a separate compiler checkout, pass
 `--compiler-source /absolute/path/to/hexagon-mlir` to the build.
-The receipt records that checkout's source contents and rejects changed build
-products. Without this flag, the checked submodule is used.
+The receipt records that checkout's source contents, the application native
+extension sources and toolchain lock, and rejects changed inputs or products.
+Without this flag, the checked submodule is used.
 
 The retained application verification suite also reads C/C++ helpers and
 fixtures through its pinned compiler submodule. Verification therefore rejects
@@ -237,7 +240,7 @@ instrumentation and bounded primitive probes. Parser/helper modules cannot be
 launched as commands. The two `tools/qwen3-review` scripts support compiler-team
 performance investigations; neither belongs to the normal inference path.
 Qwen-specific test fixtures live beside application tests. Optional C diagnostic
-wrappers live in the compiler repository and are linked only by profiling tools.
+wrappers live in the application under `native/` and are linked only by profiling tools.
 
 The retirement change was checked with 588 configured host tests and nine IR
 checks against the previously qualified compiler. A separate board run using

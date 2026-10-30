@@ -1,5 +1,5 @@
 """Run the real isolated optimizer; not DSP or whole-model acceptance."""
-from qwen3.compiler_dependency import compiler_root
+from qwen3.compiler_dependency import native_root
 import os
 from pathlib import Path
 import subprocess
@@ -13,7 +13,7 @@ pytestmark = pytest.mark.skipif(not OPT, reason='Explicit isolated optimizer req
 
 
 def source(singleton):
-    text = (compiler_root()/'qcom_hexagon_backend/test/Transforms/bounded-dynamic-softmax.mlir').read_text()
+    text = (native_root()/'policy/test/bounded-dynamic-softmax.mlir').read_text()
     # Keep this parametrized fixture independent of the additional FileCheck cases.
     text = text.split('// CHECK-LABEL: func.func @singleton')[0]
     if singleton:

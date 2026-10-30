@@ -1,8 +1,10 @@
 # Compiler source and build status
 
 The application and compiler remain separate repositories. The application pins
-the compiler at `third_party/hexagon-mlir`; compiler passes, DSP kernels and LLVM
-patches belong to that fork.
+the compiler at `third_party/hexagon-mlir`. General backend support belongs to
+that fork; Qwen-specific profiles, numerical policies and DSP helpers are now
+application-owned under `native/`. The Qwen LLVM compatibility recipe belongs
+to this application under `dependencies/llvm/`.
 
 The supported build entry is now `python -m qwen3.build`. See
 [source-build instructions](SOURCE_BUILD.md) for configuration, captures, build
@@ -24,7 +26,36 @@ The pinned toolchain remains SDK 6.5.0.0 and Hexagon Tools 19.0.02. A newer publ
 SDK, LLVM or framework release is a separate configuration and is not silently
 substituted.
 
-## Reproducible LLVM dependency
+## Native-extension ownership correction (2026-10-30)
+
+The current compiler pin is `f13109d` on `review/qwen3-core-only`: two existing
+correctness commits and one general backend support commit. Relative to official
+base `1974073`, implementation/build code is +2,899/-263 lines; tests are
++2,127/-82 and the boundary note is +33. Neither `tools/` nor `dependencies/`
+remains in the compiler tree or its new commits. The former compiler branch
+`review/qwen3-llvm-toolchain` at `23cb318` remains available for rollback.
+
+80 files moved to the application, including numerical policy fixtures and the
+LLVM reproduction recipe. All moved algorithm source bytes and the LLVM recipe
+remain unchanged. Three unused alternate numerical headers were removed from
+the compiler; the application keeps its previously selected implementations.
+Build wiring, dependency paths and test optimizer selection were updated.
+
+A fresh build produced all 22 compiler/policy/runtime products. The corrected
+verification entry passed 615 configured host tests with no skips and nine IR
+checks. Both numerical optimizers produced byte-identical outputs and diagnostics
+to their preceding versions for all eight moved IR fixtures (16 comparisons).
+The first verification exposed two test modules still selecting the generic
+optimizer for application numerical passes; their selection was corrected.
+Evidence is in `.local/native-ownership-20261030/`, especially
+`build/build.json`, `verification-fixed/result.json`, `source-comparison.json`
+and `policy-comparison.json`. Offline source bundles are under `delivery/`.
+
+This validates the ownership/build migration. Full model libraries were not
+recompiled or rerun on DSP in this change; the previously qualified model assets
+and their evidence below remain intact.
+
+## Previously qualified reproducible LLVM dependency
 
 Compiler `23cb318` packages the complete 29-file LLVM source patch, pinned
 upstream revision and patched tree, CMake recipe, and build/identity verifier.
