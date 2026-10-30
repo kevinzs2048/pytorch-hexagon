@@ -1,5 +1,10 @@
 # Build the Qwen3 model from source
 
+For the sequential host-to-board commands, including capture transfer, input JSON
+generation, constant checks, deployment and inference with the newly built libraries,
+start with [the Chinese walkthrough](../../USAGE.zh-CN.md). This page explains the
+build contracts and optional extended validation.
+
 `python -m models.qwen3.build` is the build entry. It builds the Hexagon-MLIR plugin,
 both Qwen compiler configurations, the four numerical policy tools and the DSP
 helpers. With `--models`, it also lowers the captured PyTorch graphs through
@@ -229,7 +234,7 @@ The public generate/export/doctor/regress/compare commands, source build,
 capture export and full-output verification remain the supported workflow.
 
 Tests specific to the retired recipe cache and remote worker were removed with
-those implementations. Generation protocol checks now import `qwen3.runtime_checks`
+those implementations. Generation protocol checks now import `models.qwen3.runtime_checks`
 directly. Query-domain rejection checks, mailbox admission checks, numerical
 operator tests and the complete included DSP references remain. The diagnostic
 session-completion audit keeps its validation without importing a retired worker.
@@ -239,7 +244,7 @@ allowing the unused early KV layout/bundle prototypes to be retired. Shared
 caller rewriting is unchanged; only its unused recipe validators/link mutators
 were removed.
 
-The remaining maintainer commands are explicitly enumerated in `qwen3.tools`.
+The remaining maintainer commands are explicitly enumerated in `models.qwen3.tools`.
 They cover building, host verification, performance analysis, optional model
 instrumentation and bounded primitive probes. Parser/helper modules cannot be
 launched as commands. The two `tools/qwen3-review` scripts support compiler-team

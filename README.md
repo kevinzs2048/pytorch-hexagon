@@ -5,7 +5,8 @@ maintained Hexagon-MLIR compiler. **Qwen3-0.6B is the first supported model adap
 The repository layout accommodates other adapters; it does not claim that other
 models already run correctly.
 
-中文入口：[使用指南](USAGE.zh-CN.md)。Qwen3 的适配范围和入口见
+从环境准备、ARM 图捕获、源码构建到新模型部署推理，按步骤执行：
+[中文构建与推理指南](USAGE.zh-CN.md)。Qwen3 的适配范围和入口见
 [models/qwen3/README.md](models/qwen3/README.md)。
 
 ## Repository layout

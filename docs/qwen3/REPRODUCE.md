@@ -1,5 +1,8 @@
 # Reproducing Qwen3 execution
 
+This page runs an existing execution bundle. To compile and run new model
+libraries, follow [the full walkthrough](../../USAGE.zh-CN.md).
+
 ## Required inputs
 
 1. This application repository at the supplied delivery revision, with the pinned `third_party/hexagon-mlir` submodule initialized (see the root README).
@@ -25,8 +28,8 @@ libraries. A new-board OS/firmware qualification is separate from directory relo
 cd /path/to/pytorch-hexagon
 # Optional: prove that no old PYTHONPATH is involved.
 unset PYTHONPATH
-python3 -m qwen3 doctor --bundle /path/to/bundle --execution
-python3 -m qwen3 generate --bundle /path/to/bundle \
+python3 -m hexagon_runtime qwen3 doctor --bundle /path/to/bundle --execution
+python3 -m hexagon_runtime qwen3 generate --bundle /path/to/bundle \
   --prompt '你好，请用一句话介绍你自己。' --max-new-tokens 32 \
   --chat-template --output results/chinese
 ```
@@ -55,8 +58,8 @@ model and framework identities; it can be deleted when no process is using it.
 An explicit local file mapping is used once by the maintainer:
 
 ```bash
-python3 -m qwen3 export --spec /path/to/local-assets.json --output /path/to/bundle
-python3 -m qwen3 doctor --bundle /path/to/bundle
+python3 -m hexagon_runtime qwen3 export --spec /path/to/local-assets.json --output /path/to/bundle
+python3 -m hexagon_runtime qwen3 doctor --bundle /path/to/bundle
 ```
 
 See [the example mapping](../../models/qwen3/config/asset-map.example.json). Paths may be
@@ -77,13 +80,13 @@ when sharing. SDK/compiler toolchains are separate build dependencies; see
 
 ```bash
 # Host Python with the project's test dependencies; no DSP needed.
-python -m qwen3 test
+python -m hexagon_runtime qwen3 test
 
 # Board: prompts and the trusted tensor-hash reference are included in the repo.
-python3 -m qwen3 regress --bundle /path/to/bundle --output results/regression
+python3 -m hexagon_runtime qwen3 regress --bundle /path/to/bundle --output results/regression
 
 # Run exactly the reference prompts, max-new-tokens and chunk-size first.
-python3 -m qwen3 compare --reference /path/to/reference-result.json \
+python3 -m hexagon_runtime qwen3 compare --reference /path/to/reference-result.json \
   --candidate results/relocated/result.json --output results/comparison.json
 ```
 
@@ -94,5 +97,6 @@ saved trusted reference; it does not run a fresh ARM reference itself.
 
 Keep outputs and local mappings in `results/`, `.local/` or outside the checkout;
 these paths are ignored by Git. Application source, patches, tests and documentation belong here. Compiler
-source and DSP kernels belong in the compiler fork. Historical experiments remain
+source belongs in the compiler fork; Qwen-specific DSP helpers belong in
+`models/qwen3/native/`. Historical experiments remain
 in the preserved compiler-history commits.
