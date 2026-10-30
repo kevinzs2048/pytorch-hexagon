@@ -5,7 +5,7 @@ import subprocess
 
 import pytest
 
-from qwen3.build import export_source, product_paths, sha, source_identity, verify_products
+from models.qwen3.build import export_source, product_paths, sha, source_identity, verify_products
 
 
 def test_verification_rejects_mixed_optimizer_and_helper_checkouts(tmp_path, monkeypatch):
@@ -81,9 +81,9 @@ def test_model_build_rejects_changed_compiler_products(source, tmp_path, monkeyp
     config = tmp_path/'toolchain.json'
     config.write_text('{}')
     dependency = {'receipt_sha256': 'qualified LLVM identity'}
-    native = {'native/runtime/helper.c': 'qualified native helper'}
-    monkeypatch.setattr('qwen3.build.native_identity', lambda: native)
-    monkeypatch.setattr('qwen3.build.llvm_identity', lambda *args: dependency)
+    native = {'models/qwen3/native/runtime/helper.c': 'qualified native helper'}
+    monkeypatch.setattr('models.qwen3.build.native_identity', lambda: native)
+    monkeypatch.setattr('models.qwen3.build.llvm_identity', lambda *args: dependency)
     for path in product_paths(output):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(b'original build product')
@@ -93,14 +93,14 @@ def test_model_build_rejects_changed_compiler_products(source, tmp_path, monkeyp
                   LLVM_identity=dependency, native_sources=dict(native))
     (output/'build.json').write_text(json.dumps(record))
     assert verify_products(output, repo, config) == record
-    native['native/runtime/helper.c'] = 'changed helper'
+    native['models/qwen3/native/runtime/helper.c'] = 'changed helper'
     with pytest.raises(ValueError, match='native extension sources changed'):
         verify_products(output, repo, config)
-    native['native/runtime/helper.c'] = 'qualified native helper'
-    monkeypatch.setattr('qwen3.build.llvm_identity', lambda *args: {'receipt_sha256': 'other LLVM'})
+    native['models/qwen3/native/runtime/helper.c'] = 'qualified native helper'
+    monkeypatch.setattr('models.qwen3.build.llvm_identity', lambda *args: {'receipt_sha256': 'other LLVM'})
     with pytest.raises(ValueError, match='LLVM dependency identity differs'):
         verify_products(output, repo, config)
-    monkeypatch.setattr('qwen3.build.llvm_identity', lambda *args: dependency)
+    monkeypatch.setattr('models.qwen3.build.llvm_identity', lambda *args: dependency)
     product_paths(output)[0].write_bytes(b'replaced compiler')
     with pytest.raises(ValueError, match='products changed'):
         verify_products(output, repo, config)

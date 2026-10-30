@@ -179,8 +179,8 @@ def main():
         raise ValueError('Accepted complete input or original model DSO changed')
     library=args.receipt.parent/'memory-profile.so'
     if sha(library)!=receipt['library']['sha256']:raise ValueError('Diagnostic model DSO changed')
-    sys.path[:0]=[str(args.sources/'qwen3/runtime/arm'),str(args.sources)]
-    from hexagon_shared_packet_transport import HexagonSharedPacketStream
+    sys.path[:0]=[str(args.sources/'models/qwen3/runtime/arm'),str(args.sources)]
+    from hexagon_runtime.hexagon_shared_packet_transport import HexagonSharedPacketStream
     from run_qwen_arm_dynamic_warm_generate import stage
     from hexagon_live_compile_mailbox import atomic_json
     constant_layout=stage(catalog,args.workdir,include_code=False,
@@ -243,7 +243,7 @@ def main():
     try:
         os.chdir(args.workdir)
         with HexagonSharedPacketStream(argv,env,args.output,input_bytes=len(payload),
-                output_bytes=output_bytes,initial_library=str(libraries['baseline']),timeout=120) as stream:
+                output_bytes=output_bytes,library_path_prefix='/dev/shm/qwen3-', initial_library=str(libraries['baseline']),timeout=120) as stream:
             record['ready']=stream.start();save()
             for index,name in enumerate(('baseline','profile','profile','baseline')):
                 record['pending']=dict(index=index,library=name);save()

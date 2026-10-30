@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run the retained host suite and IR checks against the unified source build."""
-from qwen3.compiler_dependency import compiler_root, native_root
+from hexagon_runtime.compiler_dependency import compiler_root
+from models.qwen3.paths import native_root
 import argparse
 import json
 import os
@@ -10,7 +11,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 from build import ROOT, entry, write
-from qwen3.build import source_identity
+from models.qwen3.build import source_identity
 
 FIXTURES = ['arm-rmsnorm-order.mlir', 'bounded-dynamic-rmsnorm.mlir',
             'bounded-dynamic-k-norm.mlir', 'bounded-dynamic-softmax.mlir',
@@ -42,10 +43,10 @@ def main():
     source = a.compiler_source.resolve() if a.compiler_source else compiler_root()
     require_matching_test_checkout(source)
     a.build = a.build.resolve()
-    from qwen3.build import verify_products
+    from models.qwen3.build import verify_products
     verify_products(a.build, source, a.config)
     a.output.mkdir(parents=True, exist_ok=False)
-    scripts = ROOT/'qwen3/runtime/arm'
+    scripts = ROOT/'models/qwen3/runtime/arm'
     sums = str(a.build/'policy/qwen-policy-sums-opt')
     first = str(a.build/'policy/qwen-policy-first-opt')
     lowering = str(a.build/'compiler/third_party/qcom_hexagon_backend/bin/linalg-hexagon-opt')
@@ -72,7 +73,8 @@ def main():
         name = 'retained-suite'
         command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
                    '--junitxml='+str(a.output/(name+'.xml')),
-                   str(ROOT/'test/python/qwen3'), str(ROOT/'test/python/torch-mlir'),
+                   str(ROOT/'test/python/hexagon_runtime'), str(ROOT/'test/python/qwen3'),
+                   str(ROOT/'test/python/torch-mlir'),
                    str(source/'test/python/torch-mlir/test_process_codegen_policy.py')]
         with (a.output/(name+'.log')).open('xb') as log:
             subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)

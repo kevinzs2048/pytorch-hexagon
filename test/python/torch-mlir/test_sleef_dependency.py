@@ -15,7 +15,7 @@ def dependency(tmp_path):
         pytest.skip("Set QWEN_SLEEF_SOURCE_DIR to an unmodified SLEEF 3.8 tree")
     source = tmp_path / "upstream"
     shutil.copytree(location, source)
-    module = Path(__file__).resolve().parents[3] / "native/arm_rope_trig_runtime/Sleef.cmake"
+    module = Path(__file__).resolve().parents[3] / "models/qwen3/native/arm_rope_trig_runtime/Sleef.cmake"
     project = tmp_path / "project"
     project.mkdir()
     (project / "CMakeLists.txt").write_text(

@@ -9,7 +9,7 @@ import torch
 
 from hexagon_dynamo_parameters import spec
 from hexagon_dynamic_module_constants import dynamic_tensor_digest
-from qwen3.runtime.support.exact_parameter_bytes import ExactParameterBytePool,raw_view
+from models.qwen3.runtime.support.exact_parameter_bytes import ExactParameterBytePool,raw_view
 
 
 def binding(value):

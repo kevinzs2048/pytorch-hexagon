@@ -1,5 +1,6 @@
 """Check exact integer guard equivalence and full strided byte-copy behavior."""
-from qwen3.compiler_dependency import compiler_root, native_root
+from hexagon_runtime.compiler_dependency import compiler_root
+from models.qwen3.paths import native_root
 import ctypes
 import itertools
 import random

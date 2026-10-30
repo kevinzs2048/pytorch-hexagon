@@ -26,7 +26,7 @@ python dependencies/llvm/toolchain.py prepare \
   --repository /path/to/llvm-git --source /path/to/llvm-qwen-source
 ```
 
-Copy `qwen3/config/build.example.json` in this application repository. Set `llvm_source` to
+Copy `models/qwen3/config/build.example.json` in this application repository. Set `llvm_source` to
 that worktree, `llvm_build` to a fresh build directory, `lld` to that build's
 `bin/ld.lld`, and `llvm_receipt` to an output JSON file outside the source tree.
 Set the host compiler paths and any required host `library_path` entries.
@@ -43,7 +43,7 @@ different recipe/source/compiler inputs is rejected rather than overwritten.
 `configure.log` and `build.log` retain the commands' output. The receipt is
 written only after the required build targets and source checks complete.
 
-Use the same configuration with the application's `python -m qwen3.build`.
+Use the same configuration with the application's `python -m models.qwen3.build`.
 The application requires the receipt before configuring the backend and records
 its identity in `build.json`. Model builds and host verification check that same
 identity again. A new source-built dependency still needs compiler/model

@@ -79,8 +79,8 @@ def main():
         libraries[row['name']]=a.receipt.parent/Path(row['library']['path']).name
     if set(libraries)!={'unknown','declaration-contract','unknown-counted','declaration-contract-counted'}:
         raise ValueError('Original/candidate and separate diagnostic libraries required')
-    sys.path[:0]=[str(a.sources/'qwen3/runtime/arm'),str(a.sources)]
-    from hexagon_shared_packet_transport import HexagonSharedPacketStream
+    sys.path[:0]=[str(a.sources/'models/qwen3/runtime/arm'),str(a.sources)]
+    from hexagon_runtime.hexagon_shared_packet_transport import HexagonSharedPacketStream
     from run_qwen_arm_dynamic_warm_generate import validate_workdir
     from hexagon_live_compile_mailbox import atomic_json
     import numpy as np
@@ -125,7 +125,7 @@ def main():
     try:
         os.chdir(a.workdir)
         with HexagonSharedPacketStream(argv,env,a.output,input_bytes=input_bytes,output_bytes=output_bytes,
-                initial_library=str(staged['unknown']),timeout=120) as stream:
+                library_path_prefix='/dev/shm/qwen3-', initial_library=str(staged['unknown']),timeout=120) as stream:
             record['ready']=stream.start();save()
             for pattern,x,other,finite in patterns(np,a.rows):
                 expected=np.empty(elements,dtype=np.float32);native(x.ctypes.data_as(pointer),other.ctypes.data_as(pointer),expected.ctypes.data_as(pointer),elements)

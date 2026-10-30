@@ -162,8 +162,8 @@ def main():
             libraries[row['name'].removeprefix('link-')] = path
     if set(libraries) != {'original', 'candidate', 'candidate-checks'}:
         raise ValueError('Unwrapped ABBA pair and separate integer diagnostic required')
-    sys.path[:0] = [str(args.sources / 'qwen3/runtime/arm'), str(args.sources)]
-    from hexagon_shared_packet_transport import HexagonSharedPacketStream
+    sys.path[:0] = [str(args.sources / 'models/qwen3/runtime/arm'), str(args.sources)]
+    from hexagon_runtime.hexagon_shared_packet_transport import HexagonSharedPacketStream
     from run_qwen_arm_dynamic_warm_generate import validate_workdir
     from hexagon_live_compile_mailbox import atomic_json
     validate_workdir(args.workdir)
@@ -203,7 +203,7 @@ def main():
     try:
         os.chdir(args.workdir)
         with HexagonSharedPacketStream(argv, env, args.output, input_bytes=INPUT_BYTES,
-                output_bytes=OUTPUT_BYTES, initial_library=str(staged['original']), timeout=120) as stream:
+                output_bytes=OUTPUT_BYTES, library_path_prefix='/dev/shm/qwen3-', initial_library=str(staged['original']), timeout=120) as stream:
             record['ready'] = stream.start()
             save()
             for case in cases(args.fixed512):

@@ -5,7 +5,7 @@
 
 ## Canonical project
 
-The existing `hexagon-mlir-qwen3` repository, branch `qwen3/unified`, is the single
+The existing `hexagon-mlir-qwen3` repository, branch `models/qwen3/unified`, is the single
 source entry. We did not create another application repository. Compiler source,
 framework/model/KV integration, policies, tests, patches and instructions are
 versioned together. Large execution assets are exported to a relocatable bundle.
@@ -25,7 +25,7 @@ The maintained tree imports the required runtime/build support files from:
 - Compiler-team diagnostics/docs: upstream-review branch, collected here.
 - Retained LLVM local changes: one patch against `064f02d`, including new tests.
 
-`qwen3/source-origins.json` records the original paths and byte hashes of the
+`models/qwen3/source-origins.json` records the original paths and byte hashes of the
 imported sources. New public packaging code is ordinary Git-tracked source.
 Numerical code, the native generation entry, and the two model DSOs are retained;
 the integration refactor changes how assets/dependencies are found and staged.
@@ -54,7 +54,7 @@ lock. No old `PYTHONPATH` is required.
 - Device: two migration runs (32 forwards) and the final public `regress` entry
   (16 forwards) matched every reference input/output hash, position, token and
   ARM/RPC/DSP input checksum. The final source digest was checked against the
-  executed board source. See [the validation record](../../qwen3/validation/consolidation.json).
+  executed board source. See [the validation record](../../models/qwen3/validation/consolidation.json).
 - The copied host bundle also passed verification: 19,793 files, 3,502,496,726
   bytes. It includes the ARM package snapshot and needs no old PYTHONPATH.
 

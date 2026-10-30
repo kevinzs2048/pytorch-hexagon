@@ -1,1 +1,1 @@
-"""Qwen3 application using a separately maintained, pinned Hexagon-MLIR backend."""
+"""Compatibility command; model implementation lives in models.qwen3."""

@@ -1,5 +1,5 @@
 """Runtime identity and packet checks; this is not DSP purity acceptance."""
-from qwen3.compiler_dependency import native_root
+from models.qwen3.paths import native_root
 import ctypes
 import importlib.util
 from pathlib import Path

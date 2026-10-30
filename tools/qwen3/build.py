@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compatibility entry for the unified source build.
 
-Use python -m qwen3.build. Small metadata helpers below remain for historical
+Use python -m models.qwen3.build. Small metadata helpers below remain for historical
 evidence/profiling tools; no reference-wrapper recipe is generated here.
 """
 import hashlib
@@ -49,5 +49,5 @@ def verify_dependencies(config, lock):
 
 
 if __name__ == "__main__":
-    from qwen3.build import main
+    from models.qwen3.build import main
     main()

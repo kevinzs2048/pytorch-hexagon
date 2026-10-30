@@ -6,18 +6,20 @@ This split supersedes that layout.
 
 | Owner | Maintained code |
 | --- | --- |
-| `qwen3-hexagon-runtime` application | PyTorch model capture/adaptation, native generation, logical KV lifecycle, deployment, Python orchestration, Qwen-specific native compiler/DSP extensions, toolchain reproduction, application tests and reports |
+| `pytorch-hexagon` application | PyTorch model capture/adaptation, native generation, logical KV lifecycle, deployment, Python orchestration, Qwen-specific native compiler/DSP extensions, toolchain reproduction, application tests and reports |
 | Hexagon-MLIR compiler fork | General dialect/lowering/codegen support, generic tensor ABI, runtime correctness fixes and compiler tests |
 
 The compiler lives in its own Git repository and is consumed as the
 `third_party/hexagon-mlir` submodule, pinned by the current application lock.
-The application owns `native/` and `dependencies/llvm/`; source language does
+The application owns `models/qwen3/native/` and `dependencies/llvm/`; source language does
 not determine repository ownership. The historical placement of all numerical
 policies and DSP helpers in the compiler fork is superseded by this boundary.
 
-The dependency commit is local, not pushed. The offline delivery includes separate
-application and compiler Git bundles; the root README gives the standard submodule
-initialization commands. Do not claim the GitHub remote already contains this commit.
+Compiler `f13109d` is published on the fork branch `review/qwen3-integration`.
+The application has its own repository and remote. Initialize the compiler
+submodule as described in the root README. Within this application, shared
+infrastructure lives in `hexagon_runtime/`; Qwen-specific implementation lives
+in `models/qwen3/`. Adding a model does not require renaming this repository.
 
 ## Historical cleanup record
 
@@ -44,7 +46,7 @@ cleanup. The fresh board regression uses the independent application source,
 separately pinned compiler source, unchanged accepted assets, system Python and
 an unset PYTHONPATH. At the initial split, all 169 host tests passed. All 16 board forwards matched every reference input/
 output hash (logits and full KV), position, token and checksum. The completed
-record is `qwen3/validation/repository-split.json`.
+record is `models/qwen3/validation/repository-split.json`.
 
 This is a source-ownership/import-path refactor. The two compiled model libraries,
 weights, numerical policies and generated packet values are not intentionally
@@ -53,11 +55,11 @@ repository separation do not close that existing build gap.
 
 ## Follow-up cleanup — 2026-10-27
 
-Eight execution helpers moved from `tools/qwen3` to `qwen3/runtime/support`;
+Eight execution helpers moved from `tools/qwen3` to `models/qwen3/runtime/support`;
 seven tests moved into `test/python/qwen3`. Shared checks live in
-`qwen3/runtime_checks.py`, so inference no longer imports historical regression,
+`models/qwen3/runtime_checks.py`, so inference no longer imports historical regression,
 performance or release launchers. Existing internal callers reuse those checks.
-The runtime cache uses `qwen3/runtime-sources.json`; unrelated tool/test edits no
+The runtime cache uses `models/qwen3/runtime-sources.json`; unrelated tool/test edits no
 longer change its identity. A regression checks that local imports remain covered.
 
 The missing QK MLIR fixture and pure SiLU IR generator were recovered from frozen
@@ -89,7 +91,7 @@ offline clone; 161 compiler/SDK-dependent tests skipped. The final runtime sourc
 passed 16 forwards in a fresh process/cache and 16 more in a second process using
 the same cache. Every input/output hash (logits and full KV), position, token and
 checksum matched the included reference. AOT counts were two misses on the first
-run and two hits on the second. See `qwen3/validation/code-cleanup.json` for source
+run and two hits on the second. See `models/qwen3/validation/code-cleanup.json` for source
 identities and evidence hashes. This does not qualify a clean compiler rebuild.
 
 ## Orphan implementation cleanup
@@ -109,6 +111,6 @@ tests with no skips, plus nine IR checks. Final board regression is recorded in
 the source-build qualification, not inferred from this static review.
 
 The removal list and original file identities are in
-`qwen3/validation/orphan-cleanup.json`; recover the old code from application
+`models/qwen3/validation/orphan-cleanup.json`; recover the old code from application
 commit `68ff472` if historical investigation needs it. Active native generation,
 KV lifecycle, numerical policy passes and DSP helper implementations remain.

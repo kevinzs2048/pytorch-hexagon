@@ -160,5 +160,5 @@ class OnlinePacketObserver:
         for actual,expected in zip(run['requests'],self.trace['requests'],strict=True):
             if any(actual[key]!=expected[key] for key in expected):
                 raise ValueError('Native generated tokens, stopping or cache ownership differ')
-        from hexagon_library_lifecycle import audit_library_events
+        from hexagon_runtime.hexagon_library_lifecycle import audit_library_events
         return audit_library_events(run['stream_events'],[f['DSP_library_slot'] for f in run['forwards']])

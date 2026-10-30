@@ -1,5 +1,5 @@
 """Exercise the real rewrite's opt-in, shape and external ABI boundaries."""
-from qwen3.compiler_dependency import native_root
+from models.qwen3.paths import native_root
 import os
 from pathlib import Path
 import subprocess

@@ -22,7 +22,7 @@ libraries. A new-board OS/firmware qualification is separate from directory relo
 ## One public entry
 
 ```bash
-cd /path/to/qwen3-hexagon-runtime
+cd /path/to/pytorch-hexagon
 # Optional: prove that no old PYTHONPATH is involved.
 unset PYTHONPATH
 python3 -m qwen3 doctor --bundle /path/to/bundle --execution
@@ -59,7 +59,7 @@ python3 -m qwen3 export --spec /path/to/local-assets.json --output /path/to/bund
 python3 -m qwen3 doctor --bundle /path/to/bundle
 ```
 
-See [the example mapping](../../qwen3/config/asset-map.example.json). Paths may be
+See [the example mapping](../../models/qwen3/config/asset-map.example.json). Paths may be
 absolute or relative to the mapping file. Export copies assets; it does not
 compile the model or confer new numerical acceptance. The generated `bundle.json`
 contains only relative file names and hashes. Original experiment paths are not

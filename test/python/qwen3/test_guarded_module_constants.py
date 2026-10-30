@@ -5,9 +5,9 @@ import math
 from pathlib import Path
 import pytest
 import torch
-from qwen3.runtime.support.guarded_module_constants import (GuardedModuleConstants,SCHEMA,
+from models.qwen3.runtime.support.guarded_module_constants import (GuardedModuleConstants,SCHEMA,
     constant_signature,validate_constant_rows,validate_capture_constants)
-from qwen3.runtime.support import guarded_module_constants as constants
+from models.qwen3.runtime.support import guarded_module_constants as constants
 
 
 def norm():
@@ -65,7 +65,7 @@ def test_signed_zero_and_compiler_host_mismatch_rejected():
 
 
 def test_complete_selected_model_content_matches_legacy_and_detects_changes():
-    from qwen3.runtime.support.guarded_module_constants import selected_model_content_signature
+    from models.qwen3.runtime.support.guarded_module_constants import selected_model_content_signature
     from hexagon_module_scalar_binding import binding_content_signature
     rows=GuardedModuleConstants(model()).records
     tensors=[dict(source='parameter'+str(i),attributes=[],

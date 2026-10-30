@@ -6,7 +6,7 @@ import pytest
 from audit_arm_dynamic_warm_run import (
     audit, audit_compile_handoff, first_prefill_control, audit_rebuilt_artifacts, admit_reload_control,
     audit_local_packet_transport)
-from hexagon_compiled_artifact_cache import digest_file
+from hexagon_runtime.hexagon_compiled_artifact_cache import digest_file
 from test_hexagon_library_lifecycle import events
 
 
@@ -237,7 +237,7 @@ def test_prefill_selection_cannot_hide_unchecked_calls(tmp_path, fault):
 
 def rebuilt_fixture(tmp_path):
     import hashlib
-    from hexagon_compiled_artifact_cache import canonical, describe_artifacts
+    from hexagon_runtime.hexagon_compiled_artifact_cache import canonical, describe_artifacts
     from hexagon_module_scalar_binding import binding_content_signature
     front, machine = tmp_path/'front', tmp_path/'machine'
     front.mkdir(); machine.mkdir()

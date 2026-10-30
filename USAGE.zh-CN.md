@@ -1,19 +1,19 @@
-# Qwen3 Hexagon Runtime 使用指南
+# PyTorch Hexagon 使用指南（Qwen3 示例）
 
 想先运行模型，直接看第 1、2 节。已有编译产物可以直接推理，不需要先构建 LLVM。
 
 当前支持 QCS9075、Qwen3-0.6B 完整 28 层、batch=1。模型前向在 DSP 执行，ARM 运行分词和 Transformers 生成循环。线性层使用 W8A8，其他中间计算及 KV 使用 FP32；没有 CPU 模型前向回退。
 
-当前源码已将 Qwen 专用扩展迁回应用仓库，编译器固定为 `f13109d`。此前完整模型验收对应应用 `426f7f5`、编译器 `23cb318`；第 2、3 节使用该已验收板端副本。本次目录迁移的验证范围见 [构建状态](docs/qwen3/BUILD_STATUS.md)，不与此前模型验收混计。本机路径记录于 2026-10-30。
+当前仓库名为 `pytorch-hexagon`，共享代码位于 `hexagon_runtime/`，Qwen3 适配位于 `models/qwen3/`。编译器仍固定为 `f13109d`。此前完整模型验收对应应用 `426f7f5`、编译器 `23cb318`；第 2、3 节使用本次目录重构后已通过 16 次前向对照的板端副本，复用已有模型库。本次目录迁移的验证范围见 [构建状态](docs/qwen3/BUILD_STATUS.md)，不与此前模型验收混计。本机路径记录于 2026-10-30。
 
 ## 1. 先分清在哪台机器操作
 
 | 用途 | 当前路径或地址 |
 | --- | --- |
-| 开发主机上的应用仓库 | `/home/kevin/hexagon/qwen3-hexagon-runtime` |
+| 开发主机上的应用仓库 | `/home/kevin/hexagon/pytorch-hexagon` |
 | 开发主机上的编译器仓库 | `/home/kevin/hexagon/hexagon-mlir-review` |
 | 开发板 SSH | `radxa@192.168.31.135` |
-| 开发板上已验证的应用源码副本 | `/mnt/nvme/qwen3-work/llvm-toolchain-20261030/candidate-source` |
+| 开发板上已验证的应用源码副本 | `/mnt/nvme/qwen3-work/pytorch-hexagon-layout-20261030T151430Z/application` |
 | 开发板上的执行资源包 | `/mnt/nvme/qwen3-work/qwen3-hexagon-runtime/artifacts/qwen3-qcs9075` |
 
 主机负责开发和编译；下面的 `generate`、`regress` 在开发板上运行。板端源码副本用于执行，修改代码和提交 Git 请回到主机上的仓库。
@@ -31,16 +31,16 @@ ssh radxa@192.168.31.135
 以下命令在登录后的同一个板端终端执行：
 
 ```bash
-cd /mnt/nvme/qwen3-work/llvm-toolchain-20261030/candidate-source
+cd /mnt/nvme/qwen3-work/pytorch-hexagon-layout-20261030T151430Z/application
 unset PYTHONPATH
 
 qwen_bundle=/mnt/nvme/qwen3-work/qwen3-hexagon-runtime/artifacts/qwen3-qcs9075
 qwen_cache=/mnt/nvme/qwen3-work/user-cache/qwen3
 qwen_run_root="/mnt/nvme/qwen3-work/user-runs/$(date +%Y%m%d-%H%M%S)"
 
-python3 -m qwen3 doctor --bundle "$qwen_bundle" --execution
+python3 -m hexagon_runtime qwen3 doctor --bundle "$qwen_bundle" --execution
 
-python3 -m qwen3 generate \
+python3 -m hexagon_runtime qwen3 generate \
   --bundle "$qwen_bundle" \
   --cache-dir "$qwen_cache" \
   --prompt '你好，请用一句话介绍你自己。' \
@@ -75,7 +75,7 @@ PY
 换提示词只需修改 `--prompt`。多个请求可用以下形式，它们按顺序执行，每个请求重置 KV 状态：
 
 ```bash
-python3 -m qwen3 generate \
+python3 -m hexagon_runtime qwen3 generate \
   --bundle "$qwen_bundle" \
   --cache-dir "$qwen_cache" \
   --prompts-json '["用一句话介绍北京。", "写一个 Python 加法函数。"]' \
@@ -96,7 +96,7 @@ python3 -m qwen3 generate \
 在同一个板端终端运行内置回归：
 
 ```bash
-python3 -m qwen3 regress \
+python3 -m hexagon_runtime qwen3 regress \
   --bundle "$qwen_bundle" \
   --cache-dir "$qwen_cache" \
   --output "$qwen_run_root/regression"
@@ -104,13 +104,13 @@ python3 -m qwen3 regress \
 
 该命令使用仓库里的固定输入完成 **16 次完整模型前向**，对照已保存的参考结果，包括完整 logits、全部 56 个 KV 张量的哈希、位置、生成 token 和停止条件。成功时生成 `comparison.json`。它不是现场重新运行 ARM PyTorch 参考，也不是全部长序列回归。
 
-如果要复查本轮从源码重建的两个 DSP 库，板端已保留对应路径映射：
+如果要复查此前已验收、从源码重建的两个 DSP 库，板端已保留对应路径映射：
 
 ```bash
-python3 -m qwen3.verify_build \
+python3 -m models.qwen3.verify_build \
   --bundle "$qwen_bundle" \
   --libraries /mnt/nvme/qwen3-work/llvm-toolchain-20261030/candidate-libraries.json \
-  --reference qwen3/validation/reference16.json \
+  --reference models/qwen3/validation/reference16.json \
   --packet-recording hashes \
   --output "$qwen_run_root/rebuilt/cold"
 ```
@@ -119,22 +119,22 @@ python3 -m qwen3.verify_build \
 
 ## 4. 给其他人拿到同一份源码
 
-应用和编译器是两个仓库。Qwen 专用编译策略及 DSP 辅助实现位于应用的 `native/`，LLVM 复现配方位于应用的 `dependencies/llvm/`。应用通过 `third_party/hexagon-mlir` 子模块固定编译器版本；不要把另外一个目录的编译器源码随意覆盖进去。
+应用和编译器是两个仓库。Qwen 专用编译策略及 DSP 辅助实现位于应用的 `models/qwen3/native/`，LLVM 复现配方位于应用的 `dependencies/llvm/`。应用通过 `third_party/hexagon-mlir` 子模块固定编译器版本；不要把另外一个目录的编译器源码随意覆盖进去。
 
-当前目录迁移版本的离线源码包在：
+当前模型目录拆分版本的离线源码包在：
 
 ```text
-/home/kevin/hexagon/qwen3-hexagon-runtime/.local/native-ownership-20261030/delivery/application-source.bundle
-/home/kevin/hexagon/qwen3-hexagon-runtime/.local/native-ownership-20261030/delivery/compiler-source.bundle
+/home/kevin/hexagon/pytorch-hexagon/.local/model-layout-20261031/delivery/application-source.bundle
+/home/kevin/hexagon/pytorch-hexagon/.local/model-layout-20261031/delivery/compiler-source.bundle
 ```
 
-将两个文件交给接收方，在目标机器上按实际文件位置执行以下命令。示例中的 `/absolute/path/to/delivery` 需要替换，目标 `qwen3-hexagon-runtime` 目录应尚不存在：
+将两个文件交给接收方，在目标机器上按实际文件位置执行以下命令。示例中的 `/absolute/path/to/delivery` 需要替换，目标 `pytorch-hexagon` 目录应尚不存在：
 
 ```bash
 qwen_delivery=/absolute/path/to/delivery
-git clone -b review/qwen3-native-ownership \
-  "$qwen_delivery/application-source.bundle" qwen3-hexagon-runtime
-cd qwen3-hexagon-runtime
+git clone -b review/qwen3-integration \
+  "$qwen_delivery/application-source.bundle" pytorch-hexagon
+cd pytorch-hexagon
 git config submodule.hexagon-mlir.url "$qwen_delivery/compiler-source.bundle"
 git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
 git log -1 --oneline
@@ -147,14 +147,16 @@ git -C third_party/hexagon-mlir log -1 --oneline
 
 ## 5. 在现有开发主机上重新编译
 
+新源码推荐用 `python -m hexagon_runtime qwen3 …`；旧的 `python -m qwen3 …` 命令仍转发到同一适配实现。第 2、3 节给出了当前已验证板端副本的实际命令和路径。
+
 只运行推理可以跳过本节。以下命令在 **开发主机** 上执行，复用已验证的工具链；默认只构建编译器及应用扩展：
 
 ```bash
-cd /home/kevin/hexagon/qwen3-hexagon-runtime
+cd /home/kevin/hexagon/pytorch-hexagon
 qwen_python=/home/kevin/miniconda3/envs/main/bin/python
 qwen_config="$PWD/.local/unified-build/toolchain.json"
 qwen_compiler=/home/kevin/hexagon/hexagon-mlir-review
-qwen_build="$PWD/.local/native-ownership-20261030/build"
+qwen_build="$PWD/.local/model-layout-20261031/build"
 
 "$qwen_python" dependencies/llvm/toolchain.py verify \
   --config "$qwen_config"
@@ -169,7 +171,7 @@ qwen_build="$PWD/.local/native-ownership-20261030/build"
   --output "$PWD/.local/host-verification-$(date +%Y%m%d-%H%M%S)"
 ```
 
-`qwen_build` 是此次扩展迁移后的构建目录。Ninja 会复用未变化的编译器和 DSP 辅助对象。需要重新编译模型时，在构建命令中增加 `--models "$PWD/.local/unified-build/inputs/models.json" --trusted-local-producers`。
+`qwen_build` 是此次扩展迁移后的构建目录。Ninja 会复用未变化的编译器和 DSP 辅助对象。需要重新编译模型时，先按[源码构建指南](docs/qwen3/SOURCE_BUILD.md#capture-the-build-inputs-on-arm)用当前版本重新导出两份 ARM 捕获，填写新的模型输入配置，再增加 `--models /absolute/path/to/model-inputs.json --trusted-local-producers`。旧的 `.local/unified-build/inputs/models.json` 属于此前源码版本；捕获记录校验源码哈希，不能直接当作当前版本输入。
 
 模型输出要求 `models/q1`、`models/q2` 尚不存在。此前模型验收后已清理其两个中间目录，已验收模型另存于 `.local/llvm-toolchain-20261030/delivery/models/`。再次构建后若要重跑，应先保存需要的模型和记录，再处理旧输出，不能直接覆盖或误删交付目录。
 
@@ -186,7 +188,7 @@ qwen_build="$PWD/.local/native-ownership-20261030/build"
 3. [源码构建指南](docs/qwen3/SOURCE_BUILD.md#inputs) 列出的固定 host Python/PyTorch/torch-mlir 等环境和补丁。板端资源包里的 ARM Python 库不能用于 x86 主机构建。
 4. 模型资源，以及 ARM 实际生成流程导出的 q1、q2–32 两份可信图捕获。捕获及 `model-inputs.json` 配置方法也在该指南中。
 
-先复制 `qwen3/config/build.example.json` 填写本机路径，按 [LLVM 重建说明](dependencies/llvm/README.md) 准备独立源码并构建 LLVM/MLIR/LLD。配置中的 `llvm_receipt` 指向构建生成的校验记录，`lld` 指向该构建的 `bin/ld.lld`。然后运行统一入口 `python -m qwen3.build`，最后做主机及板端验证。
+先复制 `models/qwen3/config/build.example.json` 填写本机路径，按 [LLVM 重建说明](dependencies/llvm/README.md) 准备独立源码并构建 LLVM/MLIR/LLD。配置中的 `llvm_receipt` 指向构建生成的校验记录，`lld` 指向该构建的 `bin/ld.lld`。然后运行统一入口 `python -m models.qwen3.build`，最后做主机及板端验证。
 
 `seal-existing` 仅记录一套已有工具链，不会从源码重建，也不能代替新环境的构建验收。
 

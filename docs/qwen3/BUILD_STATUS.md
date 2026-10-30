@@ -3,12 +3,12 @@
 The application and compiler remain separate repositories. The application pins
 the compiler at `third_party/hexagon-mlir`. General backend support belongs to
 that fork; Qwen-specific profiles, numerical policies and DSP helpers are now
-application-owned under `native/`. The Qwen LLVM compatibility recipe belongs
+application-owned under `models/qwen3/native/`. The Qwen LLVM compatibility recipe belongs
 to this application under `dependencies/llvm/`.
 
-The supported build entry is now `python -m qwen3.build`. See
+The supported build entry is now `python -m models.qwen3.build`. See
 [source-build instructions](SOURCE_BUILD.md) for configuration, captures, build
-outputs and the DSP comparison command. `python -m qwen3.tools build` is an alias
+outputs and the DSP comparison command. `python -m models.qwen3.tools build` is an alias
 for the same implementation.
 
 | Component | Current source-build route |
@@ -25,6 +25,38 @@ for the same implementation.
 The pinned toolchain remains SDK 6.5.0.0 and Hexagon Tools 19.0.02. A newer public
 SDK, LLVM or framework release is a separate configuration and is not silently
 substituted.
+
+## Model adapter layout (2026-10-31)
+
+The application is now named **PyTorch Hexagon**, with the local checkout at
+`/home/kevin/hexagon/pytorch-hexagon`. Shared infrastructure is in
+`hexagon_runtime/`; Qwen3 Python, numerical contracts and native extensions are
+in `models/qwen3/`. The common command is `python -m hexagon_runtime qwen3 ...`.
+The old `python -m qwen3 ...` command is a small forwarding entry. The old host
+checkout path remains a symlink for existing local toolchain paths.
+
+The compiler pin remains `f13109d`; no compiler repository changes accompany this
+refactor. All 71 moved native implementation/build/dependency files are unchanged.
+The library staging namespace is now explicitly supplied by the model adapter;
+Qwen retains the same namespace and admission checks. Other models are not yet
+qualified.
+
+A fresh backend build produced all 22 products. Verification passed 622 configured
+host tests without skips and nine IR checks. On QCS9075, the new common entry ran
+16 forwards against the included reference: complete inputs, logits, every KV
+packet, positions, tokens and stopping matched, with no CPU model-forward
+fallback. This board run reused the existing qualified model libraries; models
+were not recompiled. The final runtime source digest matches the tested copy.
+Evidence is under `.local/model-layout-20261031/`, including
+`verification/result.json`, `board/comparison.json`, `board/execution.json` and
+`board-location.json`; offline source bundles are under `delivery/`.
+
+The physical directory rename changed the canonical path recorded for LLVM.
+All other inventory entries remained identical. The original LLVM receipt was
+preserved; a derived receipt records the path relocation and original receipt
+hash. This is neither a new LLVM build nor a relaxed identity check. Captured
+model-build inputs made by the preceding Python source revision need to be
+regenerated as described in the source-build guide.
 
 ## Native-extension ownership correction (2026-10-30)
 
@@ -228,7 +260,7 @@ models is **352 forwards**. No additional model code was compiled during this
 post-cleanup repeat.
 
 Exact source revisions, model hashes and receipt hashes are recorded in
-[the source-build qualification](../../qwen3/validation/unified-source-build.json).
+[the source-build qualification](../../models/qwen3/validation/unified-source-build.json).
 The compiler/model build ran at application `68ff472`; the cleaned runtime was
 executed at `6701f22`. The retained build functions were checked for AST equality
 across that cleanup. This qualifies the existing Qwen3-0.6B scope, not another
@@ -245,7 +277,7 @@ The removed reference-wrapper recipe, its three exclusive templates and the
 redundant RoPE build launcher are recoverable from application revision `9a5ce27`.
 Nine disconnected runtime modules and unused functions were removed separately;
 their identities and validation are in
-[the cleanup record](../../qwen3/validation/orphan-cleanup.json).
+[the cleanup record](../../models/qwen3/validation/orphan-cleanup.json).
 
 During that earlier cleanup, the explicit runtime dependency list decreased from 49 to 46 files. Including
 the new build entry, application/runtime/maintainer Python decreased from 268

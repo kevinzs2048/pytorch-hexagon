@@ -13,8 +13,8 @@ import sys
 import pytest
 import torch
 
-from qwen3.runtime.support.native_aot_output import native_cache_scope,namespace_digest,NativeAOTOutput
-from qwen3.runtime.support import native_aot_output
+from models.qwen3.runtime.support.native_aot_output import native_cache_scope,namespace_digest,NativeAOTOutput
+from models.qwen3.runtime.support import native_aot_output
 
 
 def manifest():

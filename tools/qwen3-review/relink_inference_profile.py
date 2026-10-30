@@ -13,7 +13,8 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-from qwen3.compiler_dependency import native_root, compiler_root
+from hexagon_runtime.compiler_dependency import compiler_root
+from models.qwen3.paths import native_root
 
 
 def sha(path):
@@ -32,7 +33,7 @@ def main():
     if (git('rev-parse', 'HEAD') != a.revision or git('status', '--porcelain')
             or not a.output.is_absolute() or a.output.exists()):
         raise ValueError('Pinned clean source and fresh diagnostic output required')
-    sys.path[:0] = [str(a.source/'tools/qwen3'), str(a.source/'qwen3/runtime/arm'), str(a.source), str(compiler_root())]
+    sys.path[:0] = [str(a.source/'tools/qwen3'), str(a.source/'models/qwen3/runtime/arm'), str(a.source), str(compiler_root())]
     helpers = importlib.import_module('profile_model_memory')
     cfg = json.loads(a.config.read_text())
     read = lambda path: json.loads(Path(path).read_text())

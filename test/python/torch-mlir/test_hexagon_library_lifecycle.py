@@ -1,6 +1,6 @@
 import copy
 import pytest
-from hexagon_library_lifecycle import audit_library_events
+from hexagon_runtime.hexagon_library_lifecycle import audit_library_events
 
 
 def events():

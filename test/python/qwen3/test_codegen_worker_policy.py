@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from qwen3.runtime.arm.compile_qwen3_artifact import codegen_options
+from models.qwen3.runtime.arm.compile_qwen3_artifact import codegen_options
 
 
 @pytest.mark.parametrize("enabled", [True, False])

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from qwen3.verify_build import reference_generation_options
+from models.qwen3.verify_build import reference_generation_options
 
 
 def test_early_eos_replays_the_requested_limit_not_observed_token_count():
@@ -14,7 +14,7 @@ def test_early_eos_replays_the_requested_limit_not_observed_token_count():
 
 
 def test_compact_completed_reference_preserves_original_budget():
-    path = Path(__file__).resolve().parents[3]/'qwen3/validation/reference16.json'
+    path = Path(__file__).resolve().parents[3]/'models/qwen3/validation/reference16.json'
     assert reference_generation_options(json.loads(path.read_text())) == (8, 32)
 
 

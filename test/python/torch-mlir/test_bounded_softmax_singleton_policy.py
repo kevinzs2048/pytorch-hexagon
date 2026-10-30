@@ -1,5 +1,5 @@
 """Run the real isolated optimizer; not DSP or whole-model acceptance."""
-from qwen3.compiler_dependency import native_root
+from models.qwen3.paths import native_root
 import os
 from pathlib import Path
 import subprocess

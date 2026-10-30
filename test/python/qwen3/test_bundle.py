@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 
-from qwen3.bundle import inside, sha, validate, write, SCHEMA
+from models.qwen3.bundle import inside, sha, validate, write, SCHEMA
 
 
 class BundleTests(unittest.TestCase):

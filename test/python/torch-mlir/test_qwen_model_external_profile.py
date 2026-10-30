@@ -1,5 +1,5 @@
 """Verify diagnostic wrappers preserve actual C ABI bits and nested-call scope."""
-from qwen3.compiler_dependency import native_root
+from models.qwen3.paths import native_root
 from pathlib import Path
 import shutil
 import subprocess

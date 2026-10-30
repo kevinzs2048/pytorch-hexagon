@@ -1,10 +1,10 @@
-from qwen3.compiler_dependency import native_root
+from models.qwen3.paths import native_root
 import copy
 from pathlib import Path
 
 import pytest
 
-from hexagon_compiled_artifact_cache import digest_file
+from hexagon_runtime.hexagon_compiled_artifact_cache import digest_file
 from hexagon_silu_helper_effects import guard_wrapper,guard_caller,ORIGINAL_HEADER_SHA256,CONTRACT
 
 RUNTIME=native_root()/'runtime'

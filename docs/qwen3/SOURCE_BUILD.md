@@ -1,15 +1,15 @@
 # Build the Qwen3 model from source
 
-`python -m qwen3.build` is the build entry. It builds the Hexagon-MLIR plugin,
+`python -m models.qwen3.build` is the build entry. It builds the Hexagon-MLIR plugin,
 both Qwen compiler configurations, the four numerical policy tools and the DSP
 helpers. With `--models`, it also lowers the captured PyTorch graphs through
 torch-mlir, compiles the model, generates its callers and links its libraries.
-`python -m qwen3.tools build` invokes the same implementation.
+`python -m models.qwen3.tools build` invokes the same implementation.
 
 The application owns build orchestration and the model integration. General
 compiler passes come from the pinned `third_party/hexagon-mlir` repository.
 Qwen-specific numerical passes, compiler profiles and DSP helpers belong to
-`native/` in this application. CMake 3.24+ loads `native/compiler/Profiles.cmake`
+`models/qwen3/native/` in this application. CMake 3.24+ loads `models/qwen3/native/compiler/Profiles.cmake`
 through `CMAKE_PROJECT_TOP_LEVEL_INCLUDES`; the compiler has no Qwen build hook.
 
 ## Inputs
@@ -34,7 +34,7 @@ through `CMAKE_PROJECT_TOP_LEVEL_INCLUDES`; the compiler has no Qwen build hook.
   weights. They use a version-specific internal PyTorch pickle format and must
   not be loaded from untrusted sources.
 
-Copy `qwen3/config/build.example.json` into a local configuration and replace all
+Copy `models/qwen3/config/build.example.json` into a local configuration and replace all
 paths. Keep the linker basename `ld.lld`; the Hexagon compiler driver uses it to
 select the linker argument dialect. The old, broad profiling configuration in
 `tools/qwen3/config.example.json` is not a source-build configuration.
@@ -60,14 +60,19 @@ Retain unchanged SDK helper objects; SDK recompilation can change their code.
 
 ## Capture the build inputs on ARM
 
+Capture with the same adapter revision used for the host build. Producer records
+bind source hashes; captures made before the `models/qwen3/` import migration
+must be regenerated, not relabelled. Existing compiled execution bundles remain
+usable and are independent of these model-build input captures.
+
 Use the normal qualified bundle to run the included controlled regression and
 export the actual compiler callbacks:
 
 ```bash
 mkdir /absolute/path/to/captures
-python3 -m qwen3.verify_build \
+python3 -m models.qwen3.verify_build \
   --bundle /absolute/path/to/qwen3-qcs9075 \
-  --reference qwen3/validation/reference16.json \
+  --reference models/qwen3/validation/reference16.json \
   --capture-output /absolute/path/to/captures \
   --output /absolute/path/to/capture-validation
 ```
@@ -78,7 +83,7 @@ exported. The resulting `result.json` records `exported_captures` and each
 capture's graph contract. Copy the capture directories to the compiler host.
 Keep `graph.pkl`, `result.json` and `ready.json` together.
 
-Fill `qwen3/config/model-inputs.example.json` with the host paths to the model
+Fill `models/qwen3/config/model-inputs.example.json` with the host paths to the model
 assets and the two producer `result.json` files, including their SHA256 values.
 Assign profiles from the recorded query bounds. A q1 graph has `[1, 1]`; the
 prefill graph has `[2, 32]`. The builder checks the actual derived contract.
@@ -86,13 +91,13 @@ prefill graph has `[2, 32]`. The builder checks the actual derived contract.
 ## Build and verify
 
 ```bash
-python -m qwen3.build \
+python -m models.qwen3.build \
   --config /absolute/path/to/toolchain.json \
   --models /absolute/path/to/model-inputs.json \
   --trusted-local-producers \
   --output /absolute/path/to/build --jobs 8
 
-python -m qwen3.tools verify \
+python -m models.qwen3.tools verify \
   --config /absolute/path/to/toolchain.json \
   --build /absolute/path/to/build \
   --output /absolute/path/to/host-verification
@@ -149,7 +154,7 @@ build/
 Each model directory contains a `result.json` with commands, stage results and
 artifact hashes. A successful build reports `source_model_built_NOT_DSP_qualified`;
 compilation alone is not numerical acceptance. Compiler options are explicitly
-versioned in `qwen3/config/compiler-options.json`.
+versioned in `models/qwen3/config/compiler-options.json`.
 
 Rebuilding identical sources is not a guarantee of identical SDK helper code.
 Hexagon Clang 19.0.02 produced different instruction bytes for the unchanged
@@ -167,10 +172,10 @@ have exactly the same SHA256 values as `bundle.json`. A changed constant payload
 requires its own deployment; changing only the model DSO is not sufficient.
 
 ```bash
-python3 -m qwen3.verify_build \
+python3 -m models.qwen3.verify_build \
   --bundle /absolute/path/to/qwen3-qcs9075 \
   --libraries /absolute/path/to/candidate-libraries.json \
-  --reference qwen3/validation/reference16.json \
+  --reference models/qwen3/validation/reference16.json \
   --output /absolute/path/to/candidate-validation
 ```
 
@@ -190,10 +195,10 @@ The existing state regression is also included in the repository:
 ```bash
 set -e
 for case_name in tails eos old-long32 prefill1024 decode993 code64; do
-  python3 -m qwen3.verify_build \
+  python3 -m models.qwen3.verify_build \
     --bundle /absolute/path/to/qwen3-qcs9075 \
     --libraries /absolute/path/to/candidate-libraries.json \
-    --reference "qwen3/validation/states/${case_name}.json" \
+    --reference "models/qwen3/validation/states/${case_name}.json" \
     --packet-recording hashes \
     --output "/absolute/path/to/state-validation/${case_name}"
 done
@@ -203,7 +208,7 @@ These six cases preserve the original 304-forward checks for chunk tails, EOS,
 long generation, capacity boundaries and request reset. Hash mode still checks
 every input/output byte, including all KV tensors; it avoids retaining large raw
 KV packets on disk. Reference provenance and the older q1 library identity are
-explained in [the state-reference notes](../../qwen3/validation/states/README.md).
+explained in [the state-reference notes](../../models/qwen3/validation/states/README.md).
 
 Compiler/algorithm tests and source review remain necessary; a finite prompt
 list does not prove every possible floating-point result.
@@ -240,7 +245,7 @@ instrumentation and bounded primitive probes. Parser/helper modules cannot be
 launched as commands. The two `tools/qwen3-review` scripts support compiler-team
 performance investigations; neither belongs to the normal inference path.
 Qwen-specific test fixtures live beside application tests. Optional C diagnostic
-wrappers live in the application under `native/` and are linked only by profiling tools.
+wrappers live in the application under `models/qwen3/native/` and are linked only by profiling tools.
 
 The retirement change was checked with 588 configured host tests and nine IR
 checks against the previously qualified compiler. A separate board run using

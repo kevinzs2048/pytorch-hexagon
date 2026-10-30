@@ -12,7 +12,7 @@ import tempfile
 import time
 
 from build import ROOT, verify_dependencies, sha
-from qwen3.compiler_dependency import native_root
+from models.qwen3.paths import native_root
 
 
 def instrument(text,inspect_fmaf=False):
@@ -58,7 +58,7 @@ def linked_caller(caller, link):
     if proof is None:
         selected = original
     else:
-        sys.path.insert(0, str(ROOT/'qwen3/runtime/arm'))
+        sys.path.insert(0, str(ROOT/'models/qwen3/runtime/arm'))
         from hexagon_caller_byte_copy import CONTRACT, rewrite_caller
         if (proof.get('contract') != CONTRACT or proof.get('tensor_transfer_calls') != 117
                 or proof.get('original_model_object_and_FP_order_unchanged') is not True
@@ -80,7 +80,7 @@ def linked_caller(caller, link):
 def preserve_wrapped_memcpy(command, nm, objcopy, output,
                             delegate_symbol='qwen_profile_preserved_memcpy'):
     # Shared with the model linker; imports no model/compiler tool state.
-    sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'qwen3/runtime/arm'))
+    sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'models/qwen3/runtime/arm'))
     from hexagon_preserved_memcpy import preserve_wrapped_memcpy as preserve
     return preserve(command,nm,objcopy,output,delegate_symbol=delegate_symbol)
 
@@ -130,7 +130,7 @@ def main():
             or link['output_bytes']!=235488768 or len(objects['objects'])!=4):
         raise ValueError('Frozen original model packet and four objects required')
     if args.dynamic_query:
-        sys.path.insert(0,str(ROOT/'qwen3/runtime/arm'))
+        sys.path.insert(0,str(ROOT/'models/qwen3/runtime/arm'))
         from hexagon_qwen_shape_policy import contract_query_bounds
         if contract_query_bounds(caller['contract'])!=(2,32) or args.inspect_fmaf:
             raise ValueError('Only the original accepted dynamic graph may be diagnosed')

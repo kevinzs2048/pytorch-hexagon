@@ -1,5 +1,5 @@
 """Diagnostic isolation and native link-wrapper checks, not DSP acceptance."""
-from qwen3.compiler_dependency import native_root
+from models.qwen3.paths import native_root
 import importlib.util
 from pathlib import Path
 import shutil
