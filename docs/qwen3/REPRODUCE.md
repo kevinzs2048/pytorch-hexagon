@@ -1,7 +1,7 @@
 # Reproducing Qwen3 execution
 
 This page runs an existing execution bundle. To compile and run new model
-libraries, follow [the full walkthrough](../../USAGE.zh-CN.md).
+libraries, follow [the full walkthrough](../../USAGE.md).
 
 ## Required inputs
 

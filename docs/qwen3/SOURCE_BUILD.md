@@ -2,7 +2,7 @@
 
 For the sequential host-to-board commands, including capture transfer, input JSON
 generation, constant checks, deployment and inference with the newly built libraries,
-start with [the Chinese walkthrough](../../USAGE.zh-CN.md). This page explains the
+start with [the build and inference walkthrough](../../USAGE.md). This page explains the
 build contracts and optional extended validation.
 
 `python -m models.qwen3.build` is the build entry. It builds the Hexagon-MLIR plugin,

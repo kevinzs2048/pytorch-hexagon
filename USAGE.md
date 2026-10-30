@@ -1,90 +1,139 @@
-# 从源码构建到板端推理：Qwen3 示例
+# Build and Run Qwen3 on QCS9075
 
-按下列步骤，可以在开发主机构建编译器和 Qwen3 模型，将新模型库部署到 QCS9075，然后验证并生成文本。**全部命令从开发主机的同一个 Bash 终端依次执行**；标有 `ssh` 的代码会自动到板端运行，不需要手工来回切换目录。
+This guide walks through building the compiler and Qwen3 model libraries on an
+x86 host, deploying the new libraries to a QCS9075 board, validating their outputs,
+and generating text. **Run the commands in order from a single Bash session on
+the development host.** Commands wrapped in `ssh` execute on the board.
 
-当前范围：Qwen3-0.6B 完整 28 层、batch=1、W8A8 线性层、FP32 中间计算及 KV、容量 1024。ARM 负责 Transformers 生成循环，DSP 执行模型前向。q1 用于解码，q2–32 用于分块预填充，提示词不是编译配置。
+The supported configuration is the complete 28-layer Qwen3-0.6B model, batch size
+1, W8A8 linear layers, FP32 intermediate values and KV cache, and a KV capacity of
+1024 tokens. ARM runs the Transformers generation loop; the model forward runs
+on DSP. Two reusable execution domains cover q1 decoding and q2–32 chunked
+prefill. Prompt text is a runtime input, not a compilation configuration.
 
-## 0. 先备齐输入
+## 0. Prerequisites
 
-本流程需要已有的已验收执行资源包，用它导出真实 ARM 生成过程中的计算图，再从源码重新编译模型。**目前不是仅凭 Git 仓库和 Hugging Face 权重就能从空白系统启动的安装流程。**
+This workflow starts with an existing, validated execution asset bundle. It uses
+that bundle to capture graphs from actual ARM generation, then rebuilds the model
+from source. **It is not a clean-system bootstrap using only this Git repository
+and Hugging Face weights.**
 
-| 输入 | 用途与要求 |
+| Input | Requirements and purpose |
 | --- | --- |
-| 应用源码及固定的 Hexagon-MLIR 子模块 | 主机和板端必须使用相同版本 |
-| 主机 Python 环境 | 已配置的 x86 Python 3.11+；PyTorch `2.12.0+cpu`、torch-mlir `20260908.870`、torchao `0.17.0+git02105d46`、Transformers `5.0.0rc1` 及匹配补丁。不能直接安装最新版替代 |
-| 主机构建依赖 | CMake 3.24+、Ninja、兼容的 Host Clang、固定 Triton 源码、带本项目补丁的 LLVM/MLIR/LLD |
-| 高通工具链 | Hexagon SDK 6.5.0.0、Hexagon Tools 19.0.02、HexKL |
-| QCS9075 开发板 | 已配置的 Linux/FastRPC/DSP 环境、ARM64 Python 3.12.3、`flock`、`pgrep`、可写共享内存 |
-| `qwen3-qcs9075` 执行资源包 | 权重、配置、分词器、已验收模型库、常量库、ARM/DSP 运行库及固定 ARM Python 包；主机和板端各一份 |
-| 连接与传输 | 主机能 SSH 登录开发板；两端有 `tar`、`rsync` |
+| Application source and pinned Hexagon-MLIR submodule | Use the same source revision on the host and board |
+| Host Python environment | Configured x86 Python 3.11+ with PyTorch `2.12.0+cpu`, torch-mlir `20260908.870`, torchao `0.17.0+git02105d46`, Transformers `5.0.0rc1`, and the matching patches. Substituting current package releases is not supported by this baseline |
+| Host build dependencies | CMake 3.24+, Ninja, a compatible host Clang, the pinned Triton source, and LLVM/MLIR/LLD with this project's patches |
+| Qualcomm toolchain | Hexagon SDK 6.5.0.0, Hexagon Tools 19.0.02, and HexKL |
+| QCS9075 board | Configured Linux/FastRPC/DSP environment, ARM64 Python 3.12.3, `flock`, `pgrep`, and writable shared memory |
+| `qwen3-qcs9075` execution asset bundle | Weights, model configuration, tokenizer, validated model libraries, constant libraries, ARM/DSP runtime, and pinned ARM Python packages; one copy on the host and one on the board |
+| Connectivity and transfer tools | SSH access from host to board; `tar` and `rsync` on both machines |
 
-板端 Python 依赖由资源包提供。主机的编译环境要另行准备，不能使用资源包里的 ARM Python 包代替。换机器时需取得维护者提供的匹配主机环境/安装包及补丁；本仓库尚未提供从空白系统自动安装全部框架依赖的脚本。资源包不在 Git 中，需从维护者取得；其组成见[资源包说明](docs/qwen3/REPRODUCE.md)。完整构建依赖见[源码构建说明](docs/qwen3/SOURCE_BUILD.md#inputs)。
+The bundle supplies the board's Python dependencies. The host compiler environment
+must be prepared separately; its x86 packages cannot be replaced by the ARM
+packages in the bundle. For a new host, obtain the matching environment snapshot
+or installation packages and patches from the maintainer. This repository does
+not yet provide an automated installer for all framework dependencies on a clean
+system.
 
-## 1. 固定源码，并设置本轮目录
+The execution bundle is supplied separately from Git. See
+[execution assets](docs/qwen3/REPRODUCE.md) for its contents and
+[build inputs](docs/qwen3/SOURCE_BUILD.md#inputs) for toolchain details.
 
-现有开发机直接进入下面的目录。新机器需要先取得应用仓库：远端创建并推送后，可执行 `git clone -b review/qwen3-integration --recurse-submodules git@github.com:kevinzs2048/pytorch-hexagon.git`；也可使用文末的离线源码包。
+## 1. Obtain the source and choose working directories
+
+For a new checkout:
+
+```bash
+git clone --branch review/qwen3-integration --recurse-submodules \
+  git@github.com:kevinzs2048/pytorch-hexagon.git
+```
+
+An existing checkout can be used directly. Offline source bundles are another
+option, described at the end of this guide.
+
+**Replace the example checkout, Python, board and asset paths below before
+running the commands.** Use absolute paths without spaces or single quotes for
+this walkthrough's SSH commands. `PH_CONFIG` can point to an existing verified
+toolchain configuration; step 2 explains how to create one for a new host.
 
 ```bash
 set -euo pipefail
-cd /home/kevin/hexagon/pytorch-hexagon
+cd /absolute/path/to/pytorch-hexagon
 git submodule update --init third_party/hexagon-mlir
 git log -1 --oneline
 git submodule status
 
 export PH_REPO="$PWD"
-export PH_PYTHON=/home/kevin/miniconda3/envs/main/bin/python
-export PH_BOARD=radxa@192.168.31.135
+export PH_PYTHON=/absolute/path/to/host-python
+export PH_BOARD=user@board-address
 export PH_HOST_BUNDLE="$PH_REPO/artifacts/qwen3-qcs9075"
-export PH_BOARD_BUNDLE=/mnt/nvme/qwen3-work/qwen3-hexagon-runtime/artifacts/qwen3-qcs9075
+export PH_BOARD_BUNDLE=/absolute/path/on/board/qwen3-qcs9075
 export PH_CONFIG="$PH_REPO/.local/unified-build/toolchain.json"
 
 export PH_RUN_ID="$(date +%Y%m%d-%H%M%S)"
 export PH_RUN="$PH_REPO/.local/reproduce-$PH_RUN_ID"
 export PH_BUILD="$PH_RUN/build"
-export PH_REMOTE_RUN="/mnt/nvme/qwen3-work/reproduce-$PH_RUN_ID"
+export PH_REMOTE_RUN="/absolute/path/on/board/work/reproduce-$PH_RUN_ID"
 export PH_REMOTE_APP="$PH_REMOTE_RUN/application"
+mkdir -p "$PH_REPO/.local"
 mkdir "$PH_RUN"
 ```
 
-这些变量中，前半部分是机器和资源位置，需要按实际环境修改；后半部分为本轮创建新目录，避免覆盖以前的结果。源码路径、图捕获和模型输出在构建期间应保持不变。
+The first group of variables identifies the environment and assets. The second
+group creates a fresh directory for this run. Keep the source, captures and model
+outputs unchanged while the build is running.
 
-成功标志：应用提交可查看，子模块已初始化；`PH_RUN` 是新建的空目录。结束终端后变量会丢失，继续执行时需恢复相同变量，不能重新生成 `PH_RUN_ID` 后混用前一轮产物。
+**Expected result:** the application revision is visible, the compiler submodule
+is initialized, and `PH_RUN` is a new empty directory. If you close the terminal,
+restore the same variables before resuming. Do not generate a new `PH_RUN_ID` and
+then mix outputs from the preceding run.
 
-## 2. 检查主机资源和工具链
+## 2. Verify host assets and the toolchain
 
-现有开发环境可直接使用已配置好的 `PH_CONFIG`。新主机先完成以下配置准备；已有配置时跳过模板复制。
-
-**新主机：**先复制模板并编辑：
+An existing development environment can use its verified `PH_CONFIG`. On a new
+host, copy and edit the template first. Skip this copy when reusing an existing
+configuration:
 
 ```bash
 cp models/qwen3/config/build.example.json "$PH_RUN/toolchain.json"
 export PH_CONFIG="$PH_RUN/toolchain.json"
-# 用编辑器填写 PH_CONFIG 中的本机绝对路径。
+# Edit PH_CONFIG and enter the absolute paths for your host.
 ```
 
-| 配置字段 | 应填写什么 |
+| Configuration field | Value to supply |
 | --- | --- |
-| `python`、`host_clang`、`host_clangxx`、`cmake` | 主机可执行文件；`python` 与本节 `PH_PYTHON` 使用同一环境 |
-| `triton_source` | 包含 `dependencies/toolchain.lock.json` 中固定提交的 Triton Git 仓库 |
-| `llvm_source`、`llvm_build`、`llvm_receipt` | 匹配补丁的源码、构建目录和构建生成的身份记录 |
-| `hexagon_tools`、`hexagon_sdk`、`hexkl` | 三个高通依赖的安装目录 |
-| `lld` | 匹配的 Hexagon 链接器，文件名必须是 `ld.lld` |
-| `library_path` | Host Clang/LLVM 需要的共享库目录列表 |
+| `python`, `host_clang`, `host_clangxx`, `cmake` | Host executables; `python` must use the same environment as `PH_PYTHON` |
+| `triton_source` | Triton Git checkout containing the revision pinned in `dependencies/toolchain.lock.json` |
+| `llvm_source`, `llvm_build`, `llvm_receipt` | Patched LLVM source, its build directory, and the build identity record generated for those products |
+| `hexagon_tools`, `hexagon_sdk`, `hexkl` | Installation directories for the three Qualcomm dependencies |
+| `lld` | Matching Hexagon linker; its basename must be `ld.lld` |
+| `library_path` | Directories containing shared libraries required by host Clang/LLVM |
 
-没有 LLVM 构建产物时，先按[LLVM 构建步骤](dependencies/llvm/README.md#source-build)执行 `prepare` 和 `build`，再执行 `verify`。`models.qwen3.build` 不会替你构建 LLVM 或安装 SDK。不要使用 `seal-existing` 掩盖校验失败，也不要沿用另一套工具链的记录。
+If LLVM has not been built, follow the
+[LLVM source-build instructions](dependencies/llvm/README.md#source-build) to run
+`prepare` and `build`, then `verify`. The `models.qwen3.build` entry does not build
+LLVM or install the SDK. A failed identity check must be resolved against the
+actual inputs and products; `seal-existing` is not a substitute for that check,
+and a record from another toolchain cannot be reused.
 
-**配置准备好后，两种环境都执行以下检查：**
+Once the configuration is ready, run both checks:
 
 ```bash
 "$PH_PYTHON" -m hexagon_runtime qwen3 doctor --bundle "$PH_HOST_BUNDLE"
 "$PH_PYTHON" dependencies/llvm/toolchain.py verify --config "$PH_CONFIG"
 ```
 
-成功标志：第一个命令输出 `bundle_valid: true`；第二个命令正常退出并输出匹配的 LLVM 身份记录。`clean_compiler_rebuild_verified: false` 仅表示 `doctor` 不负责源码构建，不代表环境检查失败。
+**Expected result:** the first command reports `bundle_valid: true`; the second
+exits successfully and reports the matching LLVM identity.
+`clean_compiler_rebuild_verified: false` means that `doctor` did not perform a
+source build. It is not an environment-check failure.
 
-## 3. 把同一份源码送到开发板
+## 3. Deploy the same source revision to the board
 
-下面发送当前 **已提交的 HEAD**，不发送未提交改动、主机 Python 环境、模型权重或历史构建目录。编译器子模块单独发送。
+These commands transfer the **committed HEAD**, excluding uncommitted edits, host
+Python packages, model weights and previous build directories. The compiler
+submodule is transferred separately. Use a clean application checkout and the
+pinned submodule revision so that host and board sources agree.
 
 ```bash
 ssh "$PH_BOARD" "mkdir -p '$PH_REMOTE_APP/third_party/hexagon-mlir'"
@@ -100,11 +149,16 @@ python3 -m hexagon_runtime qwen3 doctor --bundle "$2" --execution
 SH
 ```
 
-成功标志：板端输出 `bundle_valid: true`、`execution_environment_checked: true`。这里校验了模型资源和实际 ARM 框架文件。若失败，先处理资源/环境不匹配，不要继续导出图。
+**Expected result:** the board reports `bundle_valid: true` and
+`execution_environment_checked: true`. This checks the model assets and the
+actual ARM framework files. Resolve any mismatch before exporting captures.
 
-## 4. 在板端导出当前版本的两份图捕获
+## 4. Export both graph captures on the board
 
-该命令使用资源包里的已验收模型执行内置 16 次前向对照，同时导出实际 AOT 回调中的图，供后续源码编译使用。只保留张量哈希，避免保存大量 KV 原始数据。
+This command runs the included 16-forward reference check using the bundle's
+validated libraries. It also exports the graphs from the actual AOT compiler
+callbacks for the subsequent source build. Hash recording checks complete tensor
+contents without retaining large raw KV packets.
 
 ```bash
 ssh "$PH_BOARD" "bash -s -- '$PH_REMOTE_APP' '$PH_REMOTE_RUN' '$PH_BOARD_BUNDLE'" <<'SH'
@@ -122,11 +176,16 @@ cat "$2/capture-validation/comparison.json"
 SH
 ```
 
-成功标志：`comparison.json` 为 `status: identical`、`DSP_calls: 16`，并生成两份捕获。每份捕获包含 `graph.pkl`、`result.json`、`ready.json`。
+**Expected result:** `comparison.json` reports `status: identical` and
+`DSP_calls: 16`, and two captures are created. Each capture contains `graph.pkl`,
+`result.json` and `ready.json`.
 
-旧版本捕获绑定了旧源码的哈希，不能修改记录冒充当前版本。已有模型库可继续使用；源码版本变化后，用本步骤重新捕获即可。
+Captures bind the producer's source hashes. After changing the adapter source,
+export fresh captures using this step; do not edit old records to make them look
+current. Existing compiled model libraries can still be used independently of
+these model-build inputs.
 
-## 5. 把捕获取回主机，生成模型输入配置
+## 5. Retrieve captures and create the model-input configuration
 
 ```bash
 mkdir "$PH_RUN/captures" "$PH_RUN/capture-validation"
@@ -160,9 +219,11 @@ print(run/'model-inputs.json')
 PY
 ```
 
-成功标志：生成 `PH_RUN/model-inputs.json`，明确记录 q1、q2 的主机路径和 SHA256。按图的查询维度归类，不凭 `capture-00`、`capture-01` 的编号猜测。
+**Expected result:** `PH_RUN/model-inputs.json` records host paths and SHA256
+values for q1 and q2. The script assigns profiles using the captured query bounds,
+rather than assuming that `capture-00` and `capture-01` have a particular order.
 
-## 6. 从源码构建编译器和两个模型库
+## 6. Build the compiler and both model libraries from source
 
 ```bash
 "$PH_PYTHON" -m models.qwen3.build \
@@ -176,32 +237,45 @@ PY
   --output "$PH_RUN/host-verification"
 ```
 
-这个入口依次构建 Hexagon-MLIR 后端、Qwen 编译策略和 DSP 辅助代码，再经 torch-mlir 降低两份图、生成 Hexagon 对象和链接模型库。它不会从旧构建目录复制模型对象。
+The entry builds the Hexagon-MLIR backend, Qwen compiler policies and DSP helpers,
+then lowers both graphs through torch-mlir, emits Hexagon objects and links the
+model libraries. It does not copy model objects from previous build directories.
 
-主要输出：
+The principal outputs are:
 
 ```text
 $PH_BUILD/
-  build.json                 后端构建记录及 22 个产物的哈希
-  compiler/                  基础编译器及 q1/q2 编译配置
-  policy/                    数值处理工具
-  runtime/                   DSP 辅助对象
-  frontend/                  torch-mlir 转换缓存和记录
-  models/q1/model.so          解码模型库
-  models/q2/model.so          分块预填充模型库
-  models/q1/constants/        本轮重新链接的常量库
-  models/q2/constants/        本轮重新链接的常量库
-  models/q1/result.json       q1 构建记录
-  models/q2/result.json       q2 构建记录
+  build.json                 Backend build record and hashes of 22 products
+  compiler/                  Base compiler and q1/q2 compiler configurations
+  policy/                    Numerical policy tools
+  runtime/                   DSP helper objects
+  frontend/                  torch-mlir lowering cache and records
+  models/q1/model.so          Decode model library
+  models/q2/model.so          Chunked-prefill model library
+  models/q1/constants/        Constant libraries linked during this build
+  models/q2/constants/        Constant libraries linked during this build
+  models/q1/result.json       q1 build record
+  models/q2/result.json       q2 build record
 ```
 
-成功标志：两个模型的 `result.json` 均为 `source_model_built_NOT_DSP_qualified`，主机检查为 `policy_framework_and_IR_checks_passed`。当前基线是 622 项主机检查及 9 项 IR 检查；以当次输出记录为准。
+**Expected result:** both model `result.json` files report
+`source_model_built_NOT_DSP_qualified`; host verification reports
+`policy_framework_and_IR_checks_passed`. The current baseline contains 622 host
+checks and nine IR checks. Use the result record from your own run as evidence.
 
-只想构建后端可省略 `--models` 和 `--trusted-local-producers`，但这不会生成两个 `model.so`。编译过程日志在 `PH_BUILD/*.log` 和两个模型目录内；出错先看相应日志。后端可增量构建，模型输出要求新目录，不能直接覆盖已有 `models/q1`、`models/q2`。
+To build only the backend, omit `--models` and `--trusted-local-producers`. That
+mode does not produce the two `model.so` files. Build logs are under
+`PH_BUILD/*.log` and the two model directories. Inspect the relevant stage log if
+a command fails. Backend builds can be incremental; model outputs require fresh
+directories and cannot overwrite existing `models/q1` or `models/q2` outputs.
 
-## 7. 校验常量，部署本轮模型库
+## 7. Verify constants and deploy the new model libraries
 
-本流程复用资源包的常量库，所以必须先确认本轮生成的常量与资源包逐字节一致。以下检查失败就停止，不要只替换两个模型库；不同常量需要单独整理匹配的资源包，本流程不自动完成该情况。
+This workflow reuses the bundle's constant libraries. It therefore checks that
+all newly generated constant libraries are byte-identical to those in the bundle.
+If this check fails, stop before deployment. Different constants require a
+separate matching asset deployment; replacing only the two model libraries is
+insufficient, and this walkthrough does not automate that case.
 
 ```bash
 "$PH_PYTHON" - <<'PY'
@@ -231,16 +305,18 @@ for profile in ('q1', 'q2'):
     libraries[profile] = dict(path=os.environ['PH_REMOTE_RUN']+'/libraries/'+profile+'.so',
                               sha256=digest)
 (deploy/'candidate-libraries.json').write_text(json.dumps(libraries, indent=2)+'\n')
-print('两份模型及全部常量校验通过：', deploy)
+print('Both model libraries and all constants verified:', deploy)
 PY
 
 ssh "$PH_BOARD" "mkdir '$PH_REMOTE_RUN/libraries'"
 rsync -a "$PH_RUN/deploy/" "$PH_BOARD:$PH_REMOTE_RUN/libraries/"
 ```
 
-输出：板端 `PH_REMOTE_RUN/libraries/` 内有 `q1.so`、`q2.so` 和明确指定两者路径、哈希的 `candidate-libraries.json`。已验收资源包保持原样。
+**Expected result:** `PH_REMOTE_RUN/libraries/` on the board contains `q1.so`,
+`q2.so` and `candidate-libraries.json`, which specifies their absolute board paths
+and hashes. The validated execution bundle remains intact.
 
-## 8. 明确加载本轮模型，做板端对照
+## 8. Validate the newly built libraries on DSP
 
 ```bash
 ssh "$PH_BOARD" "bash -s -- '$PH_REMOTE_APP' '$PH_REMOTE_RUN' '$PH_BOARD_BUNDLE'" <<'SH'
@@ -257,13 +333,23 @@ cat "$2/candidate-validation/comparison.json"
 SH
 ```
 
-成功标志：`status: identical`、`DSP_calls: 16`。这里检查完整输入、logits、全部 56 个 KV 张量、位置、token 和停止条件，不只比较输出文字。`execution.json` 的 `candidate_libraries` 应包含本轮 q1/q2 的哈希；这才表明用的是新模型库。
+**Expected result:** `status: identical` and `DSP_calls: 16`. The comparison checks
+complete inputs, logits, all 56 KV tensors, positions, tokens and termination,
+not just generated text. The `candidate_libraries` field in `execution.json`
+should contain this build's q1/q2 hashes, confirming which libraries ran.
 
-这一步是基本功能验收；长期运行、更多生成长度及容量边界的回归另见[完整回归命令](docs/qwen3/SOURCE_BUILD.md#check-the-new-libraries-on-dsp)，不要求每次文档或目录调整都重复全部长回归。
+This is the basic functional acceptance check. Additional generation lengths,
+capacity boundaries and state transitions are covered by the
+[extended regression commands](docs/qwen3/SOURCE_BUILD.md#check-the-new-libraries-on-dsp).
+Those longer regressions need not be repeated for every documentation or directory
+change.
 
-## 9. 用本轮模型生成自己的文本
+## 9. Generate text with the newly built libraries
 
-普通 `python -m hexagon_runtime qwen3 generate` 默认加载已验收资源包，没有 `--libraries` 参数。要使用刚构建的候选库，可通过下面的现有 Python 接口显式传入同一份库映射；不要覆盖资源包里的文件或修改资源锁。
+The ordinary `python -m hexagon_runtime qwen3 generate` command loads the validated
+bundle by default and has no `--libraries` option. To run this build's candidate
+libraries, use the existing Python interface below with the same explicit library
+mapping. Do not overwrite the validated bundle or change its resource locks.
 
 ```bash
 ssh "$PH_BOARD" "bash -s -- '$PH_REMOTE_APP' '$PH_REMOTE_RUN' '$PH_BOARD_BUNDLE'" <<'SH'
@@ -279,8 +365,8 @@ from models.qwen3.verify_build import stage_candidates
 run, bundle = map(Path, sys.argv[1:])
 libraries = json.loads((run/'libraries/candidate-libraries.json').read_text())
 args = SimpleNamespace(
-    bundle=bundle, output=run/'candidate-chinese', cache_dir=run/'candidate-aot-cache',
-    prompt='你好，请用一句话介绍你自己。', prompts_json=None, requests_json=None,
+    bundle=bundle, output=run/'candidate-example', cache_dir=run/'candidate-aot-cache',
+    prompt='Hello. Please introduce yourself in one sentence.', prompts_json=None, requests_json=None,
     chat_template=True, max_new_tokens=32, chunk_size=32, packet_recording='hashes')
 generate(args, prepare_candidate=lambda catalog: stage_candidates(catalog, libraries))
 execution = json.loads((args.output/'execution.json').read_text())
@@ -290,27 +376,39 @@ PY
 SH
 ```
 
-修改 `prompt` 即可换输入；再次运行要换 `output` 目录。终端会打印文本，`candidate-chinese/result.json` 保存生成 token 和停止原因，`execution.json` 保存实际库身份与 DSP 调用次数。遇到 EOS 可提前停止；提示词和生成总长度受 1024 容量限制。
+Change `prompt` to try another input, and choose a new `output` directory for each
+run. The command prints the generated text. `candidate-example/result.json`
+records tokens and termination; `execution.json` records the actual library
+identities and DSP calls. Generation can stop early at EOS. The model's capacity
+check is `prompt_tokens + max_new_tokens - 1 <= 1024`.
 
-如果只是运行已验收模型，直接跳过第 4–8 步，用普通 `generate` 即可；它的结果不能算作本轮新模型的验收。
+If you only need to run the already validated bundle, skip steps 4–8 and use the
+ordinary `generate` command shown in the [README](README.md#run-the-supported-model).
+That run does not validate the newly built libraries.
 
-## 10. 保存哪些内容
+## 10. Retain the reproducibility records
 
-保留源码版本、工具链配置和身份记录、两份捕获、`model-inputs.json`、模型及常量库、`host-verification/result.json`、板端 `comparison.json` 和 `execution.json`。这些保存在本轮 `PH_RUN` / `PH_REMOTE_RUN`，不提交到 Git。
+Keep the source revision, toolchain configuration and identity record, both
+captures, `model-inputs.json`, model and constant libraries,
+`host-verification/result.json`, and the board's `comparison.json` and
+`execution.json`. These belong in this run's `PH_RUN` / `PH_REMOTE_RUN` directories,
+not in Git.
 
-| 遇到的问题 | 处理位置 |
+| Failure | Where to investigate |
 | --- | --- |
-| SSH 或资源校验失败 | 第 0–3 步；检查地址、板端环境与匹配资源包 |
-| 捕获源码哈希不匹配 | 第 4 步；用当前源码重新导出，保留三件套 |
-| LLVM/编译器身份不匹配 | 第 2 步；核对配置与实际产物，不能改哈希跳过校验 |
-| 编译失败 | 第 6 步对应阶段的日志；先解决失败再部署 |
-| 常量哈希不同 | 停在第 7 步，不复用旧常量部署新模型 |
-| 板端输出不同 | 保留第 8 步结果，排查新库；不要宣称验收通过 |
-| 输出目录已存在 | 使用新的运行目录，不覆盖旧记录 |
+| SSH or asset validation fails | Steps 0–3: board address, environment and matching asset bundle |
+| Capture source hash differs | Step 4: export again with current source; preserve all three capture files |
+| LLVM/compiler identity differs | Step 2: check configuration and actual products; do not edit hashes to bypass validation |
+| Compilation fails | The failed stage's log from step 6; resolve it before deployment |
+| Constant hashes differ | Stop at step 7; do not deploy new model libraries with unmatched old constants |
+| Board outputs differ | Retain the step 8 results and investigate the candidate libraries; the run has not passed acceptance |
+| An output directory already exists | Use a fresh run directory and preserve the earlier records |
 
-## 离线取得源码
+## Offline source checkout
 
-没有应用远端时，维护者可交付 `application-source.bundle` 和 `compiler-source.bundle`。含本指南的源码包放在主机 `.local/docs-walkthrough-20261031/delivery/`；包对应哪个版本，以克隆后的 `git log -1` 为准。
+For offline use, the maintainer can supply `application-source.bundle` and
+`compiler-source.bundle`. Confirm the included revision with `git log -1` after
+cloning.
 
 ```bash
 PH_DELIVERY=/absolute/path/to/delivery
@@ -320,4 +418,11 @@ git config submodule.hexagon-mlir.url "$PH_DELIVERY/compiler-source.bundle"
 git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
 ```
 
-**验证范围：**目录重构已通过后端源码构建、622 项主机检查、9 项 IR 检查，以及使用已有模型库的 16 次板端对照。本指南补齐了重新捕获、完整模型重建、部署和候选库推理的操作顺序；本次文档调整没有重新跑完整模型编译，不能把操作说明当作新增验收记录。已有验收和证据位置见[构建状态](docs/qwen3/BUILD_STATUS.md)。
+## Validation scope
+
+The repository reorganization passed a backend source build, 622 host checks,
+nine IR checks and a 16-forward board comparison using the existing model
+libraries. This guide documents fresh capture export, full model rebuilding,
+deployment and inference with candidate libraries. Updating or translating the
+guide does not constitute another complete model rebuild or acceptance run.
+See [build status](docs/qwen3/BUILD_STATUS.md) for completed validation and evidence.

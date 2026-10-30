@@ -5,9 +5,9 @@ maintained Hexagon-MLIR compiler. **Qwen3-0.6B is the first supported model adap
 The repository layout accommodates other adapters; it does not claim that other
 models already run correctly.
 
-从环境准备、ARM 图捕获、源码构建到新模型部署推理，按步骤执行：
-[中文构建与推理指南](USAGE.zh-CN.md)。Qwen3 的适配范围和入口见
-[models/qwen3/README.md](models/qwen3/README.md)。
+Follow the [build and inference walkthrough](USAGE.md) for environment setup,
+ARM graph capture, source compilation, deployment and execution of new model
+libraries. See the [Qwen3 adapter](models/qwen3/README.md) for its scope and entry points.
 
 ## Repository layout
 
@@ -43,7 +43,7 @@ On the configured QCS9075 board, with the matching execution asset bundle:
 ```bash
 python3 -m hexagon_runtime qwen3 doctor --bundle /path/to/qwen3-qcs9075 --execution
 python3 -m hexagon_runtime qwen3 generate --bundle /path/to/qwen3-qcs9075 \
-  --prompt '你好，请用一句话介绍你自己。' --chat-template \
+  --prompt 'Hello. Please introduce yourself in one sentence.' --chat-template \
   --max-new-tokens 32 --output results/first
 python3 -m hexagon_runtime qwen3 regress --bundle /path/to/qwen3-qcs9075 \
   --output results/regression

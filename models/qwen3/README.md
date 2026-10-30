@@ -28,7 +28,7 @@ Current support: QCS9075, full 28-layer Qwen3-0.6B, batch 1, W8A8 linear layers,
 FP32 intermediates and KV, capacity 1024. q1 decoding and q2–32 prefill reuse
 compiled libraries. No CPU model-forward fallback is supplied.
 
-See the [Chinese guide](../../USAGE.zh-CN.md),
+See the [build and inference guide](../../USAGE.md),
 [source-build instructions](../../docs/qwen3/SOURCE_BUILD.md) and
 [qualification history](../../docs/qwen3/BUILD_STATUS.md). Source moves invalidate
 old AOT caches; existing compiled model bundles retain their original identities.

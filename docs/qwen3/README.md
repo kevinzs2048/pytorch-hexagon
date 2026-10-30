@@ -4,7 +4,7 @@ Start with the [application README](../../README.md). The Qwen3 runtime applicat
 and the Hexagon-MLIR compiler fork are separate repositories. The compiler is a
 pinned Git submodule dependency, not application source.
 
-- [中文使用指南](../../USAGE.zh-CN.md)
+- [Build and inference walkthrough](../../USAGE.md)
 - [Reproduce execution](REPRODUCE.md)
 - [Compiler build status](BUILD_STATUS.md)
 - [Build from source](SOURCE_BUILD.md)
