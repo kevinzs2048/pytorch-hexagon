@@ -55,6 +55,8 @@ def build(dump, hf_checkpoint, gguf_py, out, cross_check_gguf=None, log=print):
         s = np.fromfile(dump / f"{i}.s", np.float32)
         w8 = unpack_prepacked_int8(np.fromfile(dump / f"{i}.w", np.int8), n, k).astype(np.float32) * s[:, None]
         candidates = [h for h in names if h not in used and hf[h].shape == (n, k)]
+        if not candidates:
+            raise ValueError(f"Q8_0 id {i}: no unused HF projection of shape {n}x{k}")
         error = {h: float((np.abs(w8 - hf[h]) / s[:, None]).max()) for h in candidates}
         name = min(error, key=error.get)
         if error[name] > 0.5 + 1e-3 or sum(v <= 0.5 + 1e-3 for v in error.values()) != 1:

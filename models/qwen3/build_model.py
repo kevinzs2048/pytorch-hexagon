@@ -512,12 +512,16 @@ def link_resident(args):
         silu_profile = receipt['profile']
         silu_kernel = dict(silu_kernel, object=str(silu_object))
         plan['triton_silu'] = silu_kernel
+    # Attention kernels read the resident K/V in the storage they were compiled
+    # for: FP16 kernels with FP16 storage only, and FP16 storage with FP16 kernels.
+    attention_storage = [json.loads(Path(k['object']).with_name('manifest.json').read_text())
+                         .get('contract', {}).get('storage')
+                         for k in (hmx_prefill, decode_kernel, hmx_decode) if k is not None]
     if features.get('kv_storage') == 'fp16':
-        attention_kernels = [hmx_prefill, decode_kernel] + ([hmx_decode] if hmx_decode else [])
-        if hmx_prefill is None or decode_kernel is None or any(
-                json.loads(Path(k['object']).with_name('manifest.json').read_text())
-                .get('contract', {}).get('storage') != 'fp16' for k in attention_kernels):
+        if hmx_prefill is None or decode_kernel is None or any(s != 'fp16' for s in attention_storage):
             raise ValueError('FP16 KV storage requires HMX prefill and decode kernels compiled with --kv-fp16')
+    elif 'fp16' in attention_storage:
+        raise ValueError('Attention kernels compiled with --kv-fp16 require fused_graph kv_storage fp16')
     domain_defaults = dict(enableRowMinMax=row_minmax, scheduleFMAChains=False,
                            scheduleDequantLoops=False, parallelDequantLoops=False,
                            scheduleReductionLoops=False,
@@ -534,6 +538,13 @@ def link_resident(args):
             raise ValueError('Parallel dequant requires scheduled dequant loops: ' + name)
     parallel_dequant = [name for name in DOMAINS
                         if domain_options[name]['parallelDequantLoops']]
+    # These runtimes split rows with __hexagon_parallel_for_v1. Without the
+    # linked worker adapter they would bind to the compiler's serial fallback.
+    pooled = [key for key in ('parallel_rope', 'parallel_trig', 'causal_mask', 'q8_0_projections')
+              if features.get(key)]
+    if pooled and not parallel_dequant:
+        raise ValueError('fused_graph ' + ', '.join(pooled) + ' require the row-parallel worker adapter '
+                         '(parallelDequantLoops in at least one domain)')
     needs_llama = bool(fused_domains) or integer_threads == 4 or parallel_silu or bool(parallel_dequant)
     if needs_llama != bool(args.llama_source):
         raise ValueError('Use --llama-source when selecting attention, integer, SiLU or dequant workers')
