@@ -25,6 +25,7 @@
 using namespace mlir;
 #include "PrepackInt8Weights.h"
 #include "FuseInt8Dequant.h"
+#include "FuseParallelRoPE.h"
 #include "../activation/ReuseActivation.h"
 #include "../activation/VectorizeActivation.h"
 
@@ -218,6 +219,7 @@ int main(int argc,char **argv) {
   PassRegistration<ExactInt8MatmulPass>();
   PassRegistration<PrepackInt8WeightsPass>();
   PassRegistration<FuseInt8DequantPass>();
+  PassRegistration<FuseParallelRoPEPass>();
   PassRegistration<ReuseActivationPass>();
   PassRegistration<VectorizeActivationPass>();
   return asMainReturnCode(MlirOptMain(argc,argv,"Isolated Qwen exact integer optimizer\n",registry));

@@ -30,6 +30,7 @@ def main():
                                             "experimental-quantized-silu-up", "strict-int8-pack",
                                             "strict-int8-accumulate", "strict-int8-dequant",
                                             "strict-int8-dequant-residual", "strict-int8-dequant-product",
+                                            "strict-rope-heads",
                                             "strict-prefill-pack",
                                             "strict-prefill-qk", "strict-prefill-softmax",
                                             "strict-prefill-pv"))
@@ -69,6 +70,7 @@ def main():
                             "strict-int8-dequant", "strict-int8-dequant-residual",
                             "strict-int8-dequant-product")
     strict_prefill = args.profile.startswith("strict-prefill-")
+    rope_heads = args.profile == "strict-rope-heads"
     prefill = args.profile == "experimental-prefill-fp16"
     if (quantized_silu or hmx_decode) != (args.llc is not None):
         parser.error("--llc is required for experimental-quantized-silu-up or experimental-decode-fp16 only")
@@ -85,7 +87,8 @@ def main():
         parser.error("--prepare-hmx-matmul requires an experimental HMX profile")
     if not hmx and args.external_allocator:
         parser.error("--external-allocator requires an experimental HMX profile")
-    source_path = Path(__file__).with_name("strict_prefill.py" if strict_prefill else
+    source_path = Path(__file__).with_name("rope_heads.py" if rope_heads else
+                                          "strict_prefill.py" if strict_prefill else
                                           "int8_prefill.py" if int8 else
                                           "quantized_silu_up.py" if quantized_silu else
                                           "llama_silu.py" if llama_silu else
@@ -140,7 +143,8 @@ def main():
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
-    kernel = (getattr(module, "qwen_prefill_" + args.profile.removeprefix("strict-prefill-"))
+    kernel = (module.qwen_rope_heads if rope_heads else
+              getattr(module, "qwen_prefill_" + args.profile.removeprefix("strict-prefill-"))
               if strict_prefill else module.qwen_int8_pack_activation if args.profile == "strict-int8-pack" else
               module.qwen_int8_dequant_result if args.profile == "strict-int8-dequant" else
               module.qwen_int8_dequant_residual_result if args.profile == "strict-int8-dequant-residual" else
@@ -176,6 +180,11 @@ def main():
                      if args.profile in ("strict-int8-dequant-residual", "strict-int8-dequant-product") else
                      {"Acc": "*i32", "Out": "*i32", "rows": "i32",
                       "columns": "i32", "column": "i32"})
+        constants = {}
+    if rope_heads:
+        signature = {"Y": "*fp32", "Cos": "*fp32", "Sin": "*fp32", "Out": "*fp32",
+                     **{name: "i32" for name in ("start", "count", "rows", "y_row", "y_head",
+                                                 "c_row", "o_head", "o_row")}}
         constants = {}
     if strict_prefill:
         pointers = 6 if args.profile == "strict-prefill-pack" else 5
@@ -231,7 +240,7 @@ def main():
         # The 128-byte SiLU temporary costs 191 bytes including alignment.
         # Existing bounded stack promotion lets LLVM eliminate its allocation
         # and per-vector copy; attention keeps its current allocation policy.
-        "stackBufferBudget": 4096 if quantized_silu or int8 or silu or qfloat_decode else 0,
+        "stackBufferBudget": 4096 if quantized_silu or int8 or rope_heads or silu or qfloat_decode else 0,
         "enableLWP": args.lwp,
         "LWPloopDepth": args.lwp_loop_depth,
         "addFastMath": False,
@@ -374,6 +383,13 @@ def main():
                 + ", contiguous FP32; RowScale stride 0 broadcasts one scale")
             manifest["precision"] = ("exact INT8/INT32 accumulation; IEEE FP32 conversion and "
                                      "two multiplies (plus one addition) in the replaced graph order")
+    if rope_heads:
+        manifest.update(grid=[1], scratch_fp32_elements=0,
+                        contract={"head_dim": 128, "units": "head-major (head, row) range per call",
+                                  "input": "Y[row, head, 128] FP32, unit inner stride",
+                                  "tables": "Cos/Sin[row, 128] FP32, shared by heads",
+                                  "output": "Out[head, row, 128] FP32"},
+                        precision="x*cos + rotate_half(x)*sin in graph order; negate, two multiplies, one addition")
     if strict_prefill:
         stage = args.profile.removeprefix("strict-prefill-")
         manifest.update(grid=[1, 4],

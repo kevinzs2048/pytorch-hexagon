@@ -1,4 +1,4 @@
-"""Check the fused INT8 dequantization graph rewrite.
+"""Check the fused INT8 dequantization and parallel RoPE graph rewrites.
 
 Each fixture is the replaced graph chain in its prepared form; negative cases
 keep the original operations when a matched precondition does not hold.
@@ -70,6 +70,48 @@ module {
 }
 '''.replace('MATMUL', MATMUL)
 
+ROPE = '''
+#id = affine_map<(d0, d1, d2, d3) -> (d0, d1, d2, d3)>
+#heads = affine_map<(d0, d1, d2, d3) -> (d0, 0, d2, d3)>
+module {
+  func.func @graph(%y: tensor<1x?x2x128xf32>, %cos: tensor<1x1x?x128xf32>, %sin: tensor<1x1x?x128xf32>, %n: index)
+      -> RESULTS {
+    %et = tensor.empty(%n) : tensor<1x2x?x128xf32>
+    %x = linalg.transpose ins(%y : tensor<1x?x2x128xf32>) outs(%et : tensor<1x2x?x128xf32>) permutation = [0, 2, 1, 3]
+    %m1 = linalg.generic {indexing_maps = [#id, #heads, #id], iterator_types = ["parallel", "parallel", "parallel", "parallel"]}
+        ins(%x, %cos : tensor<1x2x?x128xf32>, tensor<1x1x?x128xf32>) outs(%et : tensor<1x2x?x128xf32>) {
+    ^bb0(%a: f32, %b: f32, %o: f32):
+      %v = arith.mulf %a, %b : f32
+      linalg.yield %v : f32
+    } -> tensor<1x2x?x128xf32>
+    %lo = tensor.extract_slice %x[0, 0, 0, 0] [1, 2, %n, 64] [1, 1, 1, 1] : tensor<1x2x?x128xf32> to tensor<1x2x?x64xf32>
+    %hi = tensor.extract_slice %x[0, 0, 0, 64] [1, 2, %n, 64] [1, 1, 1, 1] : tensor<1x2x?x128xf32> to tensor<1x2x?x64xf32>
+    %eh = tensor.empty(%n) : tensor<1x2x?x64xf32>
+    %neg = linalg.generic {indexing_maps = [#id, #id], iterator_types = ["parallel", "parallel", "parallel", "parallel"]}
+        ins(%hi : tensor<1x2x?x64xf32>) outs(%eh : tensor<1x2x?x64xf32>) {
+    ^bb0(%a: f32, %o: f32):
+      %v = arith.negf %a : f32
+      linalg.yield %v : f32
+    } -> tensor<1x2x?x64xf32>
+    %cat = tensor.concat dim(3) %neg, %lo : (tensor<1x2x?x64xf32>, tensor<1x2x?x64xf32>) -> tensor<1x2x?x128xf32>
+    %m2 = linalg.generic {indexing_maps = [#id, #heads, #id], iterator_types = ["parallel", "parallel", "parallel", "parallel"]}
+        ins(%cat, %sin : tensor<1x2x?x128xf32>, tensor<1x1x?x128xf32>) outs(%et : tensor<1x2x?x128xf32>) {
+    ^bb0(%a: f32, %b: f32, %o: f32):
+      %v = arith.mulf %a, %b : f32
+      linalg.yield %v : f32
+    } -> tensor<1x2x?x128xf32>
+    %out = linalg.generic {indexing_maps = [#id, #id, #id], iterator_types = ["parallel", "parallel", "parallel", "parallel"]}
+        ins(%m1, %m2 : tensor<1x2x?x128xf32>, tensor<1x2x?x128xf32>) outs(%et : tensor<1x2x?x128xf32>) {
+    ^bb0(%a: f32, %b: f32, %o: f32):
+      %v = arith.addf %a, %b : f32
+      linalg.yield %v : f32
+    } -> tensor<1x2x?x128xf32>
+    return RETURNS
+  }
+}
+'''
+
+
 def run(source, flag):
     if not OPT:
         pytest.skip('set QWEN_PACKED_I8_OPT to the built qwen-packed-i8-opt')
@@ -92,3 +134,20 @@ def test_dequant_with_fast_math_is_left_unchanged():
     assert 'call @__hexagon_i8_prepacked_v1_matmul(' in ir
     assert 'dequant' not in ir.replace('qwen-fuse-i8-dequant', '')
     assert '0 plain, 0 residual, 0 product' in log
+
+
+def test_rope_becomes_one_parallel_call():
+    source = ROPE.replace('RESULTS', 'tensor<1x2x?x128xf32>').replace('RETURNS', '%out : tensor<1x2x?x128xf32>')
+    ir, log = run(source, '--qwen-fuse-parallel-rope=expected-count=1')
+    assert 'call @qwen_rope_heads_v1(' in ir
+    assert 'arith.negf' not in ir and 'tensor.concat' not in ir and 'linalg.transpose' not in ir
+    assert 'fused parallel RoPE: 1' in log
+
+
+def test_rope_is_left_unchanged_when_the_transpose_has_other_users():
+    source = ROPE.replace('RESULTS', '(tensor<1x2x?x128xf32>, tensor<1x2x?x128xf32>)').replace(
+        'RETURNS', '%out, %x : tensor<1x2x?x128xf32>, tensor<1x2x?x128xf32>')
+    ir, log = run(source, '--qwen-fuse-parallel-rope')
+    assert 'qwen_rope_heads_v1' not in ir and 'tensor.concat' in ir
+    assert 'fused parallel RoPE: 0' in log
+
