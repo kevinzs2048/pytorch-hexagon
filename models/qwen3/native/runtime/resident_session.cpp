@@ -5,6 +5,9 @@
 #include "common.h"
 #include "hexagon_benchmark.h"
 #include "kv_cache.h"
+#ifdef QWEN_KV_FP16
+#include "kv_fp16.h"
+#endif
 #include "qwen3_sleef_exp_candidate.h"
 #include "qwen_resident_bindings.h"
 #include "returned_memref_owner.h"
@@ -32,7 +35,65 @@ extern "C" float __hexagon_softmax_exp_compat(float x) {
 extern "C" float _mlir_ciface___hexagon_softmax_exp_compat(float x) {
   return qwen3_sleef_exp_candidate(x);
 }
-static pytorch_hexagon::KVCache cache(28, 8, 128, 1024, 32);
+#ifdef QWEN_KV_FP16
+// FP16 KV storage (llama.cpp's default F16 KV cache type). New rows are
+// rounded once, IEEE round-to-nearest-even, exactly like the graph appends.
+// Packets stay FP32: mode 1 deltas and mode 2 snapshots carry the widened
+// stored values, so host-side cache reconstruction sees what attention reads.
+using KVElement = uint16_t;
+static void write_rows(KVElement *dst, const float *src, size_t n) {
+  pytorch_hexagon::kv_round_f16(dst, src, n);
+}
+static void write_rows(float *dst, const float *src, size_t n) {
+  uint16_t half[256];
+  for (size_t i = 0; i < n; i += 256) {
+    size_t count = n - i < 256 ? n - i : 256;
+    pytorch_hexagon::kv_round_f16(half, src + i, count);
+    pytorch_hexagon::kv_widen_f16(dst + i, half, count);
+  }
+}
+static void export_rows(float *dst, const KVElement *src, size_t n) {
+  pytorch_hexagon::kv_widen_f16(dst, src, n);
+}
+static void write_one(KVElement *dst, float value) { write_rows(dst, &value, 1); }
+static void write_one(float *dst, float value) { write_rows(dst, &value, 1); }
+#else
+using KVElement = float;
+static void write_rows(float *dst, const float *src, size_t n) {
+  std::memcpy(dst, src, n * sizeof(float));
+}
+static void export_rows(float *dst, const float *src, size_t n) {
+  std::memcpy(dst, src, n * sizeof(float));
+}
+static void write_one(float *dst, float value) { *dst = value; }
+#endif
+static pytorch_hexagon::BasicKVCache<KVElement> cache(28, 8, 128, 1024, 32);
+using CacheView = pytorch_hexagon::BasicKVCache<KVElement>::View;
+// The generated bindings type every plane as a float descriptor; descriptors
+// pass only pointers and element-unit extents, and the FP16-KV graph addresses
+// its planes with its own f16 signature.
+static float *plane_pointer(KVElement *plane) {
+  return reinterpret_cast<float *>(plane);
+}
+// One destination plane of the returned FP32 KV deltas.
+template <typename Destination>
+static void copy_delta_plane(Destination *target, const MemRefDescriptor<float, 4> &v,
+                             unsigned query) {
+  if (v.strides[3] == 1 && v.strides[1] == 128 && (query == 1 || v.strides[2] == 1024)) {
+    write_rows(target, v.aligned + v.offset, query * 1024);
+    return;
+  }
+  for (unsigned h = 0; h < 8; ++h)
+    for (unsigned t = 0; t < query; ++t) {
+      const float *row = v.aligned + v.offset + h * v.strides[1] + t * v.strides[2];
+      Destination *dst = target + t * 1024 + h * 128;
+      if (v.strides[3] == 1)
+        write_rows(dst, row, 128);
+      else
+        for (unsigned d = 0; d < 128; ++d)
+          write_one(dst + d, row[d * v.strides[3]]);
+    }
+}
 #ifdef QWEN_TEMPORARY_BUFFER_BYTES
 #include "temporary_buffer_pool.h"
 // Like KVCache, this storage belongs to the compiled session and requires
@@ -98,12 +159,14 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
       if (position != cache.length())
         return 2;
       for (unsigned l = 0; l < 28; ++l) {
-        pytorch_hexagon::KVCache::View v{};
+        CacheView v{};
         if (!cache.view(l, v))
           return 3;
         size_t bytes = position * 1024 * 4;
-        std::memcpy(output + 64 + 2 * l * bytes, v.keys, bytes);
-        std::memcpy(output + 64 + (2 * l + 1) * bytes, v.values, bytes);
+        export_rows(reinterpret_cast<float *>(output + 64 + 2 * l * bytes), v.keys,
+                    position * 1024);
+        export_rows(reinterpret_cast<float *>(output + 64 + (2 * l + 1) * bytes),
+                    v.values, position * 1024);
       }
     } else {
       if (position != cache.length() || position == 1024)
@@ -115,18 +178,18 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
         return 3;
       MemRefDescriptor<float, 4> kv[56];
       for (unsigned l = 0; l < 28; ++l) {
-        pytorch_hexagon::KVCache::View v{};
+        CacheView v{};
         if (!cache.history(l, v)) {
           cache.cancel();
           return 3;
         }
-        kv[2 * l] = {v.keys,
-                     v.keys,
+        kv[2 * l] = {plane_pointer(v.keys),
+                     plane_pointer(v.keys),
                      0,
                      {1, 8, position, 128},
                      {position * 1024, 128, 1024, 1}};
-        kv[2 * l + 1] = {v.values,
-                         v.values,
+        kv[2 * l + 1] = {plane_pointer(v.values),
+                         plane_pointer(v.values),
                          0,
                          {1, 8, position, 128},
                          {position * 1024, 128, 1024, 1}};
@@ -208,48 +271,38 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
           return 4;
         }
       }
+      // Mode 1 writes FP32 packet rows; position 0 writes cache planes.
       float *destinations[56]{};
+      KVElement *cache_planes[56]{};
       if (mode == 1) {
         for (unsigned i = 0; i < 56; ++i)
           destinations[i] = delta + i * query * 1024;
       } else if (!position) {
         for (unsigned l = 0; l < 28; ++l) {
-          pytorch_hexagon::KVCache::View view{};
+          CacheView view{};
           if (!cache.history(l, view)) {
             cache.cancel();
             return 3;
           }
-          destinations[2 * l] = view.keys;
-          destinations[2 * l + 1] = view.values;
+          cache_planes[2 * l] = view.keys;
+          cache_planes[2 * l + 1] = view.values;
         }
       }
       struct CopyJob {
         Results *results;
         float **destinations;
+        KVElement **cache_planes;
         unsigned query;
-      } copy_job{&results, destinations, query};
+      } copy_job{&results, destinations, cache_planes, query};
       auto copy_planes = [](void *opaque, uint64_t begin, uint64_t count) {
         const auto &job = *static_cast<CopyJob *>(opaque);
         for (unsigned i = unsigned(begin); i < unsigned(begin + count); ++i) {
           const auto &v = job.results->delta[i];
-          float *target = job.destinations[output_plane[i]];
-          if (v.strides[3] == 1 && v.strides[1] == 128 &&
-              (job.query == 1 || v.strides[2] == 1024)) {
-            std::memcpy(target, v.aligned + v.offset,
-                        job.query * 1024 * sizeof(float));
-          } else {
-            for (unsigned h = 0; h < 8; ++h)
-              for (unsigned t = 0; t < job.query; ++t) {
-                const float *row = v.aligned + v.offset +
-                                   h * v.strides[1] + t * v.strides[2];
-                float *dst = target + t * 1024 + h * 128;
-                if (v.strides[3] == 1)
-                  std::memcpy(dst, row, 128 * sizeof(float));
-                else
-                  for (unsigned d = 0; d < 128; ++d)
-                    dst[d] = row[d * v.strides[3]];
-              }
-          }
+          unsigned plane = output_plane[i];
+          if (job.destinations[plane])
+            copy_delta_plane(job.destinations[plane], v, job.query);
+          else
+            copy_delta_plane(job.cache_planes[plane], v, job.query);
         }
       };
       auto copy_delta = [&] {
@@ -269,15 +322,14 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
       if (!position && mode == 1)
         update_us += benchmark_time_us(1, [&] {
           for (unsigned l = 0; l < 28; ++l) {
-            pytorch_hexagon::KVCache::View v{};
+            CacheView v{};
             if (!cache.history(l, v)) {
               ok = false;
               return;
             }
-            std::memcpy(v.keys, delta + 2 * l * query * 1024,
-                        query * 4096);
-            std::memcpy(v.values, delta + (2 * l + 1) * query * 1024,
-                        query * 4096);
+            // Packet rows already hold stored values; FP16 rounding is exact.
+            write_rows(v.keys, delta + 2 * l * query * 1024, query * 1024);
+            write_rows(v.values, delta + (2 * l + 1) * query * 1024, query * 1024);
           }
         });
       if (!ok) {

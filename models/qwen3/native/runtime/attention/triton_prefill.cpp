@@ -19,6 +19,8 @@ static_assert(QWEN_PREFILL_POOL_BYTES <= 1024 * 1024,
 
 using qwen_attention::Memref;
 using qwen_attention::FlatMemref;
+using qwen_attention::KVMemref;
+using qwen_attention::FlatKVMemref;
 extern "C" void attention_forward(
     int64_t, void *, int64_t, void *, int64_t, void *, int64_t, void *,
     int, int, int, int, int, int, int, int, int, int, int, int, int, int);
@@ -69,7 +71,9 @@ struct Scope {
   }
 };
 struct Job {
-  FlatMemref q, k, v, out;
+  FlatMemref q;
+  FlatKVMemref k, v;
+  FlatMemref out;
   int m, n, qh, qt, kh, kt, vh, vt;
 };
 void worker(unsigned, unsigned id, void *opaque) {
@@ -109,8 +113,8 @@ extern "C" void hexagon_kernel_free(void *pointer) {
     std::free(pointer);
 }
 
-extern "C" int qwen_triton_prefill(const Memref *q, const Memref *k,
-                                  const Memref *v, const Memref *mask,
+extern "C" int qwen_triton_prefill(const Memref *q, const KVMemref *k,
+                                  const KVMemref *v, const Memref *mask,
                                   Memref *out) {
   using namespace qwen_attention;
   if (!q || !k || q->sizes[2] < MinimumQueryLength || q->sizes[2] > 32 ||

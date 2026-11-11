@@ -21,6 +21,7 @@
 #include "mlir/Transforms/Passes.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
+#include "llvm/ADT/SetVector.h"
 
 using namespace mlir;
 #include "PrepackInt8Weights.h"
@@ -28,6 +29,7 @@ using namespace mlir;
 #include "FuseParallelRoPE.h"
 #include "FuseParallelTrig.h"
 #include "FuseCausalMask.h"
+#include "../kv/FP16KVStorage.h"
 #include "../activation/ReuseActivation.h"
 #include "../activation/VectorizeActivation.h"
 
@@ -224,6 +226,7 @@ int main(int argc,char **argv) {
   PassRegistration<FuseParallelRoPEPass>();
   PassRegistration<FuseParallelTrigPass>();
   PassRegistration<FuseCausalMaskPass>();
+  PassRegistration<FP16KVStoragePass>();
   PassRegistration<ReuseActivationPass>();
   PassRegistration<VectorizeActivationPass>();
   return asMainReturnCode(MlirOptMain(argc,argv,"Isolated Qwen exact integer optimizer\n",registry));

@@ -9,16 +9,26 @@
 extern "C" void *memalign(size_t, size_t);
 using qwen_attention::Memref;
 using qwen_attention::FlatMemref;
+using qwen_attention::KVMemref;
+using qwen_attention::FlatKVMemref;
 extern "C" void attention_decode(
     int64_t, void *, int64_t, void *, int64_t, void *, int64_t, void *,
     int64_t, void *, int, int, int, int, int, int, int, int,
     int, int, int, int, int, int);
 #ifdef QWEN_TRITON_PREFILL
-extern "C" int qwen_triton_prefill(const Memref *, const Memref *,
-                                    const Memref *, const Memref *, Memref *);
+extern "C" int qwen_triton_prefill(const Memref *, const KVMemref *,
+                                    const KVMemref *, const Memref *, Memref *);
 #endif
+#ifdef QWEN_KV_FP16
+#ifndef QWEN_TRITON_PREFILL
+#error "FP16 KV storage requires the Triton prefill kernels"
+#endif
+#define QWEN_ATTENTION_ENTRY _mlir_ciface_qwen_ordered_fp16kv_attention_v1
+#else
+#define QWEN_ATTENTION_ENTRY _mlir_ciface_qwen_ordered_fp32_attention_v1
 extern "C" int qwen_strict_prefill(const Memref *, const Memref *,
                                     const Memref *, const Memref *, Memref *);
+#endif
 
 namespace {
 // CMake reads this bound from the hash-checked kernel receipt. The larger
@@ -44,7 +54,9 @@ using qwen_attention::valid;
 using qwen_attention::flatten;
 
 struct Job {
-  FlatMemref q, k, v, out, scratch;
+  FlatMemref q;
+  FlatKVMemref k, v;
+  FlatMemref out, scratch;
   int length, qhead, qtoken, khead, ktoken, vhead, vtoken;
 };
 
@@ -56,8 +68,8 @@ void worker(unsigned, unsigned id, void *opaque) {
 }
 } // namespace
 
-extern "C" int _mlir_ciface_qwen_ordered_fp32_attention_v1(
-    const Memref *q, const Memref *k, const Memref *v, const Memref *mask,
+extern "C" int QWEN_ATTENTION_ENTRY(
+    const Memref *q, const KVMemref *k, const KVMemref *v, const Memref *mask,
     Memref *out) {
   if (!q || !k || q->sizes[2] < 1 || q->sizes[2] > 32)
     return 2;

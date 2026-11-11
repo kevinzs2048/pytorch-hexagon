@@ -50,6 +50,8 @@ def main():
                         help="Experimental prefill only: use the adapter's temporary-buffer allocator")
     parser.add_argument("--schedule-fma-chains", action="store_true",
                         help="Strict SiLU/decode: schedule exact FP32 FMA chains; decode uses 32-lane softmax blocks")
+    parser.add_argument("--kv-fp16", action="store_true",
+                        help="Attention only: K/V operands are FP16 storage (llama.cpp KV cache type)")
     parser.add_argument("--lwp", action="store_true",
                         help="Diagnostic LWP instrumentation; requires serialized DSP execution")
     parser.add_argument("--lwp-loop-depth", type=int, default=1)
@@ -78,6 +80,8 @@ def main():
     if hmx_decode != (args.llvm_extract is not None) or hmx_decode != (args.llvm_opt is not None):
         parser.error("experimental-decode-fp16 requires --llvm-extract and --llvm-opt")
     hmx = prefill or hmx_decode
+    if args.kv_fp16 and not (prefill or hmx_decode or qfloat_decode):
+        parser.error("--kv-fp16 requires an attention profile with FP16 or QFloat K/V loads")
     if hmx_decode and not (args.reuse_hmx_workspace and args.prepare_hmx_matmul and args.external_allocator):
         parser.error("HMX decode requires --reuse-hmx-workspace --prepare-hmx-matmul --external-allocator")
     if args.schedule_fma_chains and not (silu or decode or strict_prefill):
@@ -155,7 +159,8 @@ def main():
               module.silu_product if quantized_silu else module.silu_forward if silu else
               module.attention_decode if decode else
               module.attention_forward_q1_hmx_g2 if hmx_decode else module.attention_forward)
-    signature = {name: "*fp32" if name in ("Q", "K", "V", "Out", "Scratch", "X", "Y") else "i32"
+    signature = {name: "*fp16" if args.kv_fp16 and name in ("K", "V") else
+                 "*fp32" if name in ("Q", "K", "V", "Out", "Scratch", "X", "Y") else "i32"
                  for index, name in enumerate(kernel.arg_names) if index not in kernel.constexprs}
     constants = ({"BLOCK_N": 64, "APPROX_EXP": False, "HEADS_PER_PROGRAM": 4,
                   "SOFTMAX_BLOCK": 32 if args.schedule_fma_chains or qfloat_decode else 8} if decode else
@@ -313,7 +318,7 @@ def main():
         "scratch_fp32_elements": module.SCRATCH_FP32_ELEMENTS if decode else 0,
         "contract": {"batch": 1, "query": [1, 1] if decode or hmx_decode else [2, 32],
                      "query_heads": 16, "kv_heads": 8, "head_dim": 128,
-                     "kv_length_max": 1024, "storage": "fp32",
+                     "kv_length_max": 1024, "storage": "fp16" if args.kv_fp16 else "fp32",
                      "mask": "causal, no padding, final consecutive query positions"},
         "source_and_tools_sha256": hashes,
         "commands": commands,

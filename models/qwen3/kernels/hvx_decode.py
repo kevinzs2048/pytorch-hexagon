@@ -68,10 +68,10 @@ def attention_decode(Q, K, V, Out, Scratch, query_length, kv_length, q_head_stri
         q12 = tl.load(Q + (head + 1) * q_head_stride + 64 + pack_cols).to(tl.int32, bitcast=True)
         q13 = tl.load(Q + (head + 1) * q_head_stride + 96 + pack_cols).to(tl.int32, bitcast=True)
         for position in range(0, kv_length):
-            k0 = tl.load(K + kv_head * k_head_stride + position * k_token_stride + pack_cols).to(tl.int32, bitcast=True)
-            k1 = tl.load(K + kv_head * k_head_stride + position * k_token_stride + 32 + pack_cols).to(tl.int32, bitcast=True)
-            k2 = tl.load(K + kv_head * k_head_stride + position * k_token_stride + 64 + pack_cols).to(tl.int32, bitcast=True)
-            k3 = tl.load(K + kv_head * k_head_stride + position * k_token_stride + 96 + pack_cols).to(tl.int32, bitcast=True)
+            k0 = tl.load(K + kv_head * k_head_stride + position * k_token_stride + pack_cols).to(tl.float32).to(tl.int32, bitcast=True)
+            k1 = tl.load(K + kv_head * k_head_stride + position * k_token_stride + 32 + pack_cols).to(tl.float32).to(tl.int32, bitcast=True)
+            k2 = tl.load(K + kv_head * k_head_stride + position * k_token_stride + 64 + pack_cols).to(tl.float32).to(tl.int32, bitcast=True)
+            k3 = tl.load(K + kv_head * k_head_stride + position * k_token_stride + 96 + pack_cols).to(tl.float32).to(tl.int32, bitcast=True)
             a0 = _qf_add(_qf_mul_sf(q00,k0), _qf_mul_sf(q01,k1))
             b0 = _qf_add(_qf_mul_sf(q02,k2), _qf_mul_sf(q03,k3))
             a1 = _qf_add(_qf_mul_sf(q10,k0), _qf_mul_sf(q11,k1))
@@ -119,7 +119,7 @@ def attention_decode(Q, K, V, Out, Scratch, query_length, kv_length, q_head_stri
             p0=tl.full((32,),0,tl.float32)+tl.load(Scratch+head*1024+row)
             p1=tl.full((32,),0,tl.float32)+tl.load(Scratch+(head+1)*1024+row)
             for i in tl.static_range(0,4):
-                v=tl.load(V+kv_head*v_head_stride+row*v_token_stride+i*32+pack_cols).to(tl.int32,bitcast=True)
+                v=tl.load(V+kv_head*v_head_stride+row*v_token_stride+i*32+pack_cols).to(tl.float32).to(tl.int32,bitcast=True)
                 x=_qf_add(accum[i],_qf_mul_sf(p0.to(tl.int32,bitcast=True),v))
                 accum=accum[:i]+(x,)+accum[i+1:]
                 y=_qf_add(accum[4+i],_qf_mul_sf(p1.to(tl.int32,bitcast=True),v))
