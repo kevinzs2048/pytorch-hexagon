@@ -27,6 +27,7 @@ using namespace mlir;
 #include "FuseInt8Dequant.h"
 #include "FuseParallelRoPE.h"
 #include "FuseParallelTrig.h"
+#include "FuseCausalMask.h"
 #include "../activation/ReuseActivation.h"
 #include "../activation/VectorizeActivation.h"
 
@@ -222,6 +223,7 @@ int main(int argc,char **argv) {
   PassRegistration<FuseInt8DequantPass>();
   PassRegistration<FuseParallelRoPEPass>();
   PassRegistration<FuseParallelTrigPass>();
+  PassRegistration<FuseCausalMaskPass>();
   PassRegistration<ReuseActivationPass>();
   PassRegistration<VectorizeActivationPass>();
   return asMainReturnCode(MlirOptMain(argc,argv,"Isolated Qwen exact integer optimizer\n",registry));

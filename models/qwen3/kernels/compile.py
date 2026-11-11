@@ -30,7 +30,7 @@ def main():
                                             "experimental-quantized-silu-up", "strict-int8-pack",
                                             "strict-int8-accumulate", "strict-int8-dequant",
                                             "strict-int8-dequant-residual", "strict-int8-dequant-product",
-                                            "strict-rope-heads",
+                                            "strict-rope-heads", "strict-causal-mask",
                                             "strict-prefill-pack",
                                             "strict-prefill-qk", "strict-prefill-softmax",
                                             "strict-prefill-pv"))
@@ -71,6 +71,7 @@ def main():
                             "strict-int8-dequant-product")
     strict_prefill = args.profile.startswith("strict-prefill-")
     rope_heads = args.profile == "strict-rope-heads"
+    causal_mask = args.profile == "strict-causal-mask"
     prefill = args.profile == "experimental-prefill-fp16"
     if (quantized_silu or hmx_decode) != (args.llc is not None):
         parser.error("--llc is required for experimental-quantized-silu-up or experimental-decode-fp16 only")
@@ -88,6 +89,7 @@ def main():
     if not hmx and args.external_allocator:
         parser.error("--external-allocator requires an experimental HMX profile")
     source_path = Path(__file__).with_name("rope_heads.py" if rope_heads else
+                                          "causal_mask.py" if causal_mask else
                                           "strict_prefill.py" if strict_prefill else
                                           "int8_prefill.py" if int8 else
                                           "quantized_silu_up.py" if quantized_silu else
@@ -143,7 +145,7 @@ def main():
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
-    kernel = (module.qwen_rope_heads if rope_heads else
+    kernel = (module.qwen_rope_heads if rope_heads else module.qwen_causal_mask if causal_mask else
               getattr(module, "qwen_prefill_" + args.profile.removeprefix("strict-prefill-"))
               if strict_prefill else module.qwen_int8_pack_activation if args.profile == "strict-int8-pack" else
               module.qwen_int8_dequant_result if args.profile == "strict-int8-dequant" else
@@ -186,6 +188,10 @@ def main():
                      **{name: "i32" for name in ("start", "count", "rows", "y_row", "y_head",
                                                  "c_row", "o_head", "o_row")}}
         constants = {}
+    if causal_mask:
+        signature = {"Pos": "*i64", "Valid": "*i64", "Out": "*fp32",
+                     **{name: "i32" for name in ("start", "count", "kv", "pos_step")}}
+        constants = {"BLOCK": 32}
     if strict_prefill:
         pointers = 6 if args.profile == "strict-prefill-pack" else 5
         signature = {name: "*fp32" if index < pointers else "i32"
@@ -240,7 +246,7 @@ def main():
         # The 128-byte SiLU temporary costs 191 bytes including alignment.
         # Existing bounded stack promotion lets LLVM eliminate its allocation
         # and per-vector copy; attention keeps its current allocation policy.
-        "stackBufferBudget": 4096 if quantized_silu or int8 or rope_heads or silu or qfloat_decode else 0,
+        "stackBufferBudget": 4096 if quantized_silu or int8 or rope_heads or causal_mask or silu or qfloat_decode else 0,
         "enableLWP": args.lwp,
         "LWPloopDepth": args.lwp_loop_depth,
         "addFastMath": False,
@@ -390,6 +396,12 @@ def main():
                                   "tables": "Cos/Sin[row, 128] FP32, shared by heads",
                                   "output": "Out[head, row, 128] FP32"},
                         precision="x*cos + rotate_half(x)*sin in graph order; negate, two multiplies, one addition")
+    if causal_mask:
+        manifest.update(grid=[1], scratch_fp32_elements=0,
+                        contract={"unit": "one query row; rows [start, start + count) per call",
+                                  "input": "Pos[row * pos_step] INT64 last visible column, Valid[j] INT64 padding flags",
+                                  "output": "Out[row, kv] FP32 contiguous: 0.0 if visible, -FLT_MAX otherwise"},
+                        precision="exact: only the two constants are written")
     if strict_prefill:
         stage = args.profile.removeprefix("strict-prefill-")
         manifest.update(grid=[1, 4],
