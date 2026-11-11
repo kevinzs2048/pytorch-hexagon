@@ -65,7 +65,10 @@ def build(dump, hf_checkpoint, gguf_py, out, cross_check_gguf=None, log=print):
         raw = gguf.quants.quantize(hf[name].astype(np.float32), gguf.GGMLQuantizationType.Q8_0)
         raw = np.asarray(raw).reshape(-1).view(np.uint8)
         if cross_check_gguf:
-            t = reference[names[name]]
+            # A GGUF of a tied checkpoint may store the LM head only as token_embd.
+            t = reference.get(names[name]) or (reference.get("token_embd.weight") if names[name] == "output.weight" else None)
+            if t is None:
+                raise ValueError("GGUF cross-check: tensor missing: " + names[name])
             if t.tensor_type != gguf.GGMLQuantizationType.Q8_0 or not np.array_equal(
                     np.asarray(t.data).reshape(-1).view(np.uint8), raw):
                 raise ValueError("GGUF cross-check differs: " + names[name])

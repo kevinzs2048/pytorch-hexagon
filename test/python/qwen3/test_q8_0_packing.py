@@ -38,18 +38,19 @@ def test_pack_layouts_by_element():
         assert scales[2 * c] == d[nt * 32 + c, kt] and scales[2 * c + 1] == d[nt * 32 + c, kt]
 
 
-def test_activation_quantization_matches_the_scalar_definition():
-    x = (np.random.default_rng(2).standard_normal(256) * 3).astype(np.float32)
-    x[32:64] = 0                                     # all-zero block: d = 0, q = 0
-    x[64:96] = np.linspace(-0.5, 0.5, 32, dtype=np.float32) * np.float32(127 / 0.5)  # exact ties
-    q, d = qz.quantize_activation(x)
-    for b in range(8):
-        v = x[b * 32:(b + 1) * 32]
-        amax = np.float32(np.abs(v).max())
-        db = np.float32(amax / np.float32(127))
-        inv = np.float32(1) / db if db != 0 else np.float32(0)
-        assert d[b] == np.float16(db)
-        assert np.array_equal(q[b], np.array([np.rint(np.float32(e * inv)) for e in v], np.int8))
+def test_activation_quantization_against_hand_computed_values():
+    # Block 0: amax 127, so d = 1 and x * (1 / d) = x exactly: ties at .5 must
+    # round half to even (llama.cpp NEON vcvtnq), not away from zero.
+    ties = np.array([0.5, 1.5, 2.5, -0.5, -1.5, -2.5, 126.5, -126.5], np.float32)
+    block0 = np.concatenate([ties, np.full(23, 3.0, np.float32), [127.0]]).astype(np.float32)
+    # Block 1: all zero -> d = 0, q = 0. Block 2: amax 12.7 -> d = fp32(12.7 / 127).
+    block2 = np.zeros(32, np.float32); block2[0] = 12.7; block2[1] = -6.35
+    q, d = qz.quantize_activation(np.concatenate([block0, np.zeros(32, np.float32), block2]))
+    assert q[0, :8].tolist() == [0, 2, 2, 0, -2, -2, 126, -126]
+    assert q[0, 8:31].tolist() == [3] * 23 and q[0, 31] == 127 and d[0] == np.float16(1.0)
+    assert not q[1].any() and d[1] == 0
+    d2 = np.float32(np.float32(12.7) / np.float32(127))
+    assert d[2] == np.float16(d2) and q[2, 0] == 127 and q[2, 1] == -64  # -6.35 / 0.1 = -63.5 -> -64 (even)
 
 
 def test_q8_q8_row_is_close_to_the_dequantized_product():

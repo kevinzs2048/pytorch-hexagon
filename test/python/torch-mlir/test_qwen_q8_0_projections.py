@@ -20,7 +20,7 @@ F2 = 'memref<?x?xf32, strided<[?, ?], offset: ?>>'
 F1 = 'memref<?xf32, strided<[?], offset: ?>>'
 
 
-def fixture(n, k, rows='?', mode='plain', factor='inverse', extra_scale_use=False, seed=0):
+def fixture(n, k, rows='?', mode='plain', factor='inverse', extra_scale_use=False, guard=True, scale_op=False, seed=0):
     rng = np.random.default_rng(seed)
     weight = rng.integers(-127, 128, size=(k, n), dtype=np.int8)
     column = rng.random(n, dtype=np.float32) + 0.5
@@ -40,6 +40,24 @@ def fixture(n, k, rows='?', mode='plain', factor='inverse', extra_scale_use=Fals
     extra = (f'''
     %keep = tensor.extract %s[%c0, %c0, %c0] : tensor<1x{rows}x1xf32>
     "test.use"(%keep) : (f32) -> ()''' if extra_scale_use else '')
+    # S as a block argument, or computed (|.| of an argument) so that the dead
+    # quantization makes its defining op dead too.
+    scale = '%sv' if scale_op else '%s'
+    scale_def = (f'''
+    %es = tensor.empty{empty} : tensor<1x{rows}x1xf32>
+    %sv = linalg.generic {{indexing_maps = [#id3, #id3], iterator_types = ["parallel", "parallel", "parallel"]}}
+        ins(%s : tensor<1x{rows}x1xf32>) outs(%es : tensor<1x{rows}x1xf32>) {{
+    ^bb0(%a: f32, %o: f32):
+      %r = math.absf %a : f32
+      linalg.yield %r : f32
+    }} -> tensor<1x{rows}x1xf32>''' if scale_op else '')
+    check = (f'''
+    %ms = tensor.dim {scale}, %c1 : tensor<1x{rows}x1xf32>
+    scf.for %i = %c0 to %ms step %c1 {{
+      %v = tensor.extract {scale}[%c0, %i, %c0] : tensor<1x{rows}x1xf32>
+      %ne = arith.cmpf one, %v, %zero : f32
+      cf.assert %ne, "unimplemented: tensor with zero element"
+    }}''' if guard else '')
     ir = f'''
 #id3 = affine_map<(d0, d1, d2) -> (d0, d1, d2)>
 #bc = affine_map<(d0, d1, d2) -> (d0, d1, 0)>
@@ -51,16 +69,10 @@ module {{
     %c1 = arith.constant 1 : index
     %zero = arith.constant 0.000000e+00 : f32
     %one = arith.constant 1.000000e+00 : f32
-    %m = tensor.dim %x, %c1 : tensor<1x{rows}x{k}xf32>
-    %ms = tensor.dim %s, %c1 : tensor<1x{rows}x1xf32>
-    scf.for %i = %c0 to %ms step %c1 {{
-      %v = tensor.extract %s[%c0, %i, %c0] : tensor<1x{rows}x1xf32>
-      %ne = arith.cmpf one, %v, %zero : f32
-      cf.assert %ne, "unimplemented: tensor with zero element"
-    }}{extra}
+    %m = tensor.dim %x, %c1 : tensor<1x{rows}x{k}xf32>{scale_def}{check}{extra}
     %e1 = tensor.empty{empty} : tensor<1x{rows}x1xf32>
     %inv = linalg.generic {{indexing_maps = [#id3, #id3], iterator_types = ["parallel", "parallel", "parallel"]}}
-        ins(%s : tensor<1x{rows}x1xf32>) outs(%e1 : tensor<1x{rows}x1xf32>) {{
+        ins({scale} : tensor<1x{rows}x1xf32>) outs(%e1 : tensor<1x{rows}x1xf32>) {{
     ^bb0(%a: f32, %o: f32):
       {inverse}
       linalg.yield %r : f32
@@ -171,3 +183,19 @@ def test_coverage_mismatch_fails(tmp_path):
     ir, _, _ = fixture(64, 32)
     result, _ = run(ir, 'expected-count=2', tmp_path)
     assert result.returncode != 0 and 'expected 2, got 1' in result.stderr
+
+
+@pytest.mark.parametrize('scale_op', [False, True])
+def test_unguarded_scale_is_reported_not_dereferenced(tmp_path, scale_op):
+    # Without the zero check, a computed S dies with the quantization; the pass
+    # must report the missing check instead of reading the erased scale.
+    ir, _, _ = fixture(64, 32, guard=False, scale_op=scale_op)
+    result, _ = run(ir, 'expected-count=1', tmp_path)
+    assert result.returncode != 0 and '0 dead scale checks erased for 1 activation scales' in result.stderr
+
+
+def test_guarded_computed_scale_is_removed(tmp_path):
+    ir, _, _ = fixture(64, 32, scale_op=True)
+    result, _ = run(ir, 'expected-count=1', tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert 'math.absf' not in result.stdout and 'cf.assert' not in result.stdout

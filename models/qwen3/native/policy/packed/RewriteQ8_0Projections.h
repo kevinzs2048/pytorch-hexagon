@@ -199,6 +199,18 @@ struct RewriteQ8_0ProjectionsPass
       scales.insert(scale);
       ++id;
     }
+    // The zero checks of each scale, found before anything is erased: their
+    // uses keep S alive through the first DCE. A scale without one may be
+    // erased by it and is not looked at again (reported by the count below).
+    SmallVector<std::pair<Value, SmallVector<scf::ForOp>>> guarded;
+    for (Value s : scales) {
+      SmallVector<scf::ForOp> loops;
+      for (Operation *user : s.getUsers())
+        if (auto loop = dyn_cast<scf::ForOp>(user->getParentOp()); loop && zeroCheck(loop, s) &&
+            !llvm::is_contained(loops, loop))
+          loops.push_back(loop);
+      guarded.push_back({s, loops});
+    }
     // Erase the dead quantization, then the zero checks that kept S alive.
     // Post-order walks: a dead op is collected (and erased) before its parent;
     // repeat until users erased in one round expose no further dead producers.
@@ -212,11 +224,14 @@ struct RewriteQ8_0ProjectionsPass
     };
     dce();
     unsigned checks = 0;
-    for (Value s : scales) {
-      SmallVector<scf::ForOp> loops;
+    for (auto &entry : guarded) {
+      Value s = entry.first;
+      const SmallVector<scf::ForOp> &loops = entry.second;
+      if (loops.empty()) continue;
       bool other = false;
       for (Operation *user : s.getUsers()) {
-        if (auto loop = dyn_cast<scf::ForOp>(user->getParentOp()); loop && zeroCheck(loop, s)) loops.push_back(loop);
+        if (auto loop = dyn_cast<scf::ForOp>(user->getParentOp()); loop && llvm::is_contained(loops, loop))
+          ;
         else if (auto dim = dyn_cast<tensor::DimOp>(user);
                  dim && llvm::all_of(dim->getUsers(), [&](Operation *u) {
                    auto l = dyn_cast<scf::ForOp>(u); return l && zeroCheck(l, s); }))
