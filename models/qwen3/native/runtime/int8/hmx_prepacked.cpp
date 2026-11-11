@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <HAP_compute_res.h>
 #include <HAP_power.h>
 #include <qurt_hvx.h>
@@ -39,6 +40,27 @@ extern "C" void qwen_int8_pack_activation(
     int64_t, void *, int64_t, void *, int, int, int, int, int, int, int, int);
 extern "C" void qwen_int8_accumulate_result(
     int64_t, void *, int64_t, void *, int, int, int, int, int, int, int, int, int);
+#ifdef QWEN_INT8_FUSED_DEQUANT
+// Fused output stages (Triton): dequantize each HMX result tile in the order
+// of the graph they replace; see models/qwen3/kernels/int8_prefill.py.
+extern "C" void qwen_int8_dequant_result(
+    int64_t, void *, int64_t, void *, int64_t, void *, int64_t, void *, int64_t, void *,
+    int, int, int, int, int, int, int, int, int, int, int, int, int);
+extern "C" void qwen_int8_dequant_residual_result(
+    int64_t, void *, int64_t, void *, int64_t, void *, int64_t, void *, int64_t, void *,
+    int64_t, void *, int, int, int, int, int, int, int, int, int, int, int, int, int, int);
+extern "C" void qwen_int8_dequant_product_result(
+    int64_t, void *, int64_t, void *, int64_t, void *, int64_t, void *, int64_t, void *,
+    int64_t, void *, int, int, int, int, int, int, int, int, int, int, int, int, int, int);
+struct MemF32 {
+  float *allocated, *aligned;
+  int64_t offset, sizes[2], strides[2];
+};
+struct MemF32Vector {
+  float *allocated, *aligned;
+  int64_t offset, size, stride;
+};
+#endif
 
 #ifdef QWEN_SHARED_HMX_RUNTIME
 // Generated attention and INT8 projections must use one HMX owner thread.
@@ -142,7 +164,71 @@ bool publish_weights(const int8_t *base, unsigned k, unsigned n) {
   return true;
 }
 
-bool execute(MemI8 *a, MemI8 *b, MemI32 *c) {
+#ifdef QWEN_INT8_FUSED_DEQUANT
+extern "C" void __hexagon_parallel_for_v1(void (*)(void *, uint64_t, uint64_t),
+                                          void *, uint64_t);
+// Raw accumulator tiles of one projection: up to 3072 / 32 tiles of 33 x 32.
+alignas(128) int32_t staged_tiles[96 * 33 * 32];
+
+struct Dequant {
+  float *row_scale, *column_scale, *residual, *out;
+  int scale_stride, residual_stride;
+  bool product = false;  // residual operand multiplies instead of adds
+  std::atomic<unsigned> *ready = nullptr;  // tiles published by the HMX owner
+  // Whole-vector byte copy: scalar loads from VTCM are very slow. Both the
+  // HMX result tile and the staging rows are 128-byte aligned.
+  void stage(const int32_t *tile, unsigned rows, unsigned column) const {
+    typedef int32_t Row __attribute__((vector_size(128), aligned(128)));
+    auto *source = reinterpret_cast<const Row *>(tile);
+    auto *target = reinterpret_cast<Row *>(staged_tiles + (column / 32) * 33 * 32);
+    for (unsigned row = 0; row < rows; ++row) target[row] = source[row];
+    target[32] = source[32];
+    if (ready) {
+      __asm__ __volatile__("barrier" ::: "memory");
+      ready->store(column / 32 + 1, std::memory_order_release);
+    }
+  }
+  // Runs the Triton output stage over all staged tiles on the worker pool.
+  void finish(unsigned rows, unsigned n) const {
+    struct Job { const Dequant *dequant; unsigned rows, n; } job{this, rows, n};
+    __hexagon_parallel_for_v1([](void *opaque, uint64_t start, uint64_t count) {
+      auto &j = *static_cast<Job *>(opaque);
+      for (uint64_t t = start; t < start + count; ++t)
+        j.dequant->tile(staged_tiles + t * 33 * 32, j.rows, j.n, unsigned(t * 32));
+    }, &job, n / 32);
+  }
+  // Writes rows x (32 * tiles) FP32 outputs starting at `column` from INT32
+  // accumulators `stride` apart; `bias` is the zero-point row for every tile.
+  void run(const int32_t *accumulator, const int32_t *bias, unsigned rows, unsigned n,
+           unsigned column, unsigned tiles, unsigned stride) const {
+    Flat acc{const_cast<int32_t *>(accumulator), const_cast<int32_t *>(accumulator), 0, 1, 1};
+    Flat zero{const_cast<int32_t *>(bias), const_cast<int32_t *>(bias), 0, 32, 1};
+    Flat output{out, out, 0, rows * n, 1};
+    Flat scales{row_scale, row_scale, 0, 1, 1};
+    Flat weights{column_scale, column_scale, 0, n, 1};
+    int r = rows, c = n, col = column, t = tiles, s = stride;
+    if (residual) {
+      Flat source{residual, residual, 0, 1, 1};
+      (product ? qwen_int8_dequant_product_result : qwen_int8_dequant_residual_result)(
+          1, &acc, 1, &zero, 1, &output, 1, &scales, 1, &weights, 1, &source,
+          r, c, col, t, s, 0, scale_stride, residual_stride, 1, 1, 1, 0, 0, 0);
+    } else {
+      qwen_int8_dequant_result(1, &acc, 1, &zero, 1, &output, 1, &scales, 1, &weights,
+          r, c, col, t, s, 0, scale_stride, 1, 1, 1, 0, 0, 0);
+    }
+  }
+  // One staged HMX tile: rows x 32 accumulators, zero-point bias in row 32.
+  void tile(const int32_t *accumulator, unsigned rows, unsigned n, unsigned column) const {
+    run(accumulator, accumulator + 32 * 32, rows, n, column, 1, 32);
+  }
+};
+#else
+struct Dequant {
+  void stage(const int32_t *, unsigned, unsigned) const {}
+};
+#endif
+
+bool execute(MemI8 *a, MemI8 *b, MemI32 *c, const Dequant *dequant = nullptr) {
   if (!eligible(a, b, c) || busy.test_and_set()) return false;
   struct BusyGuard { ~BusyGuard() { busy.clear(); } } busy_guard;
   if (!acquire()) return false;
@@ -208,6 +294,12 @@ bool execute(MemI8 *a, MemI8 *b, MemI32 *c) {
       if (hexkl_micro_hmx_mm_u8i8(vtcm, z * 2048, active + z * 1024)) std::abort();
     if (pushed < n / 32 && !push(ready, pushed++)) std::abort();
     if (hexkl_micro_hmx_acc_read_int32(vtcm, cfg, result)) std::abort();
+    if (dequant) {
+      // Stage the raw tile (rows plus the bias row); the floating-point
+      // output stage runs afterwards on HVX workers, off the HMX path.
+      dequant->stage(reinterpret_cast<const int32_t *>(vtcm + result), rows, col);
+      continue;
+    }
     Flat acc{vtcm + result, vtcm + result, 0, 2048, 1};
     Flat output{cp, cp, 0, rows * n, 1};
     qwen_int8_accumulate_result(1, &acc, 1, &output, rows, n, col, 1, 1, 1, 0, 0, 0);
@@ -241,3 +333,128 @@ extern "C" void _mlir_ciface___hexagon_i8_prepacked_v1_matmul(
   if (!execute(a, b, c)) qwen_hvx_matmul(a, b, c);
 #endif
 }
+
+#ifdef QWEN_INT8_FUSED_DEQUANT
+namespace {
+// HVX fallback for the fused entries: exact INT32 product first, then the same
+// Triton output stage per 32-column tile (bias row zero), so floating-point
+// arithmetic stays in the maintained kernel.
+alignas(128) int32_t fallback_product[32 * 3072];
+alignas(128) const int32_t zero_bias[32] = {};
+
+void dequantized_matmul(MemI8 *a, MemI8 *b, MemF32 *scale, MemF32Vector *weight,
+                        MemF32 *residual, MemF32 *out, bool multiply = false) {
+  int64_t rows = a ? a->sizes[0] : 0, n = out ? out->sizes[1] : 0;
+  if (!a || !b || !scale || !weight || !out || rows < 1 || rows > 32 ||
+      n < 32 || n % 32 || (n > 3072 && (rows != 1 || n > 151936)) || out->sizes[0] != rows ||
+      out->strides[0] != n || out->strides[1] != 1 || b->sizes[1] != n ||
+      (scale->sizes[0] != 1 && scale->sizes[0] < rows) || scale->sizes[1] != 1 ||
+      weight->size != n || weight->stride != 1 ||
+      (residual && (residual->sizes[0] != rows || residual->sizes[1] != n ||
+                    residual->strides[1] != 1)))
+    std::abort();
+  Dequant dequant{scale->aligned + scale->offset, weight->aligned + weight->offset,
+                  residual ? residual->aligned + residual->offset : nullptr,
+                  out->aligned + out->offset,
+                  scale->sizes[0] == 1 ? 0 : static_cast<int>(scale->strides[0]),
+                  residual ? static_cast<int>(residual->strides[0]) : 0, multiply};
+  // Shape-only descriptor for the existing eligibility check; never written.
+  MemI32 shape{reinterpret_cast<int32_t *>(dequant.out),
+               reinterpret_cast<int32_t *>(dequant.out), 0, {rows, n}, {n, 1}};
+#ifdef QWEN_SHARED_HMX_RUNTIME
+  if (eligible(a, b, &shape)) {
+    if (hexagon_runtime_configure_hmx_performance_dsp(1) ||
+        hexagon_runtime_configure_vtcm_pool_dsp(2 * 1024 * 1024))
+      std::abort();
+    // Pipeline (as llama.cpp overlaps HVX work with its HMX queue): the worker
+    // owning row 0 submits the HMX job and blocks; the others run the output
+    // stage on each tile as soon as the HMX owner has staged it, and the
+    // submitting worker joins them afterwards. One pool dispatch per call.
+    std::atomic<unsigned> ready{0};
+    dequant.ready = &ready;
+    struct Pipeline {
+      MemI8 *a, *b;
+      MemI32 *c;
+      const Dequant *dequant;
+      unsigned rows, n, tiles;
+      std::atomic<unsigned> next{0};
+      std::atomic<bool> finished{false};
+      bool succeeded = false;
+    } pipeline{a, b, &shape, &dequant, unsigned(rows), unsigned(n), unsigned(n / 32)};
+    __hexagon_parallel_for_v1([](void *opaque, uint64_t start, uint64_t) {
+      auto &p = *static_cast<Pipeline *>(opaque);
+      if (start == 0) {
+        hexagon_runtime_dispatch_hmx_dsp([](void *opaque) {
+          auto &q = *static_cast<Pipeline *>(opaque);
+          q.succeeded = execute(q.a, q.b, q.c, q.dequant);
+        }, &p);
+        p.finished.store(true, std::memory_order_release);
+      }
+      for (;;) {
+        unsigned tile = p.next.fetch_add(1, std::memory_order_relaxed);
+        if (tile >= p.tiles) return;
+        while (p.dequant->ready->load(std::memory_order_acquire) <= tile) {
+          // Only a failure before the first tile ends the job without it.
+          if (p.finished.load(std::memory_order_acquire) &&
+              p.dequant->ready->load(std::memory_order_acquire) <= tile)
+            return;
+          __asm__ __volatile__("pause(#64)");
+        }
+        p.dequant->tile(staged_tiles + tile * 33 * 32, p.rows, p.n, tile * 32);
+      }
+    }, &pipeline, 64);
+    dequant.ready = nullptr;
+    if (pipeline.succeeded) return;
+  }
+#else
+  if (execute(a, b, &shape, &dequant)) {
+    dequant.finish(rows, n);
+    return;
+  }
+#endif
+  // Small queries (decode, prefill tails) and the single-row LM head: exact
+  // INT32 product on the HVX path, then the output stage split by column
+  // tiles over the workers (a serial call when there are few tiles).
+  int32_t *buffer = fallback_product;
+  if (rows * n > 32 * 3072) {
+    static int32_t *wide = nullptr;  // one row of up to 151936 columns
+    if (!wide && !(wide = static_cast<int32_t *>(memalign(128, 151936 * sizeof(int32_t)))))
+      std::abort();
+    buffer = wide;
+  }
+  std::memset(buffer, 0, size_t(rows * n) * sizeof(int32_t));
+  MemI32 product{buffer, buffer, 0, {rows, n}, {n, 1}};
+  qwen_hvx_matmul(a, b, &product);
+  unsigned tiles = unsigned(n / 32);
+  if (tiles < 16) {
+    dequant.run(buffer, zero_bias, unsigned(rows), unsigned(n), 0, tiles, unsigned(n));
+    return;
+  }
+  struct Columns { const Dequant *dequant; const int32_t *product; unsigned rows, n; } job{
+      &dequant, buffer, unsigned(rows), unsigned(n)};
+  __hexagon_parallel_for_v1([](void *opaque, uint64_t start, uint64_t count) {
+    auto &j = *static_cast<Columns *>(opaque);
+    unsigned column = unsigned(start * 32);
+    j.dequant->run(j.product + column, zero_bias, j.rows, j.n, column, unsigned(count), j.n);
+  }, &job, tiles);
+}
+} // namespace
+
+extern "C" void _mlir_ciface___hexagon_i8_prepacked_v1_matmul_dequant(
+    MemI8 *a, MemI8 *b, MemF32 *scale, MemF32Vector *weight, MemF32 *out) {
+  dequantized_matmul(a, b, scale, weight, nullptr, out);
+}
+
+extern "C" void _mlir_ciface___hexagon_i8_prepacked_v1_matmul_dequant_residual(
+    MemI8 *a, MemI8 *b, MemF32 *scale, MemF32Vector *weight, MemF32 *residual,
+    MemF32 *out) {
+  dequantized_matmul(a, b, scale, weight, residual, out);
+}
+#endif
+#ifdef QWEN_INT8_FUSED_DEQUANT
+extern "C" void _mlir_ciface___hexagon_i8_prepacked_v1_matmul_dequant_product(
+    MemI8 *a, MemI8 *b, MemF32 *scale, MemF32Vector *weight, MemF32 *factor,
+    MemF32 *out) {
+  dequantized_matmul(a, b, scale, weight, factor, out, true);
+}
+#endif

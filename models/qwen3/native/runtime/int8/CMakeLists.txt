@@ -6,6 +6,11 @@ set(HEXKL_DIR "" CACHE PATH "HexKL addon")
 set(LLAMA_SOURCE "" CACHE PATH "Pinned llama.cpp source checkout")
 set(TRITON_PACK_OBJECT "" CACHE FILEPATH "Object from strict-int8-pack")
 set(TRITON_ACCUMULATE_OBJECT "" CACHE FILEPATH "Object from strict-int8-accumulate")
+set(TRITON_DEQUANT_OBJECT "" CACHE FILEPATH "Optional object from strict-int8-dequant")
+set(TRITON_DEQUANT_RESIDUAL_OBJECT "" CACHE FILEPATH
+  "Optional object from strict-int8-dequant-residual")
+set(TRITON_DEQUANT_PRODUCT_OBJECT "" CACHE FILEPATH
+  "Optional object from strict-int8-dequant-product")
 option(SHARE_HMX_RUNTIME "Share generated attention's HMX dispatcher and VTCM owner" OFF)
 set(pin f818065d753700341b5355ce36ca676ecfb5d139)
 execute_process(COMMAND git -C "${LLAMA_SOURCE}" rev-parse HEAD
@@ -28,8 +33,20 @@ set(flags -O3 -fPIC -G0 -mv73 -mhvx -mhmx -mhvx-length=128B
 if(SHARE_HMX_RUNTIME)
   list(APPEND flags -DQWEN_SHARED_HMX_RUNTIME)
 endif()
-foreach(kind IN ITEMS PACK ACCUMULATE)
+set(kinds PACK ACCUMULATE)
+# Fused dequantizing output stages are optional and come as a pair; without
+# them the library exposes only the original INT32 entry.
+if(TRITON_DEQUANT_OBJECT OR TRITON_DEQUANT_RESIDUAL_OBJECT OR TRITON_DEQUANT_PRODUCT_OBJECT)
+  if(NOT TRITON_DEQUANT_OBJECT OR NOT TRITON_DEQUANT_RESIDUAL_OBJECT OR
+     NOT TRITON_DEQUANT_PRODUCT_OBJECT)
+    message(FATAL_ERROR "All three fused INT8 dequant objects are required together")
+  endif()
+  list(APPEND kinds DEQUANT DEQUANT_RESIDUAL DEQUANT_PRODUCT)
+  list(APPEND flags -DQWEN_INT8_FUSED_DEQUANT)
+endif()
+foreach(kind IN LISTS kinds)
   string(TOLOWER "${kind}" lower)
+  string(REPLACE "_" "-" lower "${lower}")
   set(input "${TRITON_${kind}_OBJECT}")
   get_filename_component(directory "${input}" DIRECTORY)
   set(manifest "${directory}/manifest.json")

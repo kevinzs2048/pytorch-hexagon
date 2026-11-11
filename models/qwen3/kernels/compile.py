@@ -28,7 +28,9 @@ def main():
     parser.add_argument("profile", choices=("strict-decode", "qfloat-decode", "experimental-decode-fp16", "experimental-prefill-fp16", "strict-silu",
                                             "experimental-silu-fp32", "llama-silu-fp32",
                                             "experimental-quantized-silu-up", "strict-int8-pack",
-                                            "strict-int8-accumulate", "strict-prefill-pack",
+                                            "strict-int8-accumulate", "strict-int8-dequant",
+                                            "strict-int8-dequant-residual", "strict-int8-dequant-product",
+                                            "strict-prefill-pack",
                                             "strict-prefill-qk", "strict-prefill-softmax",
                                             "strict-prefill-pv"))
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -63,7 +65,9 @@ def main():
     llama_silu = args.profile == "llama-silu-fp32"
     silu = args.profile == "strict-silu" or fast_silu or llama_silu
     quantized_silu = args.profile == "experimental-quantized-silu-up"
-    int8 = args.profile in ("strict-int8-pack", "strict-int8-accumulate")
+    int8 = args.profile in ("strict-int8-pack", "strict-int8-accumulate",
+                            "strict-int8-dequant", "strict-int8-dequant-residual",
+                            "strict-int8-dequant-product")
     strict_prefill = args.profile.startswith("strict-prefill-")
     prefill = args.profile == "experimental-prefill-fp16"
     if (quantized_silu or hmx_decode) != (args.llc is not None):
@@ -138,6 +142,9 @@ def main():
     spec.loader.exec_module(module)
     kernel = (getattr(module, "qwen_prefill_" + args.profile.removeprefix("strict-prefill-"))
               if strict_prefill else module.qwen_int8_pack_activation if args.profile == "strict-int8-pack" else
+              module.qwen_int8_dequant_result if args.profile == "strict-int8-dequant" else
+              module.qwen_int8_dequant_residual_result if args.profile == "strict-int8-dequant-residual" else
+              module.qwen_int8_dequant_product_result if args.profile == "strict-int8-dequant-product" else
               module.qwen_int8_accumulate_result if int8 else
               module.silu_product if quantized_silu else module.silu_forward if silu else
               module.attention_decode if decode else
@@ -158,6 +165,15 @@ def main():
     if int8:
         signature = ({"A": "*i8", "Packed": "*i8", "rows": "i32", "width": "i32"}
                      if args.profile == "strict-int8-pack" else
+                     {"Acc": "*i32", "Bias": "*i32", "Out": "*fp32", "RowScale": "*fp32",
+                      "ColScale": "*fp32", **{n: "i32" for n in ("rows", "columns", "column", "tiles",
+                      "acc_stride", "bias_step", "scale_stride")}}
+                     if args.profile == "strict-int8-dequant" else
+                     {"Acc": "*i32", "Bias": "*i32", "Out": "*fp32", "RowScale": "*fp32",
+                      "ColScale": "*fp32", ("Residual" if args.profile.endswith("residual") else "Factor"): "*fp32",
+                      **{n: "i32" for n in ("rows", "columns", "column", "tiles", "acc_stride", "bias_step",
+                      "scale_stride", "residual_stride" if args.profile.endswith("residual") else "factor_stride")}}
+                     if args.profile in ("strict-int8-dequant-residual", "strict-int8-dequant-product") else
                      {"Acc": "*i32", "Out": "*i32", "rows": "i32",
                       "columns": "i32", "column": "i32"})
         constants = {}
@@ -350,6 +366,14 @@ def main():
                                   "accumulator": "i32[64,32]; row32 is the zero-point bias",
                                   "output": "C += signed A @ W, contiguous INT32"},
                         precision="exact INT8/INT32; no floating-point conversion; model validation is separate")
+        if "dequant" in args.profile:
+            manifest["contract"]["output"] = (
+                "Out = ((float(A @ W) * RowScale[row]) * ColScale[column])"
+                + (" with Residual added first" if args.profile.endswith("residual") else
+                   " multiplied by Factor first" if args.profile.endswith("product") else "")
+                + ", contiguous FP32; RowScale stride 0 broadcasts one scale")
+            manifest["precision"] = ("exact INT8/INT32 accumulation; IEEE FP32 conversion and "
+                                     "two multiplies (plus one addition) in the replaced graph order")
     if strict_prefill:
         stage = args.profile.removeprefix("strict-prefill-")
         manifest.update(grid=[1, 4],

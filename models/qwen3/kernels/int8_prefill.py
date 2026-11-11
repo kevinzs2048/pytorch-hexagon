@@ -40,3 +40,52 @@ def qwen_int8_accumulate_result(Acc, Out, rows, columns, column):
         value = tl.load(Acc + row * 32 + c) - bias
         old = tl.load(Out + row * columns + column + c)
         tl.store(Out + row * columns + column + c, old + value)
+
+
+# Fused output stage for dequantized projections. Per output element it
+# evaluates the replaced graph in its original order:
+#   ((float(acc - bias) * RowScale[row]) * ColScale[column]) [+ Residual | * Factor]
+# over `tiles` 32-column tiles starting at `column`. Accumulator rows are
+# `acc_stride` apart; tile t's bias row is at Bias + t * bias_step (HMX tiles
+# carry it as row 32; a plain INT32 product passes a zero row and step 0).
+# The caller passes RowScale stride 0 when one scale broadcasts to every row.
+@triton.jit
+def _dequant_tiles(Acc, Bias, Out, RowScale, ColScale, Other, rows, columns, column,
+                   tiles, acc_stride, bias_step, scale_stride, other_stride, MODE: tl.constexpr):
+    c = tl.arange(0, 32)
+    for t in range(0, tiles):
+        col = column + t * 32
+        bias = tl.load(Bias + t * bias_step + c)
+        weight = tl.load(ColScale + col + c)
+        for row in range(0, rows):
+            value = (tl.load(Acc + row * acc_stride + t * 32 + c) - bias).to(tl.float32)
+            scale = tl.load(RowScale + row * scale_stride)
+            result = (value * scale) * weight
+            if MODE == 1:
+                result = tl.load(Other + row * other_stride + col + c) + result
+            if MODE == 2:
+                result = tl.load(Other + row * other_stride + col + c) * result
+            tl.store(Out + row * columns + col + c, result)
+
+
+@triton.jit
+def qwen_int8_dequant_result(Acc, Bias, Out, RowScale, ColScale, rows, columns, column,
+                             tiles, acc_stride, bias_step, scale_stride):
+    _dequant_tiles(Acc, Bias, Out, RowScale, ColScale, ColScale, rows, columns, column,
+                   tiles, acc_stride, bias_step, scale_stride, 0, 0)
+
+
+@triton.jit
+def qwen_int8_dequant_residual_result(Acc, Bias, Out, RowScale, ColScale, Residual, rows,
+                                      columns, column, tiles, acc_stride, bias_step,
+                                      scale_stride, residual_stride):
+    _dequant_tiles(Acc, Bias, Out, RowScale, ColScale, Residual, rows, columns, column,
+                   tiles, acc_stride, bias_step, scale_stride, residual_stride, 1)
+
+
+@triton.jit
+def qwen_int8_dequant_product_result(Acc, Bias, Out, RowScale, ColScale, Factor, rows,
+                                     columns, column, tiles, acc_stride, bias_step,
+                                     scale_stride, factor_stride):
+    _dequant_tiles(Acc, Bias, Out, RowScale, ColScale, Factor, rows, columns, column,
+                   tiles, acc_stride, bias_step, scale_stride, factor_stride, 2)
