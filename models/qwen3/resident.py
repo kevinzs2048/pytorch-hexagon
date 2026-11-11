@@ -51,6 +51,10 @@ def resident_cache_namespace(base_manifest, session):
     return namespace
 
 
+Q8_0_LIBRARY = 'libqwen_q8_0_weights.so'
+Q8_0_SESSION_KEYS = {'library', 'projections', 'shared_constant_libraries', 'weights', 'numerics'}
+
+
 def load_session(directory, base_manifest):
     directory = Path(directory).resolve()
     manifest = json.loads((directory / 'session.json').read_text())
@@ -69,8 +73,24 @@ def load_session(directory, base_manifest):
     required.update(name+'-graph.txt' for name in ('initial', 'prefill', 'decode', 'single0', 'single1'))
     required.update(name+'-mapping.json' for name in ('initial', 'prefill', 'decode', 'single0', 'single1'))
     constants = manifest['constants']
-    if (len(set(constants)) != 4 or any(name != f'libqwen_dynamic_kv_prefill_const_{i}.so'
-                                       for i, name in enumerate(constants, 1))
+    q8 = manifest.get('q8_0_projections')
+    if q8 is None:
+        shared = constants
+        if len(set(shared)) != 4:
+            raise ValueError('Incomplete resident code, graph or constant inventory')
+    else:
+        # Q8_0 projections drop the INT8 weights from every domain: fewer shared
+        # constant libraries, then the Q8_0 weight library staged with them.
+        if (not isinstance(q8, dict) or set(q8) != Q8_0_SESSION_KEYS
+                or q8['library'] != Q8_0_LIBRARY or type(q8['projections']) is not int
+                or type(q8['shared_constant_libraries']) is not int
+                or not 1 <= q8['shared_constant_libraries'] <= 4
+                or constants[-1:] != [Q8_0_LIBRARY]
+                or len(constants) != q8['shared_constant_libraries'] + 1):
+            raise ValueError('Inconsistent Q8_0 projection inventory')
+        shared = constants[:-1]
+    if (len(set(shared)) != len(shared) or any(name != f'libqwen_dynamic_kv_prefill_const_{i}.so'
+                                             for i, name in enumerate(shared, 1))
             or not required.union(constants) <= manifest['files'].keys()):
         raise ValueError('Incomplete resident code, graph or constant inventory')
     return manifest
