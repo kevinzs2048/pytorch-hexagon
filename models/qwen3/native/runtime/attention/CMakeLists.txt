@@ -23,6 +23,19 @@ set(flags -O3 -fPIC -G0 -mv73 -mhvx -mhmx -mhvx-length=128B -fno-math-errno
   -I${HEXAGON_SDK}/rtos/qurt/computev73/include/qurt
   -I${HEXAGON_SDK}/rtos/qurt/computev73/include/posix)
 list(APPEND flags "-I${common_native}")
+# Resident KV storage of the C++ attention entries (attention_memref.h).
+option(KV_FP16 "FP16 resident K/V storage and *fp16 kernels (QWEN_KV_FP16)" OFF)
+option(KV_DMA "Stage multi-token attention K/V in VTCM by DMA (QWEN_ATTENTION_KV_DMA)" OFF)
+set(kv_flags)
+if(KV_DMA)
+  if(NOT KV_FP16)
+    message(FATAL_ERROR "KV_DMA stages FP16 K/V planes; it requires KV_FP16")
+  endif()
+  list(APPEND kv_flags -DQWEN_ATTENTION_KV_DMA)
+endif()
+if(KV_FP16)
+  list(APPEND kv_flags -DQWEN_KV_FP16)
+endif()
 set(sources "${htp}/worker-pool.c")
 foreach(source IN LISTS sources)
   get_filename_component(name "${source}" NAME_WE)
@@ -160,7 +173,7 @@ if(TRITON_DECODE_OBJECT)
     DEPFILE "${prefill_object}.d" VERBATIM)
   set(adapter_object "${CMAKE_CURRENT_BINARY_DIR}/triton_decode_adapter.o")
   add_custom_command(OUTPUT "${adapter_object}"
-    COMMAND "${HEXAGON_TOOLS}/bin/hexagon-clang++" ${flags} -std=c++17
+    COMMAND "${HEXAGON_TOOLS}/bin/hexagon-clang++" ${flags} -std=c++17 ${kv_flags}
       -DQWEN_DECODE_SCRATCH_ELEMENTS=${decode_scratch}
       $<$<BOOL:${strict_prefill_enabled}>:-DQWEN_TRITON_PREFILL>
       -MMD -MF "${adapter_object}.d" -c
@@ -275,7 +288,7 @@ if(TRITON_PREFILL_OBJECT)
     get_filename_component(name "${source}" NAME_WE)
     set(obj "${CMAKE_CURRENT_BINARY_DIR}/experimental_${name}.o")
     add_custom_command(OUTPUT "${obj}"
-      COMMAND "${HEXAGON_TOOLS}/bin/hexagon-clang++" ${flags} -std=c++17
+      COMMAND "${HEXAGON_TOOLS}/bin/hexagon-clang++" ${flags} -std=c++17 ${kv_flags}
         -DQWEN_TRITON_PREFILL -DQWEN_PREFILL_POOL_BYTES=${TRITON_PREFILL_POOL_BYTES}
         -DQWEN_PREFILL_VTCM_BYTES=${prefill_vtcm_bytes}
         -DQWEN_DECODE_SCRATCH_ELEMENTS=${decode_scratch} ${hmx_decode_flags}
@@ -294,6 +307,8 @@ if(TRITON_PREFILL_OBJECT)
     DEPENDS "${experimental_archive}")
 elseif(NOT TRITON_PREFILL_POOL_BYTES STREQUAL "0")
   message(FATAL_ERROR "TRITON_PREFILL_POOL_BYTES requires TRITON_PREFILL_OBJECT")
+elseif(KV_DMA)
+  message(FATAL_ERROR "KV_DMA stages K/V for the HMX prefill; it requires TRITON_PREFILL_OBJECT")
 endif()
 
 # Strict activation kernels share the same pinned worker-pool dependency.
