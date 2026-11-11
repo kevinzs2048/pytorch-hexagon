@@ -5,4 +5,5 @@ quantize: Q8_0 tile packing and the bit-exact numpy references of the DSP runtim
 weights:  identify each --qwen-q8-0-projections id against the HF checkpoint and
           pack its gguf-py Q8_0 bytes
 library:  link the packed tiles into libqwen_q8_0_weights.so plus the id table
+builder:  the resident-builder steps (models/qwen3/build_model.py fused_graph)
 """

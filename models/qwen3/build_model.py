@@ -57,9 +57,36 @@ def constant_symbols(paths, readobj, environment):
     return result
 
 
+# Fused-graph passes per domain, in the order of one policy invocation (the
+# order the accepted candidates were prepared in). Counts are per domain.
+FUSED_GRAPH_PASSES = (
+    ('int8_dequant', '--qwen-fuse-i8-dequant=expected-count=197 expected-residual=56 expected-product=28',
+     ('initial', 'prefill', 'decode')),
+    ('parallel_rope', '--qwen-fuse-parallel-rope=expected-count=56', ('initial', 'prefill', 'decode')),
+    ('parallel_trig', '--qwen-fuse-parallel-trig=expected-count=2', ('initial', 'prefill')),
+    ('causal_mask', '--qwen-fuse-causal-mask=expected-count=1', ('prefill',)),
+    ('kv_storage', '--qwen-fp16-kv-storage=expected-calls=28', ('initial', 'prefill', 'decode')),
+)
+FUSED_GRAPH_KEYS = {'int8_dequant', 'parallel_rope', 'parallel_trig', 'causal_mask', 'kv_storage', 'kv_dma',
+                    'q8_0_projections'}
+
+
+def fused_graph_passes(name, graph):
+    """Policy flags of the selected fused-graph features for one domain. With
+    Q8_0 projections every domain fuses its INT8 dequantization first."""
+    passes = []
+    for key, flag, domains in FUSED_GRAPH_PASSES:
+        selected = graph.get(key) not in (None, False)
+        if key == 'int8_dequant' and graph.get('q8_0_projections'):
+            domains = domains + ('initial_single',)
+        if selected and name in domains:
+            passes.append(flag)
+    return passes
+
+
 def prepare_resident(name, entry, build, output, environment, integer_weights="plain",
                      silu_effects=False, activation_reuse=False, parallel_silu=False,
-                     vectorize_activation=False, batch_arm_rope=False):
+                     vectorize_activation=False, batch_arm_rope=False, graph=None):
     """Stream a pinned actual Linalg capture through the effective-length policies."""
     sys.path.insert(0, str(ROOT/'models/qwen3/runtime/arm'))
     from apply_dynamic_bound_qk_policy import FunctionPolicyPatch
@@ -204,6 +231,22 @@ def prepare_resident(name, entry, build, output, environment, integer_weights="p
                 '--emit-bytecode', '-o', str(batched)], env=environment,
                 stdout=log, stderr=subprocess.STDOUT, check=True)
         batched.replace(target)
+    graph = graph or {}
+    passes = fused_graph_passes(name, graph)
+    if passes or graph.get('q8_0_projections'):
+        fused = output/'fused-graph.mlirbc'
+        log = output/'fused-graph.log'
+        if graph.get('q8_0_projections'):
+            from .q8_0.builder import rewrite_domain
+            record['q8_0_projections'] = rewrite_domain(tools/'qwen-packed-i8-opt', target, fused, name,
+                                                        output/'q8_0-dump', environment, log, passes)
+        else:
+            with log.open('wb') as stream:
+                subprocess.run([str(tools/'qwen-packed-i8-opt'), str(target), *passes, '--canonicalize',
+                                '--verify-each', '--emit-bytecode', '-o', str(fused)],
+                               env=environment, stdout=stream, stderr=subprocess.STDOUT, check=True)
+        fused.replace(target)
+    record['fused_graph_passes'] = passes
     record['batch_arm_rope'] = batch_arm_rope
     record['vectorize_activation'] = vectorize_activation
     record['parallel_silu'] = parallel_silu
@@ -310,6 +353,51 @@ def link_resident(args):
                 raise ValueError('INT8 kernel identity/profile differs: ' + kind)
             int8_inputs[kind] = (obj, manifest)
             int8_kernels[kind] = dict(entry, object=str(obj))
+    features = plan.get('fused_graph', {})
+    if not isinstance(features, dict) or set(features) - FUSED_GRAPH_KEYS:
+        raise ValueError('Unsupported fused_graph features')
+    graph_inputs = {}
+
+    def kernel_record(entry, profile, label):
+        if not isinstance(entry, dict) or set(entry) != {'object', 'object_sha256', 'manifest_sha256'}:
+            raise ValueError('Invalid kernel record: ' + label)
+        obj = Path(entry['object']).resolve(strict=True)
+        manifest = obj.with_name('manifest.json')
+        receipt = json.loads(manifest.read_text())
+        if (sha(obj) != entry['object_sha256'] or sha(manifest) != entry['manifest_sha256'] or
+                receipt.get('object_sha256') != entry['object_sha256'] or receipt.get('profile') != profile or
+                receipt.get('lwp', {}).get('enabled') is not False):
+            raise ValueError('Kernel identity/profile differs: ' + label)
+        graph_inputs[label] = (obj, manifest, entry)
+        return dict(entry, object=str(obj))
+    if features.get('int8_dequant') is not None:
+        dequant = features['int8_dequant']
+        if int8_kernels is None or not isinstance(dequant, dict) or set(dequant) != {'dequant', 'residual', 'product'}:
+            raise ValueError('int8_dequant requires the INT8 HMX kernels and dequant/residual/product objects')
+        features['int8_dequant'] = {kind: kernel_record(dequant[kind], 'strict-int8-dequant' +
+                                                     ('' if kind == 'dequant' else '-' + kind), 'dequant-' + kind)
+                                 for kind in ('dequant', 'residual', 'product')}
+    if features.get('parallel_rope') is not None:
+        features['parallel_rope'] = kernel_record(features['parallel_rope'], 'strict-rope-heads', 'rope')
+    if features.get('parallel_trig') not in (None, True):
+        raise ValueError('parallel_trig must be true when present')
+    if features.get('causal_mask') is not None:
+        features['causal_mask'] = kernel_record(features['causal_mask'], 'strict-causal-mask', 'mask')
+    if features.get('kv_storage') not in (None, 'fp16'):
+        raise ValueError('kv_storage must be fp16 when present')
+    if features.get('kv_dma') not in (None, True) or (features.get('kv_dma') and features.get('kv_storage') != 'fp16'):
+        raise ValueError('kv_dma requires kv_storage fp16')
+    q8_0 = features.get('q8_0_projections')
+    if q8_0 is not None:
+        if (features.get('int8_dequant') is None or not isinstance(q8_0, dict) or set(q8_0) != {'hf_checkpoint'} or
+                not args.llama_source or not compile_resident):
+            raise ValueError('q8_0_projections requires int8_dequant, the HF checkpoint, '
+                             '--llama-source and resident compilation')
+        q8_0 = dict(hf_checkpoint=str(Path(q8_0['hf_checkpoint']).resolve(strict=True)))
+        features['q8_0_projections'] = q8_0
+    if features and not compile_resident:
+        raise ValueError('fused_graph features require resident compilation')
+    plan['fused_graph'] = features
     sdk_hmx_linker = None
     if int8_kernels is not None:
         path = Path(config['hexagon_tools'])/'bin/hexagon-link'
@@ -424,6 +512,12 @@ def link_resident(args):
         silu_profile = receipt['profile']
         silu_kernel = dict(silu_kernel, object=str(silu_object))
         plan['triton_silu'] = silu_kernel
+    if features.get('kv_storage') == 'fp16':
+        attention_kernels = [hmx_prefill, decode_kernel] + ([hmx_decode] if hmx_decode else [])
+        if hmx_prefill is None or decode_kernel is None or any(
+                json.loads(Path(k['object']).with_name('manifest.json').read_text())
+                .get('contract', {}).get('storage') != 'fp16' for k in attention_kernels):
+            raise ValueError('FP16 KV storage requires HMX prefill and decode kernels compiled with --kv-fp16')
     domain_defaults = dict(enableRowMinMax=row_minmax, scheduleFMAChains=False,
                            scheduleDequantLoops=False, parallelDequantLoops=False,
                            scheduleReductionLoops=False,
@@ -501,7 +595,9 @@ def link_resident(args):
                 *(['-DTRITON_HMX_DECODE_OBJECT='+str(hmx_decode_object),
                    '-DTRITON_HMX_DECODE_MIN_KV='+str(hmx_decode['min_kv'])]
                   if hmx_decode else []),
-                *(['-DTRITON_SILU_OBJECT='+str(silu_object)] if silu_kernel else [])])
+                *(['-DTRITON_SILU_OBJECT='+str(silu_object)] if silu_kernel else []),
+                *(['-DKV_FP16=ON'] if features.get('kv_storage') == 'fp16' else []),
+                *(['-DKV_DMA=ON'] if features.get('kv_dma') else [])])
             target, archive_name = {
                 'fp32-reference': ('qwen-workers-static', 'libqwen_workers.a'),
                 'fp32-ordered-workers-v1': ('qwen-ordered-fp32-attention-static', 'libqwen_ordered_fp32_attention.a'),
@@ -567,7 +663,7 @@ def link_resident(args):
                 continue
             prepared = prepare_resident(name, entry, build, output/(name+'-prepared'), env,
                                         integer_weights, silu_effects, activation_reuse,
-                                        parallel_silu, vectorize_activation, batch_arm_rope)
+                                        parallel_silu, vectorize_activation, batch_arm_rope, features)
             record['preparation'][name] = prepared
             if compile_resident:
                 objects = output/(name+'-objects')
@@ -659,8 +755,17 @@ def link_resident(args):
                 compiled_input_sha256=bundle['input_sha256'],
                 compiler_sha256=bundle['extension_sha256'])
         constants = []
-        if len(bundles['prefill'][1]) != 5:
-            raise ValueError('Expected four shared constant modules')
+        shared_modules = len(bundles['prefill'][1]) - 1
+        if (shared_modules != 4 if q8_0 is None else not 1 <= shared_modules <= 4):
+            raise ValueError('Expected four shared constant modules' if q8_0 is None else
+                             'Expected one to four shared constant modules without INT8 weights')
+        q8_0_record = None
+        if q8_0 is not None:
+            from .q8_0.builder import weights_and_library
+            q8_0_record = weights_and_library(
+                {name: output/(name+'-prepared/q8_0-dump') for name in DOMAINS}, Path(q8_0['hf_checkpoint']),
+                plan['checkpoint_sha256'], args.llama_source.resolve()/'gguf-py', output, tools, config['lld'],
+                config.get('python', sys.executable), ROOT, env, log=lambda line: None)
         flags = ['-O3', '-mv73', '-mhvx', '--ld-path='+config['lld'],
                  '-Wl,-z,separate-loadable-segments', '-shared', '-fPIC', '-G0']
         for i, obj in enumerate(bundles['prefill'][1][1:], 1):
@@ -695,7 +800,11 @@ def link_resident(args):
                 '-DHEXKL_DIR='+str(Path(config['hexkl']).resolve()),
                 *(['-DSHARE_HMX_RUNTIME=ON'] if hmx_prefill else []),
                 '-DTRITON_PACK_OBJECT='+str(int8_inputs['pack'][0]),
-                '-DTRITON_ACCUMULATE_OBJECT='+str(int8_inputs['accumulate'][0])])
+                '-DTRITON_ACCUMULATE_OBJECT='+str(int8_inputs['accumulate'][0]),
+                *(['-DTRITON_DEQUANT_OBJECT='+str(graph_inputs['dequant-dequant'][0]),
+                   '-DTRITON_DEQUANT_RESIDUAL_OBJECT='+str(graph_inputs['dequant-residual'][0]),
+                   '-DTRITON_DEQUANT_PRODUCT_OBJECT='+str(graph_inputs['dequant-product'][0])]
+                  if features.get('int8_dequant') else [])])
             run('int8-build', [config.get('cmake', 'cmake'), '--build', int8_build,
                               '--target', 'qwen-int8-prefill-static', '--parallel', '4'])
             integer_link = [int8_build/'libqwen_int8_prefill.a']
@@ -741,8 +850,49 @@ def link_resident(args):
                 abi='__hexagon_parallel_for_v1')
             record['parallel_kv_export'] = dict(min_query=16, workers=4,
                 shares_runtime='parallel_dequant')
+        # Fused-graph runtimes and kernels, appended after the model output as
+        # in the accepted candidates.
+        graph_link = []
+        graph_flags = ['-O3', '-fPIC', '-G0', '-mv73', '-mhvx', '-mhvx-length=128B', '-std=c++17',
+                       '-fno-exceptions', '-fno-rtti', '-I'+str(sdk/'incs'), '-I'+str(sdk/'incs/stddef')]
+        for key, source_name, extra in (('parallel_rope', 'parallel_rope.cpp', []),
+                                        ('parallel_trig', 'parallel_trig.cpp', ['-Wall']),
+                                        ('causal_mask', 'parallel_mask.cpp', ['-Wall'])):
+            if not features.get(key):
+                continue
+            obj = output/(Path(source_name).stem+'.o')
+            run('graph-'+key, [tools/'bin/hexagon-clang++', *graph_flags, *extra, '-c',
+                               runtime/'graph'/source_name, '-o', obj])
+            graph_link.append(obj)
+            if key == 'parallel_rope':
+                kernel = output/'rope_kernel.o'
+                run('graph-rope-kernel', [tools/'bin/hexagon-llvm-objcopy',
+                    *['--localize-symbol='+s for s in ('memrefCopy', '__hexagon_mlir_expf', '_Assert',
+                                                       'aligned_alloc', 'roundevenf')],
+                    graph_inputs['rope'][0], kernel])
+                graph_link.append(kernel)
+            if key == 'causal_mask':
+                kernel = output/'mask_kernel.o'
+                run('graph-mask-kernel', [tools/'bin/hexagon-llvm-objcopy', '--keep-global-symbol=qwen_causal_mask',
+                                          graph_inputs['mask'][0], kernel])
+                graph_link.append(kernel)
+        kv_flags = []
+        if features.get('kv_storage') == 'fp16':
+            kv_flags = ['-DQWEN_KV_FP16']
+            obj = output/'kv_fp16.o'
+            run('kv-fp16', [tools/'bin/hexagon-clang++', '-O3', '-mv73', '-mhvx', '-mhvx-length=128B', '-mhvx-ieee-fp',
+                            '-DPYTORCH_HEXAGON_KV_FP16_HVX', '-fPIC', '-G0', '-mlong-calls', '-std=c++17',
+                            '-fno-math-errno', '-c', ROOT/'hexagon_runtime/native/kv_fp16.cpp', '-o', obj])
+            graph_link.append(obj)
+        if q8_0_record is not None:
+            from .q8_0.builder import runtime_object
+            q8_0_record['runtime'] = runtime_object(tools, includes, Path(config['hexkl'])/'include', output, env, run)
+            library = Path(q8_0_record['library']['library'])
+            shutil.copyfile(library, output/library.name)
+            graph_link += [q8_0_record['runtime']['object'], q8_0_record['library']['table'],
+                           '-L'+str(output), '-l'+library.name[3:-3]]
         run('link', [tools/'bin/hexagon-clang++', *model_flags, '-mlong-calls', '-nostdlib++',
-            '-std=c++17', '-fno-math-errno', *temporary_flags, *temporary_runtime, *benchmark_flags, *parallel_runtime,
+            '-std=c++17', *kv_flags, '-fno-math-errno', *temporary_flags, *temporary_runtime, *benchmark_flags, *parallel_runtime,
             *resource_scope_flags,
             *['-I'+str(path) for path in includes], runtime/'resident_session.cpp',
             *mains, *integer_link, *attention_archive, ROOT/'hexagon_runtime/native/kv_cache.cpp',
@@ -750,7 +900,8 @@ def link_resident(args):
             *['-l'+name[3:-3] for name in constants],
             '-L'+str(sdk/'libs/qhl_hvx/prebuilt/hexagon_toolv87_v73'), '-lqhmath_hvx',
             tools/'target/hexagon/lib/v73/G0/pic/libc++.a',
-            tools/'target/hexagon/lib/v73/G0/pic/libc++abi.a', *integer_libraries, '-o', output/'model.so'])
+            tools/'target/hexagon/lib/v73/G0/pic/libc++abi.a', *integer_libraries, '-o', output/'model.so',
+            *graph_link])
         # Unsupported SDK intrinsics must fail here, not at the DSP loader.
         unresolved = subprocess.check_output(
             [str(tools/'bin/llvm-nm'), '-u', str(output/'model.so')], env=env, text=True)
@@ -771,6 +922,8 @@ def link_resident(args):
             if sha(Path(item['path'])) != item['sha256']:
                 raise ValueError('Runtime graph/decomposition changed: ' + name)
             shutil.copyfile(item['path'], output/name)
+        if q8_0_record is not None:
+            constants.append(Path(q8_0_record['library']['library']).name)
         files = ['model.so', 'decompositions.py', *constants]
         if needs_llama:
             files.append('LICENSE.llama.cpp')
@@ -805,6 +958,22 @@ def link_resident(args):
         manifest['row_minmax'] = row_minmax
         manifest['domain_compiler_options'] = domain_options
         manifest['vectorize_activation'] = vectorize_activation
+        if features:
+            manifest['fused_graph'] = {key: value for key, value in features.items() if key != 'q8_0_projections'}
+            record['fused_graph'] = features
+        if q8_0_record is not None:
+            record['q8_0_projections'] = q8_0_record
+            manifest['q8_0_projections'] = dict(
+                library=Path(q8_0_record['library']['library']).name,
+                projections=q8_0_record['library']['count'], shared_constant_libraries=shared_modules,
+                weights=dict(source=q8_0_record['weights']['source'], hf_sha256=q8_0_record['weights']['hf_sha256'],
+                             weights_json_sha256=q8_0_record['weights']['sha256'],
+                             library_sha256=q8_0_record['library']['library_sha256'],
+                             table_sha256=q8_0_record['library']['table_sha256'],
+                             runtime_sha256=q8_0_record['runtime']['object_sha256']),
+                numerics=dict(prefill='Q8_0 weights dequantized to FP16, FP16 activations, HMX FP16 accumulation',
+                              single_row='Q8_0 x Q8_0 per 32 values (llama.cpp CPU vec_dot), FP32 accumulation',
+                              lm_head='Q8_0 x Q8_0 per 32 values (llama.cpp CPU vec_dot), FP32 accumulation'))
         manifest['temporary_buffer_bytes'] = temporary_buffer_bytes
         if needs_llama:
             manifest['llama_runtime'] = record['llama_runtime']
@@ -816,6 +985,9 @@ def link_resident(args):
         if decode_kernel and (sha(decode_object) != decode_kernel['object_sha256'] or
                               sha(decode_manifest) != decode_kernel['manifest_sha256']):
             raise ValueError('Triton decode inputs changed during linking')
+        for label, (obj, manifest_path, entry) in graph_inputs.items():
+            if sha(obj) != entry['object_sha256'] or sha(manifest_path) != entry['manifest_sha256']:
+                raise ValueError('Fused-graph kernel inputs changed during linking: ' + label)
         if hmx_prefill and (sha(hmx_object) != hmx_prefill['object_sha256'] or
                             sha(hmx_manifest) != hmx_prefill['manifest_sha256']):
             raise ValueError('HMX prefill inputs changed during linking')
