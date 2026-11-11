@@ -1,4 +1,4 @@
-"""Check the fused INT8 dequantization and parallel RoPE graph rewrites.
+"""Check the fused INT8 dequantization, parallel RoPE and parallel trig graph rewrites.
 
 Each fixture is the replaced graph chain in its prepared form; negative cases
 keep the original operations when a matched precondition does not hold.
@@ -111,6 +111,56 @@ module {
 }
 '''
 
+TRIG = '''
+module {
+  func.func private @__hexagon_arm_cos4(memref<4xf32>, f32, f32, f32, f32)
+  func.func @graph(%x: tensor<1x?x128xf32>, %n: index) -> tensor<1x?x128xf32> {
+    %c0 = arith.constant 0 : index
+    %c1 = arith.constant 1 : index
+    %c2 = arith.constant 2 : index
+    %c3 = arith.constant 3 : index
+    %c4 = arith.constant 4 : index
+    %c64 = arith.constant 64 : index
+    %cs = arith.constant STEP : index
+    %init = tensor.empty(%n) : tensor<1x?x128xf32>
+    %t = memref.alloca() : memref<4xf32>
+    %rows = tensor.dim %x, %c1 : tensor<1x?x128xf32>
+    %r = scf.for %i = %c0 to %rows step %c1 iter_args(%a = %init) -> (tensor<1x?x128xf32>) {
+      %q = scf.for %j = %c0 to %c64 step %cs iter_args(%b = %a) -> (tensor<1x?x128xf32>) {
+        %j0 = arith.addi %j, %c0 : index
+        %j1 = arith.addi %j, %c1 : index
+        %j2 = arith.addi %j, %c2 : index
+        %j3 = arith.addi %j, %c3 : index
+        %x0 = tensor.extract %x[%c0, %i, %j0] : tensor<1x?x128xf32>
+        %x1 = tensor.extract %x[%c0, %i, %j1] : tensor<1x?x128xf32>
+        %x2 = tensor.extract %x[%c0, %i, %j2] : tensor<1x?x128xf32>
+        %x3 = tensor.extract %x[%c0, %i, %j3] : tensor<1x?x128xf32>
+        func.call @__hexagon_arm_cos4(%t, %x0, %x1, %x2, %x3) : (memref<4xf32>, f32, f32, f32, f32) -> ()
+        %y0 = memref.load %t[%c0] : memref<4xf32>
+        %y1 = memref.load %t[%c1] : memref<4xf32>
+        %y2 = memref.load %t[%c2] : memref<4xf32>
+        %y3 = memref.load %t[%c3] : memref<4xf32>
+        %k0 = arith.addi %j0, %c64 : index
+        %k1 = arith.addi %j1, %c64 : index
+        %k2 = arith.addi %j2, %c64 : index
+        %k3 = arith.addi %j3, %c64 : index
+        %b0 = tensor.insert %y0 into %b[%c0, %i, %j0] : tensor<1x?x128xf32>
+        %b1 = tensor.insert %y0 into %b0[%c0, %i, %k0] : tensor<1x?x128xf32>
+        %b2 = tensor.insert %y1 into %b1[%c0, %i, %j1] : tensor<1x?x128xf32>
+        %b3 = tensor.insert %y1 into %b2[%c0, %i, %k1] : tensor<1x?x128xf32>
+        %b4 = tensor.insert %y2 into %b3[%c0, %i, %j2] : tensor<1x?x128xf32>
+        %b5 = tensor.insert %y2 into %b4[%c0, %i, %k2] : tensor<1x?x128xf32>
+        %b6 = tensor.insert %y3 into %b5[%c0, %i, %j3] : tensor<1x?x128xf32>
+        %b7 = tensor.insert %y3 into %b6[%c0, %i, %k3] : tensor<1x?x128xf32>
+        scf.yield %b7 : tensor<1x?x128xf32>
+      }
+      scf.yield %q : tensor<1x?x128xf32>
+    } {hexagon.fp32_arm_rope_trig4_batch}
+    return %r : tensor<1x?x128xf32>
+  }
+}
+'''
+
 
 def run(source, flag):
     if not OPT:
@@ -151,3 +201,14 @@ def test_rope_is_left_unchanged_when_the_transpose_has_other_users():
     assert 'qwen_rope_heads_v1' not in ir and 'tensor.concat' in ir
     assert 'fused parallel RoPE: 0' in log
 
+
+def test_trig_table_becomes_one_parallel_call():
+    ir, log = run(TRIG.replace('STEP', '4'), '--qwen-fuse-parallel-trig=expected-count=1')
+    assert 'call @qwen_arm_trig_rows_v1(' in ir and 'scf.for' not in ir
+    assert 'fused parallel trig: 1' in log
+
+
+def test_trig_table_with_another_step_is_left_unchanged():
+    ir, log = run(TRIG.replace('STEP', '2'), '--qwen-fuse-parallel-trig')
+    assert 'qwen_arm_trig_rows_v1' not in ir and 'call @__hexagon_arm_cos4(' in ir
+    assert 'fused parallel trig: 0' in log
