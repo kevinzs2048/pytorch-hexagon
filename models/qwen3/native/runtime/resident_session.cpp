@@ -26,6 +26,11 @@ constexpr uint32_t LastMode = 4;
 #else
 constexpr uint32_t LastMode = 3;
 #endif
+#ifdef QWEN_ATTENTION_FORWARD_SCOPE
+// Attention K/V staging: one VTCM lease per forward instead of one per layer.
+extern "C" void qwen_attention_forward_begin();
+extern "C" void qwen_attention_forward_end();
+#endif
 #ifdef QWEN_PARALLEL_KV_EXPORT
 extern "C" void __hexagon_parallel_for_v1(void (*)(void *, uint64_t, uint64_t),
                                           void *, uint64_t);
@@ -247,6 +252,12 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
         struct ForwardResources {
           ~ForwardResources() { qwen_prepacked_forward_end(); }
         } resources;
+#endif
+#ifdef QWEN_ATTENTION_FORWARD_SCOPE
+        qwen_attention_forward_begin();
+        struct AttentionResources {
+          ~AttentionResources() { qwen_attention_forward_end(); }
+        } attention_resources;
 #endif
 #ifdef QWEN_RESIDENT_NO_LOGITS
         struct SkipLogits {

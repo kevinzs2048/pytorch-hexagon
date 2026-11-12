@@ -101,8 +101,13 @@ inline void fill(Descriptor &d, const void *src, void *dst, unsigned rows,
 Descriptor descriptors[4][4];
 unsigned resource;
 uint8_t *base;
-// Cache the descriptor; hold the physical VTCM lease only during one call.
+// The resident graph is serialized: inside qwen_attention_forward_begin/end the
+// lease acquired by the first staged layer is kept until the forward ends (as
+// the INT8 prepacked DMA scope does). Other callers keep one lease per call.
+bool forward_active, held;
+// Cache the descriptor; hold the physical VTCM lease only while it is in use.
 bool acquire() {
+  if (held) return true;
   if (!resource) {
     compute_res_attr_t attr;
     void *pointer = nullptr;
@@ -122,17 +127,33 @@ bool acquire() {
     resource = id;
     base = static_cast<uint8_t *>(pointer);
   }
-  // As the INT8 runtime: the cached descriptor is leased per operation.
-  return !HAP_compute_res_acquire_cached(resource, 1000);
+  // As the INT8 runtime: the cached descriptor is leased per operation, or
+  // once per resident forward.
+  bool acquired = !HAP_compute_res_acquire_cached(resource, 1000);
+  if (acquired && forward_active) held = true;
+  return acquired;
 }
 void release() {
-  if (resource) HAP_compute_res_release_cached(resource);
+  // Every worker has joined, so no transfer is in flight.
+  if (resource && !held) HAP_compute_res_release_cached(resource);
 }
 __attribute__((destructor)) void cleanup() {
+  if (resource && held) HAP_compute_res_release_cached(resource);
   if (resource) HAP_compute_res_release(resource);
+  held = false;
   resource = 0;
 }
 } // namespace kv_dma
+extern "C" void qwen_attention_forward_begin() {
+  if (kv_dma::forward_active || kv_dma::held) std::abort();
+  kv_dma::forward_active = true;
+}
+extern "C" void qwen_attention_forward_end() {
+  if (!kv_dma::forward_active) std::abort();
+  if (kv_dma::held) HAP_compute_res_release_cached(kv_dma::resource);
+  kv_dma::held = false;
+  kv_dma::forward_active = false;
+}
 #endif
 
 namespace {

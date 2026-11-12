@@ -929,6 +929,11 @@ def link_resident(args):
                            '-L'+str(output), '-l'+library.name[3:-3]]
         # Mode 4 (forward without logits) relies on the Q8_0 runtime's LM head.
         no_logits_flags = ['-DQWEN_RESIDENT_NO_LOGITS'] if q8_0_record is not None else []
+        # One attention K/V VTCM lease per forward. Only for Q8_0 sessions: their
+        # domains call no INT8 matmul, so the INT8 prefill DMA scope never takes
+        # its own 3 MB lease (both would not fit next to the HMX pool).
+        if q8_0_record is not None and features.get('kv_dma'):
+            no_logits_flags.append('-DQWEN_ATTENTION_FORWARD_SCOPE')
         run('link', [tools/'bin/hexagon-clang++', *model_flags, '-mlong-calls', '-nostdlib++',
             '-std=c++17', *kv_flags, *no_logits_flags, '-fno-math-errno', *temporary_flags, *temporary_runtime, *benchmark_flags, *parallel_runtime,
             *resource_scope_flags,
