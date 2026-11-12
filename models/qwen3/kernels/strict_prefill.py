@@ -8,7 +8,7 @@ and pruning preserves the original PV block partition and FMA order.
 """
 import triton
 import triton.language as tl
-from models.qwen3.kernels.strict_decode import _exp_compat
+# exp2 path: _exp_compat replaced by tl.exp2 in qwen_prefill_softmax
 
 SCORE_ELEMENTS = tl.constexpr(16 * 32 * 256)
 SCRATCH_FP32_ELEMENTS = 16 * 32 * 256 + 32
@@ -104,9 +104,9 @@ def qwen_prefill_qk(Q, K, V, Out, Scratch, query_length, kv_length, q_head_strid
                                      (kv_head * kpad + start) * 128, stride, 128)
                 for i in tl.static_range(0, 8):
                     if start + i < kv_length:
-                        tl.store(Scores + qr * score_stride + start + i, pair[i] * 0.08838834764831845 + tl.where(start + i <= kv_length - query_length + qr, 0.0, -3.4028234663852886e38))
+                        tl.store(Scores + qr * score_stride + start + i, pair[i] * 0.12751743082459868 + tl.where(start + i <= kv_length - query_length + qr, 0.0, -3.4028234663852886e38))
                         if qr + 1 < query_length:
-                            tl.store(Scores + (qr + 1) * score_stride + start + i, pair[8 + i] * 0.08838834764831845 + tl.where(start + i <= kv_length - query_length + qr + 1, 0.0, -3.4028234663852886e38))
+                            tl.store(Scores + (qr + 1) * score_stride + start + i, pair[8 + i] * 0.12751743082459868 + tl.where(start + i <= kv_length - query_length + qr + 1, 0.0, -3.4028234663852886e38))
 
 
 @triton.jit
@@ -129,7 +129,7 @@ def qwen_prefill_softmax(Q, K, V, Out, Scratch, query_length, kv_length, q_head_
             for start in range(0, kv_length, SOFTMAX_BLOCK):
                 positions = start + softmax_lane
                 scores = tl.load(Scores + current_head * score_stride + positions)
-                probability = _exp_compat(scores - maximum)
+                probability = tl.exp2(scores - maximum)
                 tl.store(Scores + current_head * score_stride + positions, probability)
             sums = (0.0, 0.0, 0.0, 0.0)
             for col in range(0, kv_length // 4 * 4, 4):

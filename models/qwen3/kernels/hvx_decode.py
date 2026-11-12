@@ -9,7 +9,7 @@ No padding mask: the adapter validates that every occupied key is visible.
 """
 import triton
 import triton.language as tl
-from models.qwen3.kernels.strict_decode import _exp_compat
+# exp2 path: log2(e) pre-baked into QK scale; _exp_compat not used
 from models.qwen3.kernels.llama_silu import _qf_mul_sf, _qf_add, _to_sf
 
 SCRATCH_FP32_ELEMENTS = 16 * 1024
@@ -78,8 +78,8 @@ def attention_decode(Q, K, V, Out, Scratch, query_length, kv_length, q_head_stri
             b1 = _qf_add(_qf_mul_sf(q12,k2), _qf_mul_sf(q13,k3))
             score0 = _reduce_qf(_qf_add(a0,b0))
             score1 = _reduce_qf(_qf_add(a1,b1))
-            tl.store(Scratch + head * 1024 + position, score0 * 0.08838834764831845)
-            tl.store(Scratch + (head + 1) * 1024 + position, score1 * 0.08838834764831845)
+            tl.store(Scratch + head * 1024 + position, score0 * 0.12751743082459868)
+            tl.store(Scratch + (head + 1) * 1024 + position, score1 * 0.12751743082459868)
         for current_head in range(head, head + 2):
             maximum = -float('inf')
             for col in range(0, kv_length):
@@ -88,7 +88,7 @@ def attention_decode(Q, K, V, Out, Scratch, query_length, kv_length, q_head_stri
             for start in range(0, kv_length, SOFTMAX_BLOCK):
                 positions = start + softmax_lane
                 scores = tl.load(Scratch + current_head * 1024 + positions, positions < kv_length, other=-float('inf'))
-                probability = _exp_compat(scores - maximum)
+                probability = tl.exp2(scores - maximum)
                 tl.store(Scratch + current_head * 1024 + positions, probability, positions < kv_length)
             if kv_length < 4:
                 total = 0.0
