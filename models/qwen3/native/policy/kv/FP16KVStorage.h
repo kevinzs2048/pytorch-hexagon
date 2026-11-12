@@ -2,9 +2,11 @@
 // FP16 resident KV storage, llama.cpp's default KV cache type (F16).
 // Runs on the prepared graph after qwen-resident-kv and attention fusion:
 //   * every caller-owned KV plane argument becomes tensor<1x8x?x128xf16>;
-//   * new rows are rounded once with arith.truncf (IEEE round-to-nearest-even,
-//     the HVX vcvt conversion the HMX attention kernels already applied to FP32
-//     KV operands) before the existing append copy;
+//   * the append copy of new rows becomes qwen_kv_append_f16_v1, which rounds
+//     them once (IEEE round-to-nearest-even, the HVX vcvt conversion the HMX
+//     attention kernels already applied to FP32 KV operands) into the plane.
+//     An in-graph arith.truncf lowers to scalar code (about 1 ns per value,
+//     68 us per prefill layer); the runtime uses the HVX conversion;
 //   * the fused attention call receives the FP16 planes directly
 //     (qwen_ordered_fp16kv_attention_v1).
 //   * attention over fresh in-graph K/V (initial domain, no caller planes)
@@ -28,6 +30,26 @@ struct FP16KVStoragePass
   }
   static constexpr StringLiteral FP32Attention = "qwen_ordered_fp32_attention_v1";
   static constexpr StringLiteral FP16Attention = "qwen_ordered_fp16kv_attention_v1";
+  static constexpr StringLiteral AppendF16 = "qwen_kv_append_f16_v1";
+
+  // memref<1x8x?x128xT, strided<[?, ?, ?, ?], offset: ?>>: one declaration for
+  // decode (one row) and prefill appends; the runtime checks unit inner strides.
+  static MemRefType rows(MLIRContext *ctx, Type element) {
+    int64_t d = ShapedType::kDynamic;
+    return MemRefType::get({1, 8, d, 128}, element, StridedLayoutAttr::get(ctx, d, {d, d, d, d}));
+  }
+  static func::FuncOp appendDeclaration(IRRewriter &b, ModuleOp module, Location loc) {
+    MLIRContext *ctx = module.getContext();
+    auto type = FunctionType::get(ctx, {rows(ctx, Float32Type::get(ctx)), rows(ctx, Float16Type::get(ctx))}, {});
+    if (auto existing = module.lookupSymbol<func::FuncOp>(AppendF16))
+      return existing.getFunctionType() == type ? existing : func::FuncOp();
+    OpBuilder::InsertionGuard guard(b);
+    b.setInsertionPointToStart(module.getBody());
+    auto declaration = func::FuncOp::create(b, loc, AppendF16, type);
+    declaration.setPrivate();
+    declaration->setAttr("llvm.emit_c_interface", b.getUnitAttr());
+    return declaration;
+  }
 
   static bool planeType(Type type, bool f16) {
     auto t = dyn_cast<RankedTensorType>(type);
@@ -100,7 +122,7 @@ struct FP16KVStoragePass
     MLIRContext *ctx = module.getContext();
     IRRewriter b(ctx);
     Type f16 = Float16Type::get(ctx), f32 = Float32Type::get(ctx);
-    unsigned planes = 0;
+    unsigned planes = 0, appends = 0;
     llvm::SetVector<Operation *> calls;
     auto fail = [&](Operation *op, const Twine &message) {
       op->emitError(message);
@@ -132,14 +154,15 @@ struct FP16KVStoragePass
               auto source = copy.getSource().getDefiningOp<bufferization::ToBufferOp>();
               if (use.getOperandNumber() != 1 || !source || !source.getReadOnly())
                 return fail(copy, "FP16 KV: append copy source is not a read-only tensor buffer");
+              auto append = appendDeclaration(b, module, copy.getLoc());
+              if (!append)
+                return fail(copy, "FP16 KV: inconsistent qwen_kv_append_f16_v1 declaration");
               b.setInsertionPoint(copy);
-              Value rounded = elementwise(b, copy.getLoc(), source.getTensor(), f16, true);
-              auto sourceType = cast<MemRefType>(source.getType());
-              Value buffer = bufferization::ToBufferOp::create(b, copy.getLoc(),
-                  half(sourceType), rounded, /*readOnly=*/true);
-              memref::CopyOp::create(b, copy.getLoc(), buffer, copy.getTarget());
+              Value rowsF32 = memref::CastOp::create(b, copy.getLoc(), rows(ctx, f32), source.getResult());
+              Value planeF16 = memref::CastOp::create(b, copy.getLoc(), rows(ctx, f16), copy.getTarget());
+              func::CallOp::create(b, copy.getLoc(), append, ValueRange{rowsF32, planeF16});
               copy.erase();
-              if (source->use_empty()) source.erase();
+              ++appends;
               continue;
             }
             if (auto toTensor = dyn_cast<bufferization::ToTensorOp>(user)) {
@@ -213,6 +236,7 @@ struct FP16KVStoragePass
       signalPassFailure();
       return;
     }
-    llvm::errs() << "fp16 kv storage planes: " << planes << " attention calls: " << calls.size() << "\n";
+    llvm::errs() << "fp16 kv storage planes: " << planes << " attention calls: " << calls.size()
+                 << " appends: " << appends << "\n";
   }
 };

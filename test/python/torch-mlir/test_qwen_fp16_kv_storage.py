@@ -83,12 +83,16 @@ def test_resident_planes_become_fp16_and_feed_fp16_attention():
     ir = result.stdout
     assert 'tensor<1x8x?x128xf32> {bufferization' not in ir
     assert ir.count('tensor<1x8x?x128xf16> {bufferization.buffer_layout') == 2
-    assert ir.count('arith.truncf') == 2 and 'memref<1x8x1x128xf16' in ir
+    # Appends round through the HVX runtime conversion, not an in-graph truncf.
+    assert 'arith.truncf' not in ir and 'memref.copy' not in ir and 'memref<1x8x1x128xf16' in ir
+    assert ir.count('call @qwen_kv_append_f16_v1(') == 2
+    assert 'func.func private @qwen_kv_append_f16_v1(memref<1x8x?x128xf32, strided<[?, ?, ?, ?], offset: ?>>, ' \
+           'memref<1x8x?x128xf16, strided<[?, ?, ?, ?], offset: ?>>) attributes {llvm.emit_c_interface}' in ir
     assert 'call @qwen_ordered_fp16kv_attention_v1(' in ir
     assert 'qwen_ordered_fp32_attention_v1' not in ir
     # Returned deltas stay FP32; the session rounds them when it owns the copy.
     assert '-> (tensor<1x8x1x128xf32>, i32)' in ir
-    assert 'planes: 2 attention calls: 1' in result.stderr
+    assert 'planes: 2 attention calls: 1 appends: 2' in result.stderr
 
 
 def test_fresh_attention_operands_are_rounded_by_one_generic():
@@ -101,7 +105,8 @@ def test_fresh_attention_operands_are_rounded_by_one_generic():
     assert '-> (tensor<1x8x?x128xf16>, tensor<1x8x?x128xf16>)' in ir
     assert ir.count('bufferization.to_buffer') == 4  # Q, mask and the two FP16 views
     assert 'call @qwen_ordered_fp16kv_attention_v1(' in ir
-    assert 'planes: 0 attention calls: 1' in result.stderr
+    assert 'planes: 0 attention calls: 1 appends: 0' in result.stderr
+    assert 'qwen_kv_append_f16_v1' not in ir
 
 
 def test_other_plane_use_is_rejected():
