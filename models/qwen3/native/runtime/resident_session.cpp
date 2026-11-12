@@ -19,6 +19,13 @@
 extern "C" void qwen_prepacked_forward_begin();
 extern "C" void qwen_prepacked_forward_end();
 #endif
+#ifdef QWEN_RESIDENT_NO_LOGITS
+// Q8_0 runtime: leave the vocabulary projection of the next forwards uncomputed.
+extern "C" void qwen_q8_0_skip_vocabulary(int skip);
+constexpr uint32_t LastMode = 4;
+#else
+constexpr uint32_t LastMode = 3;
+#endif
 #ifdef QWEN_PARALLEL_KV_EXPORT
 extern "C" void __hexagon_parallel_for_v1(void (*)(void *, uint64_t, uint64_t),
                                           void *, uint64_t);
@@ -127,8 +134,11 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
   std::memcpy(&mode, input + 8, 4);
   std::memcpy(&position, input + 12, 4);
   std::memcpy(&query, input + 16, 4);
-  const bool forward = mode == 1 || mode == 3;
-  if (mode > 3 || position > 1024 ||
+  // Mode 4 is mode 3 without logits: the forward appends to the resident
+  // cache and the response is the 64-byte header only. Callers use it for
+  // prompt chunks whose prediction they discard.
+  const bool forward = mode == 1 || mode == 3 || mode == 4;
+  if (mode > LastMode || position > 1024 ||
       (forward ? (query < 1 || query > 32 || query > 1024 - position)
                  : query != 0))
     return 2;
@@ -238,6 +248,17 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
           ~ForwardResources() { qwen_prepacked_forward_end(); }
         } resources;
 #endif
+#ifdef QWEN_RESIDENT_NO_LOGITS
+        struct SkipLogits {
+          bool active;
+          explicit SkipLogits(bool on) : active(on) {
+            if (active) qwen_q8_0_skip_vocabulary(1);
+          }
+          ~SkipLogits() {
+            if (active) qwen_q8_0_skip_vocabulary(0);
+          }
+        } skip_logits(mode == 4);
+#endif
         qwen_resident_forward(&results, query, position, cache.capacity(), ids,
                               cache_position, positions, mask, kv);
 
@@ -254,13 +275,16 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
         return 4;
       }
       float *out = reinterpret_cast<float *>(output + 64);
-      if (logits.strides[2] == 1)
+      if (mode == 4)
+        ;  // Unwritten logits buffer; the response carries no payload.
+      else if (logits.strides[2] == 1)
         std::memcpy(out, logits.aligned + logits.offset, 151936 * sizeof(float));
       else
         for (unsigned i = 0; i < 151936; ++i)
           out[i] = logits.aligned[logits.offset + i * logits.strides[2]];
       // Mode 1 exports new KV rows for the generic PyTorch/diagnostic path.
       // Mode 3 keeps them on the DSP and returns only the prediction logits.
+      // Mode 4 keeps them on the DSP and returns nothing.
       float *delta = mode == 1 ? out + 151936 : nullptr;
       // Validate every returned view before workers write disjoint planes.
       for (unsigned i = 0; i < 56; ++i) {

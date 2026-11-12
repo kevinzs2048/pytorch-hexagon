@@ -434,6 +434,11 @@ void quantize_row(const float *row, unsigned k, uint32_t *words, float *scales) 
   }
 }
 
+// Set by the resident session around a forward whose logits the caller
+// discards (protocol mode 4). The vocabulary projection is then validated but
+// not computed, and its output buffer is left unwritten.
+bool skip_vocabulary = false;
+
 void matvec_q8(MemF32 *x, int64_t id, MemF32 *side, bool product, MemF32 *out) {
   uint32_t n = 0, k = 0;
   const uint8_t *weight = qwen_q8_0_weight(id, &n, &k);
@@ -441,6 +446,8 @@ void matvec_q8(MemF32 *x, int64_t id, MemF32 *side, bool product, MemF32 *out) {
       k > MaxK || n % 32 || out->sizes[0] != 1 || out->sizes[1] != n || out->strides[1] != 1 ||
       (side && (side->sizes[0] != 1 || side->sizes[1] != n || side->strides[1] != 1)))
     std::abort();
+  const bool vocabulary = n > 3072;  // q8_0/weights.py: only the LM head is this wide
+  if (vocabulary && !side && skip_vocabulary) return;
   alignas(128) uint32_t words[MaxK / 4];
   float scales[MaxK / 32];
   quantize_row(x->aligned + x->offset, k, words, scales);
@@ -453,12 +460,14 @@ void matvec_q8(MemF32 *x, int64_t id, MemF32 *side, bool product, MemF32 *out) {
   v.weight = weight; v.tiles = k / 32; v.panels = n / 32;
   v.chunks = (v.tiles + 31) / 32; v.chunk = v.tiles / v.chunks;
   if (v.chunk * v.chunks != v.tiles) std::abort();  // K in {1024, 2048, 3072}
-  v.vrmpy_layout = n > 3072;  // q8_0/weights.py: only the LM head uses the vrmpy layout
+  v.vrmpy_layout = vocabulary;  // q8_0/weights.py: only the LM head uses the vrmpy layout
   v.side = side ? side->aligned + side->offset : nullptr; v.product = product;
   v.out = out->aligned + out->offset; v.words = words; v.scales = scales;
   __hexagon_parallel_for_v1(matvec_panels, &v, n / 32);
 }
 } // namespace
+
+extern "C" void qwen_q8_0_skip_vocabulary(int skip) { skip_vocabulary = skip != 0; }
 
 extern "C" void _mlir_ciface___hexagon_q8_0_matvec_q8(MemF32 *x, int64_t id, MemF32 *out) {
   matvec_q8(x, id, nullptr, false, out);

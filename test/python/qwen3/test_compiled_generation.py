@@ -20,7 +20,7 @@ class Stream:
         mode, position, query = struct.unpack_from('<III', packet, 8)
         self.calls.append((mode, position, query))
         self.output_sizes.append(size)
-        length = position + query if mode in (1, 3) else 0
+        length = position + query if mode in (1, 3, 4) else 0
         response = b'QWMS001\0' + struct.pack('<6Q', length, 1024, 0, 0, 0, 1) + bytes(8)
         if mode in (1, 3):
             data = torch.zeros(protocol.VOCAB + (56 * query * 1024 if mode == 1 else 0))
@@ -192,6 +192,31 @@ def test_resident_handle_keeps_kv_off_arm_and_expires_on_reset():
     fresh = b.new_cache()
     b.model(**inputs(b, fresh))
     assert fresh.get_seq_length() == 1
+
+
+@pytest.mark.parametrize('diagnostics', [False, True])
+def test_only_the_last_chunk_of_a_logical_batch_requests_logits(diagnostics):
+    b = backend(resident_only=True, skip_unused_logits=True, diagnostics=diagnostics)
+    b.reset()
+    cache = b.new_cache()
+    out = b.model(**prompt_inputs(b, 70, cache))
+    middle = 3 if diagnostics else 4  # diagnostics record every chunk's top token
+    assert b.stream.calls == [(0, 0, 0), (middle, 0, 32), (middle, 32, 32), (3, 64, 6)]
+    assert b.stream.output_sizes[1:] == [64 + (protocol.VOCAB * 4 if mode == 3 else 0)
+                                         for mode, _, _ in b.stream.calls[1:]]
+    assert out.logits.shape == (1, 1, protocol.VOCAB) and int(out.logits.argmax()) == 3
+    assert cache.get_seq_length() == b.position == 70
+    b.model(**inputs(b, cache))  # a single-chunk forward always returns logits
+    assert b.stream.calls[-1] == (3, 70, 1)
+
+
+def test_skipping_logits_requires_a_resident_only_session():
+    with pytest.raises(ValueError, match='resident-only'):
+        backend(skip_unused_logits=True)
+    with pytest.raises(ValueError, match='resident-only'):
+        backend(resident_only=True, skip_unused_logits=1)
+    with pytest.raises(ValueError, match='omit its logits'):
+        protocol.forward(Stream(), torch.zeros((1, 2), dtype=torch.int64), 0, logits=False)
 
 
 @pytest.mark.parametrize('operation', ['update', 'reset', 'crop', 'reorder_cache',

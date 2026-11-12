@@ -66,7 +66,8 @@ class CompiledGeneration:
     parameter_pool = None
 
     def __init__(self, config, generation_config, stream, *, verify_cache=False, diagnostics=False,
-                 batch_size=protocol.MAX_LENGTH, ubatch_size=protocol.MAX_QUERY, resident_only=False):
+                 batch_size=protocol.MAX_LENGTH, ubatch_size=protocol.MAX_QUERY, resident_only=False,
+                 skip_unused_logits=False):
         expected = dict(model_type='qwen3', num_hidden_layers=28, num_attention_heads=16,
                         num_key_value_heads=8, head_dim=128, hidden_size=1024,
                         intermediate_size=3072, vocab_size=151936)
@@ -82,6 +83,9 @@ class CompiledGeneration:
         self.resident_only = resident_only
         if resident_only and verify_cache:
             raise ValueError("Cache verification requires the ARM mirror")
+        if type(skip_unused_logits) is not bool or (skip_unused_logits and not resident_only):
+            raise ValueError("Skipping unused logits requires a resident-only session")
+        self.skip_unused_logits = skip_unused_logits
         self.epoch = 0
         self.batch_size, self.ubatch_size = batch_size, ubatch_size
         self.stream, self.verify_cache, self.diagnostics = stream, verify_cache, diagnostics
@@ -156,8 +160,13 @@ class CompiledGeneration:
             for offset in range(0, query, self.ubatch_size):
                 chunk = ids[:, offset:offset + self.ubatch_size]
                 chunk_position = position + offset
+                # Only the last chunk's prediction is returned; diagnostics
+                # record every chunk's top token and so keep all of them.
+                needed = (not self.skip_unused_logits or self.diagnostics
+                          or offset + self.ubatch_size >= query)
                 logits, delta, stats, event, exchanged = protocol.forward(
-                    self.stream, chunk, chunk_position, resident_only=self.resident_only)
+                    self.stream, chunk, chunk_position, resident_only=self.resident_only,
+                    logits=needed)
                 if not self.resident_only:
                     for layer in range(protocol.LAYERS):
                         cache.update(delta[2 * layer], delta[2 * layer + 1], layer)

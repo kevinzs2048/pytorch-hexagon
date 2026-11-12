@@ -927,8 +927,10 @@ def link_resident(args):
             shutil.copyfile(library, output/library.name)
             graph_link += [q8_0_record['runtime']['object'], q8_0_record['library']['table'],
                            '-L'+str(output), '-l'+library.name[3:-3]]
+        # Mode 4 (forward without logits) relies on the Q8_0 runtime's LM head.
+        no_logits_flags = ['-DQWEN_RESIDENT_NO_LOGITS'] if q8_0_record is not None else []
         run('link', [tools/'bin/hexagon-clang++', *model_flags, '-mlong-calls', '-nostdlib++',
-            '-std=c++17', *kv_flags, '-fno-math-errno', *temporary_flags, *temporary_runtime, *benchmark_flags, *parallel_runtime,
+            '-std=c++17', *kv_flags, *no_logits_flags, '-fno-math-errno', *temporary_flags, *temporary_runtime, *benchmark_flags, *parallel_runtime,
             *resource_scope_flags,
             *['-I'+str(path) for path in includes], runtime/'resident_session.cpp',
             *mains, *integer_link, *attention_archive, ROOT/'hexagon_runtime/native/kv_cache.cpp',
@@ -968,7 +970,7 @@ def link_resident(args):
         manifest = dict(schema='qwen3-resident-session-v1', constants=constants,
             checkpoint_sha256=plan['checkpoint_sha256'],
             files={name: dict(bytes=(output/name).stat().st_size, sha256=sha(output/name)) for name in files})
-        manifest['resident_forward_modes'] = [1, 3]
+        manifest['resident_forward_modes'] = [1, 3, 4] if q8_0_record is not None else [1, 3]
         # Building a library is not a model-quality qualification, even when
         # its outputs preserve an earlier implementation's arithmetic.
         manifest['model_quality_accepted'] = False

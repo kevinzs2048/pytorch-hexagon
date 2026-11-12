@@ -61,7 +61,9 @@ def load_session(directory, base_manifest):
     if manifest.get('schema') != 'qwen3-resident-session-v1':
         raise ValueError('Unsupported resident session bundle')
     modes = manifest.get('resident_forward_modes', [1])
-    if (modes not in ([1], [1, 3]) or any(type(mode) is not int for mode in modes)):
+    if (modes not in ([1], [1, 3], [1, 3, 4]) or any(type(mode) is not int for mode in modes)
+            # Mode 4 (no logits) is implemented by the Q8_0 runtime's LM head.
+            or (4 in modes and manifest.get('q8_0_projections') is None)):
         raise ValueError('Unsupported resident forward modes')
     if manifest['checkpoint_sha256'] != base_manifest['files']['hf/model.safetensors']['sha256']:
         raise ValueError('Resident code and base checkpoint differ')
@@ -119,6 +121,8 @@ def generate(args):
     resident_only = (execution == 'compiled'
                      and 3 in manifest.get('resident_forward_modes', [1])
                      and not args.verify_resident_cache)
+    # Prompt chunks before the last one of a logical batch need no prediction.
+    skip_unused_logits = resident_only and 4 in manifest.get('resident_forward_modes', [1])
     output = args.output.absolute()
     output.mkdir(parents=True, exist_ok=False)
 
@@ -167,6 +171,9 @@ def generate(args):
                   CPU_model_fallback=False, machine_code_compilations=0,
                   execution=execution,
                   kv_cache_location='dsp' if resident_only else 'dsp_with_arm_mirror',
+                  # Packet diagnostics record every chunk's top token, so they keep all logits.
+                  unused_prefill_logits=('skipped' if skip_unused_logits and args.packet_recording == 'none'
+                                         else 'computed'),
                   prefill_batch_size=batch_size, prefill_ubatch_size=args.chunk_size,
                   compiled_query_limit=32,
                   parameter_validation=('immutable_artifact_SHA256' if execution == 'compiled'
@@ -240,7 +247,8 @@ def generate(args):
                                              verify_cache=args.verify_resident_cache,
                                              diagnostics=args.packet_recording != 'none',
                                              batch_size=batch_size, ubatch_size=args.chunk_size,
-                                             resident_only=resident_only)
+                                             resident_only=resident_only,
+                                             skip_unused_logits=skip_unused_logits)
                 model = backend.model
             else:
                 from hexagon_resident_session import ResidentSessionBackend

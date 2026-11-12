@@ -16,7 +16,11 @@ def header(mode, position, query=0):
     return b'QWMS001\0' + struct.pack('<III', mode, position, query) + bytes(44)
 
 
-def forward(stream, ids, position, *, resident_only=False):
+def forward(stream, ids, position, *, resident_only=False, logits=True):
+    """One DSP forward. ``logits=False`` (mode 4, resident-only sessions that
+    advertise it) appends to the DSP cache and returns no prediction."""
+    if not logits and not resident_only:
+        raise ValueError('Only a resident-only forward may omit its logits')
     if (ids.device.type != 'cpu' or ids.dtype != torch.int64 or ids.ndim != 2
             or ids.shape[0] != 1):
         raise ValueError('Resident tokens must be a batch-one CPU int64 tensor')
@@ -25,8 +29,9 @@ def forward(stream, ids, position, *, resident_only=False):
         raise ValueError('Resident query/cache extent is unsupported')
     if bool(((ids < 0) | (ids >= VOCAB)).any()):
         raise ValueError('Token ID is outside the compiled vocabulary')
-    size = 64 + (VOCAB + (0 if resident_only else 2 * LAYERS * query * KV_HEADS * HEAD_DIM)) * 4
-    raw, event = stream.invoke_packet(header(3 if resident_only else 1, position, query) + ids.contiguous().numpy().tobytes(), size)
+    size = 64 + ((VOCAB if logits else 0) + (0 if resident_only else 2 * LAYERS * query * KV_HEADS * HEAD_DIM)) * 4
+    mode = 1 if not resident_only else 3 if logits else 4
+    raw, event = stream.invoke_packet(header(mode, position, query) + ids.contiguous().numpy().tobytes(), size)
     exchanged = time.perf_counter()
     if len(raw) != size or raw[:8] != b'QWMS001\0' or any(raw[56:64]):
         raise ValueError('Invalid resident response header or size')
@@ -34,6 +39,8 @@ def forward(stream, ids, position, *, resident_only=False):
                      struct.unpack_from('<6Q', raw, 8)))
     if stats['length'] != position + query or not stats['length'] <= stats['capacity'] <= MAX_LENGTH:
         raise ValueError('Resident response cache extent differs')
+    if not logits:
+        return None, None, stats, event, exchanged
     data = torch.frombuffer(bytearray(raw[64:]), dtype=torch.float32)
     logits = data[:VOCAB].reshape(1, 1, VOCAB).clone()
     if resident_only:
