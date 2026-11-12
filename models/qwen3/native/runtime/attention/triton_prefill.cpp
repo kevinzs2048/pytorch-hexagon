@@ -7,6 +7,10 @@
 #include <cstdlib>
 #include <limits>
 #include <qurt.h>
+#if defined(__hexagon__)
+#include <hexagon_types.h>
+#include <hvx_hexagon_protos.h>
+#endif
 
 #ifndef QWEN_PREFILL_POOL_BYTES
 #define QWEN_PREFILL_POOL_BYTES 0
@@ -236,6 +240,47 @@ extern "C" void hexagon_kernel_free(void *pointer) {
     std::free(pointer);
 }
 
+// The Triton kernels construct the causal mask themselves, so the model's mask
+// operand may only be that mask: row r sees the first n - m + r + 1 keys.
+// Visible entries must be +0 or -0; hidden entries -inf or the most negative
+// finite FP32. Returns nonzero for any other bit pattern. On the DSP, whole
+// 32-lane groups of visible entries are tested on HVX; the remaining visible
+// entries and the at most m - 1 hidden entries of a row are tested one by one.
+// Host builds (unit tests) apply the same rule to every element.
+static unsigned causal_mask_invalid(const float *rows, int64_t row_stride, int m, int n) {
+  auto element = [](const float *value, bool visible) -> unsigned {
+    uint32_t bits;
+    __builtin_memcpy(&bits, value, sizeof(bits));
+    return visible ? bits & 0x7fffffffU  // Both signed zeros are accepted.
+                   : unsigned((bits != 0xff800000U) & (bits != 0xff7fffffU));
+  };
+  unsigned invalid = 0;
+#if defined(__hexagon__)
+  const HVX_Vector magnitude = Q6_V_vsplat_R(0x7fffffff);
+  HVX_Vector wrong = Q6_V_vzero();
+#endif
+  for (int row = 0; row < m; ++row) {
+    const float *values = rows + row * row_stride;
+    const int visible = n - m + row + 1;
+    int col = 0;
+#if defined(__hexagon__)
+    for (; col + 32 <= visible; col += 32)
+      wrong = Q6_V_vor_VV(wrong, Q6_V_vand_VV(*reinterpret_cast<const HVX_UVector *>(values + col), magnitude));
+#endif
+    for (; col < visible; ++col)
+      invalid |= element(values + col, true);
+    for (; col < n; ++col)
+      invalid |= element(values + col, false);
+  }
+#if defined(__hexagon__)
+  alignas(128) uint32_t lanes[32];
+  *reinterpret_cast<HVX_Vector *>(lanes) = wrong;
+  for (uint32_t lane : lanes)
+    invalid |= lane;
+#endif
+  return invalid;
+}
+
 extern "C" int qwen_triton_prefill(const Memref *q, const KVMemref *k,
                                   const KVMemref *v, const Memref *mask,
                                   Memref *out) {
@@ -257,22 +302,7 @@ extern "C" int qwen_triton_prefill(const Memref *q, const KVMemref *k,
   // synchronization; the operator requires no raw-buffer flush/invalidate.
   // The Triton kernel constructs its causal mask. Reject padding/additive masks
   // rather than silently ignoring model inputs with different semantics.
-  unsigned invalid = 0;
-  for (int row = 0; row < m; ++row) {
-    const float *values = mask->aligned + mask->offset + row * mask->strides[2];
-    const int visible = n - m + row + 1;
-    for (int col = 0; col < visible; ++col) {
-      uint32_t bits;
-      __builtin_memcpy(&bits, values + col, sizeof(bits));
-      invalid |= bits & 0x7fffffffU; // Both signed zeros are accepted.
-    }
-    for (int col = visible; col < n; ++col) {
-      uint32_t bits;
-      __builtin_memcpy(&bits, values + col, sizeof(bits));
-      invalid |= (bits != 0xff800000U) & (bits != 0xff7fffffU);
-    }
-  }
-  if (invalid)
+  if (causal_mask_invalid(mask->aligned + mask->offset, mask->strides[2], m, n))
     return 2;
   if (hexagon_runtime_configure_hmx_performance_dsp(1) ||
       hexagon_runtime_configure_vtcm_pool_dsp(QWEN_PREFILL_VTCM_BYTES))
