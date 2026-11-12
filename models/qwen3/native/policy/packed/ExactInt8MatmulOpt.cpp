@@ -27,6 +27,8 @@ using namespace mlir;
 #include "PrepackInt8Weights.h"
 #include "FuseInt8Dequant.h"
 #include "FuseParallelRoPE.h"
+#include "FuseHeadNormRoPE.h"
+#include "EmbeddingRows.h"
 #include "FuseParallelTrig.h"
 #include "FuseCausalMask.h"
 #include "RewriteQ8_0Projections.h"
@@ -225,6 +227,8 @@ int main(int argc,char **argv) {
   PassRegistration<PrepackInt8WeightsPass>();
   PassRegistration<FuseInt8DequantPass>();
   PassRegistration<FuseParallelRoPEPass>();
+  PassRegistration<FuseHeadNormRoPEPass>();
+  PassRegistration<EmbeddingRowsPass>();
   PassRegistration<FuseParallelTrigPass>();
   PassRegistration<FuseCausalMaskPass>();
   PassRegistration<FP16KVStoragePass>();

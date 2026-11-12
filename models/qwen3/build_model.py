@@ -63,11 +63,15 @@ FUSED_GRAPH_PASSES = (
     ('int8_dequant', '--qwen-fuse-i8-dequant=expected-count=197 expected-residual=56 expected-product=28',
      ('initial', 'prefill', 'decode')),
     ('parallel_rope', '--qwen-fuse-parallel-rope=expected-count=56', ('initial', 'prefill', 'decode')),
+    # Decode's single-row norms are not loops; it keeps the in-graph norm.
+    ('head_norm_rope', '--qwen-fuse-head-norm-rope=expected-count=56', ('initial', 'prefill')),
     ('parallel_trig', '--qwen-fuse-parallel-trig=expected-count=2', ('initial', 'prefill')),
     ('causal_mask', '--qwen-fuse-causal-mask=expected-count=1', ('prefill',)),
     ('kv_storage', '--qwen-fp16-kv-storage=expected-calls=28', ('initial', 'prefill', 'decode')),
+    ('embedding_rows', '--qwen-embedding-rows=expected-count=1', ('initial_single', 'initial', 'prefill', 'decode')),
 )
-FUSED_GRAPH_KEYS = {'int8_dequant', 'parallel_rope', 'parallel_trig', 'causal_mask', 'kv_storage', 'kv_dma',
+FUSED_GRAPH_KEYS = {'int8_dequant', 'parallel_rope', 'head_norm_rope', 'parallel_trig', 'causal_mask',
+                    'kv_storage', 'kv_dma', 'embedding_rows',
                     'q8_0_projections'}
 
 
@@ -379,12 +383,18 @@ def link_resident(args):
                                  for kind in ('dequant', 'residual', 'product')}
     if features.get('parallel_rope') is not None:
         features['parallel_rope'] = kernel_record(features['parallel_rope'], 'strict-rope-heads', 'rope')
+    if features.get('head_norm_rope') is not None:
+        if features.get('parallel_rope') is None:
+            raise ValueError('head_norm_rope requires parallel_rope')
+        features['head_norm_rope'] = kernel_record(features['head_norm_rope'], 'strict-rope-heads-norm', 'rope-norm')
     if features.get('parallel_trig') not in (None, True):
         raise ValueError('parallel_trig must be true when present')
     if features.get('causal_mask') is not None:
         features['causal_mask'] = kernel_record(features['causal_mask'], 'strict-causal-mask', 'mask')
     if features.get('kv_storage') not in (None, 'fp16'):
         raise ValueError('kv_storage must be fp16 when present')
+    if features.get('embedding_rows') not in (None, True):
+        raise ValueError('embedding_rows must be true when present')
     if features.get('kv_dma') not in (None, True) or (features.get('kv_dma') and features.get('kv_storage') != 'fp16'):
         raise ValueError('kv_dma requires kv_storage fp16')
     q8_0 = features.get('q8_0_projections')
@@ -540,7 +550,8 @@ def link_resident(args):
                         if domain_options[name]['parallelDequantLoops']]
     # These runtimes split rows with __hexagon_parallel_for_v1. Without the
     # linked worker adapter they would bind to the compiler's serial fallback.
-    pooled = [key for key in ('parallel_rope', 'parallel_trig', 'causal_mask', 'q8_0_projections')
+    pooled = [key for key in ('parallel_rope', 'head_norm_rope', 'parallel_trig', 'causal_mask', 'kv_storage',
+                              'q8_0_projections')
               if features.get(key)]
     if pooled and not parallel_dequant:
         raise ValueError('fused_graph ' + ', '.join(pooled) + ' require the row-parallel worker adapter '
@@ -867,6 +878,8 @@ def link_resident(args):
         graph_flags = ['-O3', '-fPIC', '-G0', '-mv73', '-mhvx', '-mhvx-length=128B', '-std=c++17',
                        '-fno-exceptions', '-fno-rtti', '-I'+str(sdk/'incs'), '-I'+str(sdk/'incs/stddef')]
         for key, source_name, extra in (('parallel_rope', 'parallel_rope.cpp', []),
+                                        ('head_norm_rope', 'parallel_rope_norm.cpp', ['-Wall']),
+                                        ('embedding_rows', 'embedding_rows.cpp', ['-Wall']),
                                         ('parallel_trig', 'parallel_trig.cpp', ['-Wall']),
                                         ('causal_mask', 'parallel_mask.cpp', ['-Wall'])):
             if not features.get(key):
@@ -882,6 +895,13 @@ def link_resident(args):
                                                        'aligned_alloc', 'roundevenf')],
                     graph_inputs['rope'][0], kernel])
                 graph_link.append(kernel)
+            if key == 'head_norm_rope':
+                kernel = output/'rope_norm_kernel.o'
+                run('graph-rope-norm-kernel', [tools/'bin/hexagon-llvm-objcopy',
+                    *['--localize-symbol='+s for s in ('memrefCopy', '__hexagon_mlir_expf', '_Assert',
+                                                       'aligned_alloc', 'roundevenf')],
+                    graph_inputs['rope-norm'][0], kernel])
+                graph_link.append(kernel)
             if key == 'causal_mask':
                 kernel = output/'mask_kernel.o'
                 run('graph-mask-kernel', [tools/'bin/hexagon-llvm-objcopy', '--keep-global-symbol=qwen_causal_mask',
@@ -895,6 +915,11 @@ def link_resident(args):
                             '-DPYTORCH_HEXAGON_KV_FP16_HVX', '-fPIC', '-G0', '-mlong-calls', '-std=c++17',
                             '-fno-math-errno', '-c', ROOT/'hexagon_runtime/native/kv_fp16.cpp', '-o', obj])
             graph_link.append(obj)
+            # qwen_kv_append_f16_v1, called by the qwen-fp16-kv-storage appends.
+            append = output/'kv_append.o'
+            run('graph-kv-append', [tools/'bin/hexagon-clang++', *graph_flags, '-Wall',
+                                    '-I'+str(ROOT/'hexagon_runtime/native'), '-c', runtime/'graph'/'kv_append.cpp', '-o', append])
+            graph_link.append(append)
         if q8_0_record is not None:
             from .q8_0.builder import runtime_object
             q8_0_record['runtime'] = runtime_object(tools, includes, Path(config['hexkl'])/'include', output, env, run)
