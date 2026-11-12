@@ -20,9 +20,12 @@ class Stream:
         mode, position, query = struct.unpack_from('<III', packet, 8)
         self.calls.append((mode, position, query))
         self.output_sizes.append(size)
-        length = position + query if mode in (1, 3, 4) else 0
+        length = position + query if mode in (1, 3, 4, 5) else 0
+        if mode == 5:
+            self.batch_chunks = struct.unpack_from('<I', packet, 20)[0]
+            assert len(packet) == 64 + query * 8
         response = b'QWMS001\0' + struct.pack('<6Q', length, 1024, 0, 0, 0, 1) + bytes(8)
-        if mode in (1, 3):
+        if mode in (1, 3, 5):
             data = torch.zeros(protocol.VOCAB + (56 * query * 1024 if mode == 1 else 0))
             data[3 if length >= self.stop_at else 5] = 100
             response += data.numpy().tobytes()
@@ -208,6 +211,34 @@ def test_only_the_last_chunk_of_a_logical_batch_requests_logits(diagnostics):
     assert cache.get_seq_length() == b.position == 70
     b.model(**inputs(b, cache))  # a single-chunk forward always returns logits
     assert b.stream.calls[-1] == (3, 70, 1)
+
+
+@pytest.mark.parametrize('diagnostics', [False, True])
+def test_a_logical_batch_is_one_call_on_a_session_with_batched_forwards(diagnostics):
+    b = backend(resident_only=True, skip_unused_logits=True, batched_forward=True,
+                diagnostics=diagnostics)
+    b.reset()
+    cache = b.new_cache()
+    out = b.model(**prompt_inputs(b, 70, cache))
+    # Diagnostics record every chunk and therefore keep one call per chunk.
+    assert b.stream.calls[1:] == ([(3, 0, 32), (3, 32, 32), (3, 64, 6)] if diagnostics
+                                  else [(5, 0, 70)])
+    if not diagnostics:
+        assert b.stream.batch_chunks == 32 and b.stream.output_sizes[1] == 64 + protocol.VOCAB * 4
+        assert b.calls[-1]['query'] == 70 and b.calls[-1]['ubatch'] == 32
+    assert out.logits.shape == (1, 1, protocol.VOCAB) and int(out.logits.argmax()) == 3
+    assert cache.get_seq_length() == b.position == 70
+    b.model(**inputs(b, cache))  # one chunk is an ordinary forward
+    assert b.stream.calls[-1] == (3, 70, 1)
+
+
+def test_batched_forwards_require_skipped_logits():
+    with pytest.raises(ValueError, match='skips unused logits'):
+        backend(resident_only=True, batched_forward=True)
+    with pytest.raises(ValueError, match='extent'):
+        protocol.forward_batch(Stream(), torch.zeros((1, 40), dtype=torch.int64), 1000, 32)
+    with pytest.raises(ValueError, match='extent'):
+        protocol.forward_batch(Stream(), torch.zeros((1, 40), dtype=torch.int64), 0, 33)
 
 
 def test_skipping_logits_requires_a_resident_only_session():

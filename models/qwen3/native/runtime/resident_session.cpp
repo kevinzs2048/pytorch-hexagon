@@ -22,6 +22,7 @@ extern "C" void qwen_prepacked_forward_end();
 #ifdef QWEN_RESIDENT_NO_LOGITS
 // Q8_0 runtime: leave the vocabulary projection of the next forwards uncomputed.
 extern "C" void qwen_q8_0_skip_vocabulary(int skip);
+// Last single-forward mode. Mode 5 (a batch of them) is dispatched separately.
 constexpr uint32_t LastMode = 4;
 #else
 constexpr uint32_t LastMode = 3;
@@ -129,9 +130,9 @@ extern "C" __attribute__((visibility("hidden"))) void qwen_graph_free(void *p) {
 extern "C" bool pytorch_hexagon_request_benchmark_performance();
 #endif
 int main() { return 2; }
-extern "C" int hexagon_forward_buffers(const unsigned char *input,
-                                       int input_len, unsigned char *output,
-                                       int output_len, uint64_t *kernel_us) {
+static int forward_packet(const unsigned char *input, int input_len,
+                          unsigned char *output, int output_len,
+                          uint64_t *kernel_us) {
   if (!input || !output || !kernel_us || input_len < 64 || output_len < 64 ||
       std::memcmp(input, "QWMS001\0", 8))
     return 2;
@@ -397,4 +398,63 @@ extern "C" int hexagon_forward_buffers(const unsigned char *input,
     cache.cancel();
     return 5;
   }
+}
+#ifdef QWEN_RESIDENT_NO_LOGITS
+// Mode 5: a whole logical batch in one call. Header word 3 (offset 20) is the
+// chunk size. The batch runs as the same forwards a caller would send one by
+// one: mode 4 for every chunk but the last, mode 3 for the last, whose logits
+// are the response. Chunks commit one by one; after a failure the cache holds
+// the chunks that completed, as it would for separate calls.
+static int forward_batch(const unsigned char *input, int input_len,
+                         unsigned char *output, int output_len,
+                         uint64_t *kernel_us) {
+  uint32_t position, query, chunk;
+  std::memcpy(&position, input + 12, 4);
+  std::memcpy(&query, input + 16, 4);
+  std::memcpy(&chunk, input + 20, 4);
+  if (position > 1024 || query < 1 || query > 1024 - position || chunk < 1 ||
+      chunk > 32 || input_len != int(64 + query * 8) ||
+      output_len != 64 + 151936 * 4)
+    return 2;
+  for (int i = 24; i < 64; ++i)
+    if (input[i])
+      return 2;
+  uint64_t update_us = 0, model_us = 0;
+  for (uint32_t offset = 0; offset < query; offset += chunk) {
+    const uint32_t count = query - offset < chunk ? query - offset : chunk;
+    const bool last = offset + count == query;
+    const uint32_t mode = last ? 3 : 4, at = position + offset;
+    unsigned char packet[64 + 32 * 8]{}, header[64];
+    std::memcpy(packet, "QWMS001\0", 8);
+    std::memcpy(packet + 8, &mode, 4);
+    std::memcpy(packet + 12, &at, 4);
+    std::memcpy(packet + 16, &count, 4);
+    std::memcpy(packet + 64, input + 64 + offset * 8, count * 8);
+    unsigned char *response = last ? output : header;
+    uint64_t chunk_us = 0;
+    if (int status = forward_packet(packet, 64 + count * 8, response,
+                                    last ? output_len : 64, &chunk_us))
+      return status;
+    uint64_t times[2];
+    std::memcpy(times, response + 8 + 4 * 8, sizeof(times));
+    update_us += times[0];
+    model_us += times[1];
+  }
+  const uint64_t times[2] = {update_us, model_us};
+  std::memcpy(output + 8 + 4 * 8, times, sizeof(times));
+  *kernel_us = update_us + model_us;
+  return 0;
+}
+#endif
+extern "C" int hexagon_forward_buffers(const unsigned char *input,
+                                       int input_len, unsigned char *output,
+                                       int output_len, uint64_t *kernel_us) {
+#ifdef QWEN_RESIDENT_NO_LOGITS
+  uint32_t mode;
+  if (input && output && kernel_us && input_len >= 64 &&
+      !std::memcmp(input, "QWMS001\0", 8) &&
+      (std::memcpy(&mode, input + 8, 4), mode == 5))
+    return forward_batch(input, input_len, output, output_len, kernel_us);
+#endif
+  return forward_packet(input, input_len, output, output_len, kernel_us);
 }

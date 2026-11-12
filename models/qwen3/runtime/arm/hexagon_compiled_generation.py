@@ -67,7 +67,7 @@ class CompiledGeneration:
 
     def __init__(self, config, generation_config, stream, *, verify_cache=False, diagnostics=False,
                  batch_size=protocol.MAX_LENGTH, ubatch_size=protocol.MAX_QUERY, resident_only=False,
-                 skip_unused_logits=False):
+                 skip_unused_logits=False, batched_forward=False):
         expected = dict(model_type='qwen3', num_hidden_layers=28, num_attention_heads=16,
                         num_key_value_heads=8, head_dim=128, hidden_size=1024,
                         intermediate_size=3072, vocab_size=151936)
@@ -86,6 +86,9 @@ class CompiledGeneration:
         if type(skip_unused_logits) is not bool or (skip_unused_logits and not resident_only):
             raise ValueError("Skipping unused logits requires a resident-only session")
         self.skip_unused_logits = skip_unused_logits
+        if type(batched_forward) is not bool or (batched_forward and not skip_unused_logits):
+            raise ValueError("A batched forward requires a session that skips unused logits")
+        self.batched_forward = batched_forward
         self.epoch = 0
         self.batch_size, self.ubatch_size = batch_size, ubatch_size
         self.stream, self.verify_cache, self.diagnostics = stream, verify_cache, diagnostics
@@ -157,7 +160,19 @@ class CompiledGeneration:
             # Like llama.cpp's logical batch / physical ubatch separation, a
             # framework forward may contain several DSP forwards. Keep one KV
             # session and return only the final position's logits.
-            for offset in range(0, query, self.ubatch_size):
+            # A session with mode 5 runs those DSP forwards in one call.
+            # Diagnostics need every chunk's packet and keep separate calls.
+            batched = self.batched_forward and not self.diagnostics and query > self.ubatch_size
+            if batched:
+                logits, stats, event, exchanged = protocol.forward_batch(
+                    self.stream, ids, position, self.ubatch_size)
+                self.position = position + query
+                self.calls.append(dict(
+                    capture=None, position=position, query=query, logical_position=position,
+                    logical_query=query, ubatch=self.ubatch_size, ids=ids.tolist(),
+                    statistics=stats, invoke=event, parameter_check_s=checked - started,
+                    exchange_s=exchanged - checked, reconstruct_s=0, snapshot_check_s=0))
+            for offset in range(0, 0 if batched else query, self.ubatch_size):
                 chunk = ids[:, offset:offset + self.ubatch_size]
                 chunk_position = position + offset
                 # Only the last chunk's prediction is returned; diagnostics

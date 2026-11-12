@@ -66,8 +66,10 @@ def test_inconsistent_q8_0_inventory_is_rejected(tmp_path, constants, record):
 def test_forward_without_logits_is_a_q8_0_session_mode(tmp_path):
     constants = shared(2) + [Q8_0_LIBRARY]
     assert load_session(session(tmp_path, constants, q8(2), modes=[1, 3, 4]), BASE)
+    assert load_session(session(tmp_path, constants, q8(2), modes=[1, 3, 4, 5]), BASE)
     for modes, record, libraries in (([1, 3, 4], None, shared(4)), ([1, 4], q8(2), constants),
-                                     ([1, 3, 4, 5], q8(2), constants)):
+                                     ([1, 3, 5], q8(2), constants), ([1, 3, 4, 5], None, shared(4)),
+                                     ([1, 3, 4, 5, 6], q8(2), constants)):
         with pytest.raises(ValueError, match='forward modes'):
             load_session(session(tmp_path, libraries, record, modes=modes), BASE)
 

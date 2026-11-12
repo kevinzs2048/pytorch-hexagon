@@ -975,7 +975,7 @@ def link_resident(args):
         manifest = dict(schema='qwen3-resident-session-v1', constants=constants,
             checkpoint_sha256=plan['checkpoint_sha256'],
             files={name: dict(bytes=(output/name).stat().st_size, sha256=sha(output/name)) for name in files})
-        manifest['resident_forward_modes'] = [1, 3, 4] if q8_0_record is not None else [1, 3]
+        manifest['resident_forward_modes'] = [1, 3, 4, 5] if q8_0_record is not None else [1, 3]
         # Building a library is not a model-quality qualification, even when
         # its outputs preserve an earlier implementation's arithmetic.
         manifest['model_quality_accepted'] = False
