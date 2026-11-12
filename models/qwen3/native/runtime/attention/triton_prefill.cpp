@@ -258,6 +258,10 @@ static unsigned causal_mask_invalid(const float *rows, int64_t row_stride, int m
 #if defined(__hexagon__)
   const HVX_Vector magnitude = Q6_V_vsplat_R(0x7fffffff);
   HVX_Vector wrong = Q6_V_vzero();
+  // Every row is read once, in order, and is usually no longer cached when the
+  // next layer validates it: start the L2 prefetch of the whole mask.
+  if (row_stride * 4 < 65536)
+    Q6_l2fetch_AP(const_cast<float *>(rows), (uint64_t(row_stride * 4) << 32) | (uint64_t(n * 4) << 16) | uint64_t(m));
 #endif
   for (int row = 0; row < m; ++row) {
     const float *values = rows + row * row_stride;
