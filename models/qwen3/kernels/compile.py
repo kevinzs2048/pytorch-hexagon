@@ -30,7 +30,7 @@ def main():
                                             "experimental-quantized-silu-up", "strict-int8-pack",
                                             "strict-int8-accumulate", "strict-int8-dequant",
                                             "strict-int8-dequant-residual", "strict-int8-dequant-product",
-                                            "strict-rope-heads", "strict-causal-mask",
+                                            "strict-rope-heads", "strict-rope-heads-norm", "strict-causal-mask",
                                             "strict-prefill-pack",
                                             "strict-prefill-qk", "strict-prefill-softmax",
                                             "strict-prefill-pv"))
@@ -72,7 +72,8 @@ def main():
                             "strict-int8-dequant", "strict-int8-dequant-residual",
                             "strict-int8-dequant-product")
     strict_prefill = args.profile.startswith("strict-prefill-")
-    rope_heads = args.profile == "strict-rope-heads"
+    rope_heads = args.profile in ("strict-rope-heads", "strict-rope-heads-norm")
+    rope_norm = args.profile == "strict-rope-heads-norm"
     causal_mask = args.profile == "strict-causal-mask"
     prefill = args.profile == "experimental-prefill-fp16"
     if (quantized_silu or hmx_decode) != (args.llc is not None):
@@ -149,7 +150,7 @@ def main():
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
-    kernel = (module.qwen_rope_heads if rope_heads else module.qwen_causal_mask if causal_mask else
+    kernel = (module.qwen_rope_heads_norm if rope_norm else module.qwen_rope_heads if rope_heads else module.qwen_causal_mask if causal_mask else
               getattr(module, "qwen_prefill_" + args.profile.removeprefix("strict-prefill-"))
               if strict_prefill else module.qwen_int8_pack_activation if args.profile == "strict-int8-pack" else
               module.qwen_int8_dequant_result if args.profile == "strict-int8-dequant" else
@@ -189,9 +190,10 @@ def main():
                       "columns": "i32", "column": "i32"})
         constants = {}
     if rope_heads:
-        signature = {"Y": "*fp32", "Cos": "*fp32", "Sin": "*fp32", "Out": "*fp32",
-                     **{name: "i32" for name in ("start", "count", "rows", "y_row", "y_head",
-                                                 "c_row", "o_head", "o_row")}}
+        signature = {"Y": "*fp32", **({"W": "*fp32"} if rope_norm else {}), "Cos": "*fp32", "Sin": "*fp32",
+                     "Out": "*fp32", **{name: "i32" for name in ("start", "count", "rows", "y_row", "y_head",
+                                                                "c_row", "o_head", "o_row")},
+                     **({"eps": "fp32"} if rope_norm else {})}
         constants = {}
     if causal_mask:
         signature = {"Pos": "*i64", "Valid": "*i64", "Out": "*fp32",
@@ -401,6 +403,10 @@ def main():
                                   "tables": "Cos/Sin[row, 128] FP32, shared by heads",
                                   "output": "Out[head, row, 128] FP32"},
                         precision="x*cos + rotate_half(x)*sin in graph order; negate, two multiplies, one addition")
+        if rope_norm:
+            manifest["contract"]["norm"] = "W[128] FP32 and eps; x = W * (y * rsqrt(sum(y^2) / 128 + eps)) per (row, head)"
+            manifest["precision"] += ("; RMSNorm sum in the graph's ARM order (8 chunks x 16 lanes, "
+                                      "16 -> 4 -> 1), one division by 128, rsqrt, two multiplies")
     if causal_mask:
         manifest.update(grid=[1], scratch_fp32_elements=0,
                         contract={"unit": "one query row; rows [start, start + count) per call",
