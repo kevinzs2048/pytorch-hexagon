@@ -31,6 +31,9 @@ qwen_runtime_object(packed-int8-runtime profile/packed_int8_matmul_runtime.c
   "${HEXAGON_CC}" ${common} -mhvx-length=128B ${sdk_includes})
 qwen_runtime_object(packed-multi-i8-runtime profile/packed_int8_multi_matmul_runtime.c
   "${HEXAGON_CC}" ${common} -mhvx-length=128B ${sdk_includes})
+qwen_runtime_object(resident-kv-cache
+  "../../../../hexagon_runtime/native/kv_cache.cpp"
+  "${HEXAGON_CXX}" ${cxx} -std=c++17)
 qwen_runtime_object(guarded-copy-runtime profile/guarded_memref_copy.cpp
   "${HEXAGON_CXX}" ${cxx})
 qwen_runtime_object(fixed512-memcpy profile/fixed512_memcpy.cpp

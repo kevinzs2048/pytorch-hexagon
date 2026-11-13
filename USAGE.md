@@ -11,6 +11,10 @@ The supported configuration is the complete 28-layer Qwen3-0.6B model, batch siz
 on DSP. Two reusable execution domains cover q1 decoding and q2–32 chunked
 prefill. Prompt text is a runtime input, not a compilation configuration.
 
+Steps 1–10 reproduce the existing fixed-capacity delivery. The effective-length
+native `DynamicCache` candidate has an explicit resident-session entry described
+in [the development section below](#native-dynamiccache-candidate-development).
+
 ## 0. Prerequisites
 
 This workflow starts with an existing, validated execution asset bundle. It uses
@@ -418,6 +422,179 @@ git config submodule.hexagon-mlir.url "$PH_DELIVERY/compiler-source.bundle"
 git -c protocol.file.allow=always submodule update --init third_party/hexagon-mlir
 ```
 
+## Resident model deployment (development)
+
+This candidate keeps KV on the DSP, appends new rows in place, and limits
+attention to the occupied sequence length. Transformers still runs `generate`
+with a request-scoped cache handle. One-token initial requests, chunked
+prefill, decoding and request reset use the same resident DSP session.
+
+On the QCS9075 board, from the matching application checkout:
+
+```bash
+
+python3 -m hexagon_runtime qwen3 generate \
+  --bundle /absolute/path/to/base-bundle \
+  --resident-session /absolute/path/to/resident-session \
+  --resident-execution compiled \
+  --prompt 'Explain what a KV cache does.' \
+  --max-new-tokens 8 --chunk-size 32 \
+  --output /absolute/path/to/a/new/result-directory
+```
+
+The base bundle supplies the checkpoint, tokenizer, pinned Python packages and
+transport. The separate session directory contains `session.json`, the model
+library, four shared constant libraries, graph/mapping metadata and pinned
+decompositions. The command validates that both bundles describe the same
+checkpoint and verifies the session files. With a mode-3 session, normal operation
+sends token IDs and returns logits. `--verify-resident-cache` enables an ARM KV
+mirror and additionally reads full DSP snapshots for diagnosis.
+`--packet-recording hashes/full` records the packets actually exchanged; it does
+not enable the ARM KV mirror. Recorded mode-3 packets contain logits, not KV rows.
+
+The deployment example explicitly selects `--resident-execution compiled`.
+This skips runtime Dynamo/AOT recapture and does
+not load a second CPU copy of the model parameters. Transformers still runs the
+generation loop; the same DSP libraries execute the forward. New session builds
+advertise `resident_forward_modes: [1, 3]`: normal compiled generation keeps KV
+tensors entirely on the DSP and returns only logits to ARM. A request-scoped
+Transformers `Cache` handle tracks the sequence length without allocating ARM KV
+tensors. Older session builds, `torch-compile` execution, and explicit cache
+verification retain the ARM `DynamicCache` mirror. `result.json` records
+`kv_cache_location` so the selected behavior is visible.
+
+The supported inputs remain batch one, unpadded causal prompts,
+DSP query chunks of 1–32 tokens and at most 1024 cached tokens. Each CLI request owns
+a fresh cache. Arbitrary supplied caches, mutable PyTorch modules, custom masks
+and `inputs_embeds` are not supported by this deployment adapter.
+
+Compiled execution separates the logical prefill batch from the DSP microbatch,
+following llama.cpp's `n_batch` / `n_ubatch` distinction. `--batch-size` controls
+how many prompt tokens Transformers submits at once (default: 1024).
+`--ubatch-size` controls how many tokens each DSP forward executes (default: 32;
+`--chunk-size` remains an alias). For example, add
+`--batch-size 512 --ubatch-size 32` to the command
+above: a 512-token prompt is submitted as one logical batch and executed as
+16 DSP forwards sharing the same KV cache. The adapter returns the prediction
+from the final microbatch; subsequent generation processes one token at a time.
+Both sizes are maxima, so the final prompt chunk may be smaller. Require
+`1 <= ubatch-size <= batch-size <= 1024`, with `ubatch-size <= 32` for the current
+libraries. A larger logical batch does not enlarge the compiled DSP execution
+range or imply a speedup. `--batch-size` applies only to compiled resident
+execution; the live `torch-compile` path continues to use `--chunk-size`.
+
+Compiled execution verifies the immutable bundle files and pinned framework.
+It does not use `--resident-aot-cache` or `--resident-parameter-check owned-request`;
+those flags apply to the live `torch-compile` path. The default execution mode
+remains `torch-compile` for compatibility; use the explicit deployment command
+above for immutable bundles. For live graph capture/validation, replace
+`--resident-execution compiled` with `--resident-execution torch-compile`.
+`result.json` records the selected mode, initialization
+in `setup_seconds`, and the per-request generation time separately.
+
+The result also reports `numerical_policy` and `model_quality_accepted` from the
+session metadata. Successful generation or equality with an older HMX build does
+not establish model-quality acceptance against the strict reference. New builds
+start with acceptance set to `false`; old bundles without this metadata report
+`null` (unknown). See the session's Attention and SiLU precision policies before
+interpreting numerical comparisons. Packet recording adds diagnostic overhead;
+use `--packet-recording none` for deployment timing.
+
+For `torch-compile` execution, the default `--resident-parameter-check every-forward` compares every parameter
+byte before each forward. For the model constructed privately by this CLI,
+`--resident-parameter-check owned-request` can reuse successful parameter
+checks within a generation request. Each new request validates complete bytes
+again; small module scalars are still checked every forward. This mode relies on
+exclusive ownership: no parameter writes, external tensor aliases or user hooks
+are allowed during the request. Tensor versions alone cannot detect `.data` or
+NumPy writes. The generic backend retains full checks, and callers with mutable
+or externally shared models must use the default policy.
+
+To reuse AOT graphs across processes, add `--resident-aot-cache` and
+`--cache-dir /absolute/path/to/a/persistent/cache`. The first run populates the cache; later
+runs validate its identity and bind the restored graphs to the current model
+and DSP session. This is optional and does not bypass graph guards or parameter
+checks. A changed session, runtime implementation, model or framework version
+uses a different cache identity. Inspect `aot_cache.counters` in `result.json`
+for actual hits, misses and bypasses. Dynamo tracing and model loading still run
+in each new process, so an AOT cache hit does not eliminate startup latency.
+
+To prepare and link a session from an existing captured-session plan on the host:
+
+```bash
+"$PH_PYTHON" -m models.qwen3.build_model \
+  --config "$PH_CONFIG" --build "$PH_BUILD" \
+  --compiler-source "$PH_REPO/third_party/hexagon-mlir" \
+  --resident-spec /absolute/path/to/captured-session.json \
+  --output "$PH_RUN/resident-session"
+```
+
+The plan contains four domains (`initial_single`, `initial`, `prefill`, `decode`),
+their actual function signatures, input provenance, output-plane mappings,
+compiled object bundles and graph hashes. Optional `linalg`/`linalg_sha256` fields
+recreate numerical and resident-KV preparation from pinned captured IR. Existing
+objects are reused only when the prepared bytecode or complete verified IR,
+including every constant, matches the original compiled input. Changed
+computation requires compilation and numerical acceptance. Duplicate
+prepared weight files are removed after exact comparison; receipts retain their
+hashes and commands.
+
+To compile all four captured Linalg domains and link in one invocation, add
+`--compile-resident`. Every domain must then supply `linalg` and `linalg_sha256`;
+existing `objects` fields are unnecessary and are not used. The build writes a
+`resident-plan.json` with the newly compiled object paths for later relinking.
+The compiler worker raises its soft stack limit to 64 MiB before loading LLVM
+(the hard limit must permit this). This avoids a reproduced SCEV/SLP crash with the default 8 MiB
+stack on full-model graphs; the effective limit is recorded in compilation metadata.
+
+For an optimized plan using packed integer weights and the worker pool:
+
+```bash
+"$PH_PYTHON" -m models.qwen3.build_model \
+  --config "$PH_CONFIG" --build "$PH_BUILD" \
+  --compiler-source "$PH_REPO/third_party/hexagon-mlir" \
+  --resident-spec /absolute/path/to/captured-session.json --compile-resident \
+  --llama-source /absolute/path/to/pinned/llama.cpp \
+  --output "$PH_RUN/optimized-resident-session"
+```
+
+The plan can opt into root settings `integer_weights="hvx-i8-prepacked-v1"`,
+`integer_threads=4`, `silu_effects=true`, and `activation_reuse=true`.
+Two additional opt-ins apply to all four domains, including single-token
+decode: `parallel_silu=true` distributes the original FP32 SiLU expression
+over four workers, and `vectorize_activation=true` hoists each row-scale
+assertion and expands exact ties-to-even rounding into vectorizable integer
+operations. The latter requires `activation_reuse=true`. These settings preserve
+the original scale division, quantization thresholds and rounding order. Select
+`attention="fp32-ordered-workers-v1"` in the `initial`, `prefill`, and `decode`
+domain entries; keep the original attention graph for `initial_single`. These settings complement the
+captured signatures and provenance; they are not a complete capture plan.
+
+The strict Triton decode kernel can replace the ordered C++ decode implementation
+without changing the captured graph or prefill arithmetic. See
+[Building strict Triton attention](docs/qwen3/TRITON_ATTENTION.md) for the object
+build and the hash-pinned `triton_decode` plan entry. The selection is retained
+when the emitted plan is relinked; the ordinary plan keeps its existing default.
+
+Each domain entry may also contain a `compiler_options` object with boolean
+`enableRowMinMax`, `scheduleFMAChains`, `scheduleDequantLoops`, or
+`scheduleReductionLoops` values. These select existing strict compilation
+passes. Scheduling defaults to false; `enableRowMinMax` inherits the root
+`row_minmax` setting unless explicitly overridden for that domain.
+For example, `"compiler_options": {"scheduleDequantLoops": true}` in the
+`decode` entry enables dequantization scheduling only in that graph. Changing
+a setting requires recompiling the affected graph; relinking rejects an object
+whose recorded settings differ. The emitted resident plan preserves the options.
+These graph settings are separate from the Triton kernel compile command, and
+do not enable fast math or change the attention precision policy.
+See [contracts and validation](docs/qwen3/INT8_PREPACK.md). Building a session
+does not itself certify device numerical results.
+
+**This development mode still requires an existing capture plan. It does not
+yet export a fresh resident capture plan using steps 4–5 above.**
+The default delivery remains the numbered workflow. First-use PyTorch
+graph capture remains expensive; AOT cache hits do not remove Dynamo tracing.
+
 ## Validation scope
 
 The repository reorganization passed a backend source build, 622 host checks,
@@ -426,3 +603,9 @@ libraries. This guide documents fresh capture export, full model rebuilding,
 deployment and inference with candidate libraries. Updating or translating the
 guide does not constitute another complete model rebuild or acceptance run.
 See [build status](docs/qwen3/BUILD_STATUS.md) for completed validation and evidence.
+
+Resident generation defaults to `--packet-recording none`: it retains timing
+metadata but skips diagnostic packet hashes and the extra logits argmax. Use
+`--packet-recording hashes` or `full` for comparison runs. Legacy generation
+continues to default to `hashes`. This does not disable parameter or artifact
+integrity checks.

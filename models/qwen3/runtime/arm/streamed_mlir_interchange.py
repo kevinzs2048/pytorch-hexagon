@@ -12,7 +12,8 @@ import threading
 
 
 
-def stream_mlir_pipeline(operation, commands, *, archive_path, log_path, timeout=600):
+def stream_mlir_pipeline(operation, commands, *, archive_path, log_path, timeout=600,
+                         env=None):
     """Stream verified compiler stages without materializing intermediate weights.
 
     Every stage must succeed. Only stdout is piped to the next stage; compiler
@@ -35,7 +36,7 @@ def stream_mlir_pipeline(operation, commands, *, archive_path, log_path, timeout
                 child = subprocess.Popen(command,
                     stdin=previous.stdout if previous else subprocess.PIPE,
                     stdout=log if index == len(commands) - 1 else subprocess.PIPE,
-                    stderr=log)
+                    stderr=log, env=env)
                 processes.append(child)
                 if previous is not None:
                     previous.stdout.close()

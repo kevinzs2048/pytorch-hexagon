@@ -112,6 +112,44 @@ def test_two_fresh_processes_share_disk_artifact_without_live_callbacks(tmp_path
         'original_native_compiler_on_AOT_miss','original_native_compiler_on_AOT_hit_rebind']
 
 
+def symbolic_sum_roundtrip(path, create):
+    """Small graph reproducing the Python-function target in Qwen decode."""
+    from torch.fx._graph_pickler import GraphPickler
+    from torch._subclasses.fake_tensor import FakeTensorMode
+    from torch.fx.experimental.symbolic_shapes import ShapeEnv
+    from hexagon_captured_linalg_cache import captured_identity
+    if create:
+        graph = torch.fx.Graph()
+        length = graph.placeholder('length')
+        length.meta['val'] = 3
+        total = graph.call_function(torch.sym_sum, ((length, 1),))
+        total.meta['val'] = 4
+        graph.output((total,))
+        module = torch.fx.GraphModule({}, graph)
+        path.write_bytes(GraphPickler.dumps(module))
+    else:
+        module = GraphPickler.loads(path.read_bytes(),
+                                   FakeTensorMode(shape_env=ShapeEnv()))
+        module.recompile()
+    assert module(3) == (4,)
+    return captured_identity(module)
+
+
+def test_symbolic_sum_identity_survives_fresh_process_graph_reload(tmp_path):
+    program = ('import json,sys;from pathlib import Path;'
+               'from test_native_aot_output import symbolic_sum_roundtrip;'
+               'print(json.dumps(symbolic_sum_roundtrip(Path(sys.argv[1]),'
+               'sys.argv[2]=="save")))')
+    identities = []
+    for mode in ('save', 'load'):
+        result = subprocess.run(
+            [sys.executable, '-c', program, str(tmp_path/'graph.pkl'), mode],
+            cwd=Path(__file__).parent, capture_output=True, text=True,
+            check=True, timeout=90)
+        identities.append(json.loads(result.stdout))
+    assert identities[0] == identities[1]
+
+
 def test_singleton_and_bounded_dynamic_graphs_remain_separate(tmp_path):
     events=[]
     for n in (2,1,32,1):run_once(tmp_path,events,n)

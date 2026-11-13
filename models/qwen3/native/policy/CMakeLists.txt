@@ -12,6 +12,25 @@ set(HEXAGON_MLIR_SOURCE_DIR "" CACHE PATH "Hexagon-MLIR compiler source checkout
 if(NOT EXISTS "${HEXAGON_MLIR_SOURCE_DIR}/qcom_hexagon_backend/CMakeLists.txt")
   message(FATAL_ERROR "HEXAGON_MLIR_SOURCE_DIR must identify the compiler checkout")
 endif()
+
+option(QWEN_BUILD_RESIDENT_KV "Build the explicit resident KV append adapter" OFF)
+option(QWEN_BUILD_FUSED_ATTENTION "Build the ordered FP32 attention adapter" OFF)
+if(QWEN_BUILD_FUSED_ATTENTION)
+  add_executable(qwen-fused-attention-opt attention/FuseAttentionOpt.cpp)
+  target_compile_options(qwen-fused-attention-opt PRIVATE -g0)
+  target_link_libraries(qwen-fused-attention-opt PRIVATE MLIROptLib MLIRTransforms
+    MLIRAffineDialect MLIRArithDialect MLIRBufferizationDialect
+    MLIRControlFlowDialect MLIRFuncDialect MLIRLinalgDialect MLIRMathDialect
+    MLIRMemRefDialect MLIRSCFDialect MLIRTensorDialect MLIRVectorDialect)
+endif()
+if(QWEN_BUILD_RESIDENT_KV)
+  add_executable(qwen-resident-kv-opt kv/ResidentKVOpt.cpp)
+  target_compile_options(qwen-resident-kv-opt PRIVATE -g0)
+  target_link_libraries(qwen-resident-kv-opt PRIVATE MLIROptLib MLIRTransforms
+    MLIRAffineDialect MLIRArithDialect MLIRBufferizationDialect
+    MLIRControlFlowDialect MLIRFuncDialect MLIRLinalgDialect MLIRMathDialect
+    MLIRMemRefDialect MLIRSCFDialect MLIRTensorDialect MLIRVectorDialect)
+endif()
 set(QWEN_BACKEND "${HEXAGON_MLIR_SOURCE_DIR}/qcom_hexagon_backend")
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
@@ -43,7 +62,7 @@ foreach(stage first sums)
   target_link_libraries(qwen-policy-${stage}-opt PRIVATE QwenTmTensor MLIROptLib
     MLIRTransforms MLIRAffineDialect MLIRArithDialect MLIRControlFlowDialect
     MLIRFuncDialect MLIRLinalgDialect MLIRLinalgTransforms MLIRMathDialect
-    MLIRSCFDialect MLIRTensorDialect)
+    MLIRSCFDialect MLIRTensorDialect MLIRVectorDialect)
 endforeach()
 
 # Explicit isolated experiment. The two accepted numerical targets are unchanged.

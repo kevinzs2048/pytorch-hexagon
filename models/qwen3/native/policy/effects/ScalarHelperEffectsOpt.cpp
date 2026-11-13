@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// One explicit scalar helper contract. No arithmetic or SSA rewrites here.
+// Explicit scalar helper contracts; preserve every arithmetic operation.
 #include "hexagon/Dialect/TmTensor/IR/TmTensorDialect.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -14,12 +14,15 @@
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/SymbolTable.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 
 using namespace mlir;
 namespace {
+#include "ParallelSilu.h"
+#include "BatchARMTrig.h"
 struct Snapshot {
   Operation *op;
   DictionaryAttr attrs;
@@ -33,8 +36,12 @@ struct ScalarHelperEffectsPass:PassWrapper<ScalarHelperEffectsPass,OperationPass
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ScalarHelperEffectsPass)
   ScalarHelperEffectsPass()=default;
   ScalarHelperEffectsPass(const ScalarHelperEffectsPass &other):PassWrapper(other) {}
+  void getDependentDialects(DialectRegistry &registry) const override {
+    registry.insert<LLVM::LLVMDialect>();
+  }
   Option<unsigned> expectedCount{*this,"expected-count",llvm::cl::desc("Exact admitted marked query1 SiLU call count"),llvm::cl::init(28)};
   Option<bool> multiRow{*this,"multi-row",llvm::cl::desc("Opt-in existing query2..32 SiLU calls; default retains original query1 scope"),llvm::cl::init(false)};
+  Option<bool> residentGraphs{*this,"resident-graphs",llvm::cl::desc("Admit the four pinned resident graph entry names"),llvm::cl::init(false)};
   StringRef getArgument() const final {return "qwen-silu-effects";}
   StringRef getDescription() const final {return "Pinned SiLU readnone/nounwind/willreturn; all original operations preserved";}
   void runOnOperation() final {
@@ -45,7 +52,8 @@ struct ScalarHelperEffectsPass:PassWrapper<ScalarHelperEffectsPass,OperationPass
                                    {Float32Type::get(module.getContext())});
     if (!callee || !callee.isExternal() || !callee.isPrivate() ||
         callee.getFunctionType()!=expected || !expectedCount ||
-        callee->hasAttr("llvm.readnone") || callee->hasAttr("passthrough")) {
+        callee->hasAttr("llvm.readnone") || callee->hasAttr("memory_effects") ||
+        callee->hasAttr("passthrough")) {
       module.emitError("unannotated private external pinned scalar SiLU declaration required");
       return signalPassFailure();
     }
@@ -61,13 +69,20 @@ struct ScalarHelperEffectsPass:PassWrapper<ScalarHelperEffectsPass,OperationPass
       auto type=parent && parent.getNumResults()==1 ?
           dyn_cast<RankedTensorType>(parent.getResult(0).getType()) : RankedTensorType();
       bool shape=false;
+      bool ownerMatches = owner && owner.getSymName()=="Qwen3DynamicBoundProbe";
+      if (residentGraphs && owner) {
+        StringRef name = owner.getSymName();
+        ownerMatches |= multiRow
+            ? (name=="Qwen3DynamicCache0" || name=="Qwen3DynamicPrefill")
+            : (name=="Qwen3DynamicSingle0" || name=="Qwen3DynamicCache1");
+      }
       if (type && type.getRank()==3 && type.getDimSize(0)==1 && type.getDimSize(2)==3072) {
         int64_t rows=type.getDimSize(1);
         shape=multiRow ? (rows==ShapedType::kDynamic || (rows>=2 && rows<=32)) : rows==1;
       }
       if (!call || call.getCallee()!=name || !isa_and_nonnull<UnitAttr>(call->getAttr("hexagon.fp32_silu_exp_compat")) ||
           call.getNumOperands()!=1 || call.getOperand(0).getType()!=Float32Type::get(module.getContext()) ||
-          call.getResultTypes()!=expected.getResults() || !owner || owner.getSymName()!="Qwen3DynamicBoundProbe" ||
+          call.getResultTypes()!=expected.getResults() || !ownerMatches ||
           !parent || !parent->hasAttr("hexagon.fp32_arm_silu_denominator") || !type ||
           !shape || !type.getElementType().isF32()) {
         module.emitError("only original marked query1 SiLU scalar direct calls are admitted");
@@ -90,6 +105,13 @@ struct ScalarHelperEffectsPass:PassWrapper<ScalarHelperEffectsPass,OperationPass
     });
     Builder builder(module.getContext());
     callee->setAttr("llvm.readnone",builder.getUnitAttr());
+    if (residentGraphs) {
+      // FuncToLLVM filters llvm.readnone when creating an external C wrapper.
+      // This scalar-only ABI also carries the modern attribute through it.
+      callee->setAttr("memory_effects", LLVM::MemoryEffectsAttr::get(module.getContext(),
+          {LLVM::ModRefInfo::NoModRef, LLVM::ModRefInfo::NoModRef,
+           LLVM::ModRefInfo::NoModRef}));
+    }
     callee->setAttr("passthrough",builder.getStrArrayAttr({"nounwind","willreturn"}));
     DictionaryAttr changed=callee->getAttrDictionary();
     SmallVector<Operation *> after;
@@ -122,5 +144,7 @@ int main(int argc,char **argv) {
       bufferization::BufferizationDialect,memref::MemRefDialect,scf::SCFDialect,
       tensor::TensorDialect,vector::VectorDialect,tm_tensor::TmTensorDialect>();
   PassRegistration<ScalarHelperEffectsPass>();
+  PassRegistration<ParallelSiluPass>();
+  PassRegistration<BatchARMTrigPass>();
   return asMainReturnCode(MlirOptMain(argc,argv,"Scoped original Qwen SiLU effect contract\n",registry));
 }

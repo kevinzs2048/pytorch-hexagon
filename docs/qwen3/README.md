@@ -10,6 +10,7 @@ pinned Git submodule dependency, not application source.
 - [Build from source](SOURCE_BUILD.md)
 - [Repository separation](REPOSITORY_SPLIT.md)
 - [Operator timings](OPERATOR_TIMINGS.md)
+- [QCS9075 inference breakdown, 2026-11-05 (Chinese)](profiling-20261105/README.zh-CN.md)
 - [KV integration](KV_CACHE_EXTENSION.md)
 - [Compiler-team email draft](MAINTAINER_EMAIL.md)
 

@@ -77,6 +77,30 @@ def implementation_digest():
 
 
 def generate(args, *, prepare_candidate=None):
+    execution = getattr(args, 'resident_execution', 'torch-compile')
+    if execution == 'compiled':
+        if getattr(args, 'resident_session', None) is None:
+            raise ValueError('--resident-execution compiled requires --resident-session')
+        if getattr(args, 'resident_aot_cache', False):
+            raise ValueError('--resident-aot-cache applies only to torch-compile execution')
+        if getattr(args, 'resident_parameter_check', 'every-forward') != 'every-forward':
+            raise ValueError('Compiled execution verifies immutable artifacts, not live model parameters')
+    if getattr(args, 'packet_recording', None) is None:
+        args.packet_recording = 'none' if getattr(args, 'resident_session', None) else 'hashes'
+    if args.packet_recording == 'none' and getattr(args, 'resident_session', None) is None:
+        raise ValueError('--packet-recording none requires --resident-session')
+    if getattr(args, 'resident_aot_cache', False) and getattr(args, 'resident_session', None) is None:
+        raise ValueError('--resident-aot-cache requires --resident-session')
+    if (getattr(args, 'resident_parameter_check', 'every-forward') != 'every-forward'
+            and getattr(args, 'resident_session', None) is None):
+        raise ValueError('--resident-parameter-check requires --resident-session')
+    if getattr(args, 'verify_resident_cache', False) and getattr(args, 'resident_session', None) is None:
+        raise ValueError('--verify-resident-cache requires --resident-session')
+    if getattr(args, 'resident_session', None) is not None:
+        if prepare_candidate is not None:
+            raise ValueError('Resident sessions use their own explicit compiled bundle')
+        from .resident import generate as generate_resident
+        return generate_resident(args)
     doctor(args.bundle, execution=True)
     runtime_paths()
     output = args.output.absolute()
@@ -203,9 +227,25 @@ def main(argv=None):
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--cache-dir", type=Path, default=Path(".cache/qwen3"))
     p.add_argument("--max-new-tokens", type=int, default=32)
-    p.add_argument("--chunk-size", type=int, default=32)
+    p.add_argument("--chunk-size", "--ubatch-size", dest="chunk_size", type=int, default=32,
+                   help="Maximum tokens per DSP forward (current libraries: 1..32)")
+    p.add_argument("--batch-size", type=int,
+                   help="Maximum tokens per Transformers prefill call; compiled resident execution only "
+                        "(default: 1024, split internally by --ubatch-size)")
     p.add_argument("--chat-template", action="store_true")
-    p.add_argument("--packet-recording", choices=("hashes", "full"), default="hashes")
+    p.add_argument("--packet-recording", choices=("none", "hashes", "full"),
+                   help="Resident default: none; legacy default: hashes. Enable hashes/full for diagnostics.")
+    p.add_argument("--resident-execution", choices=("torch-compile", "compiled"), default="torch-compile",
+                   help="Use live PyTorch capture or deploy the verified immutable DSP model without recapture")
+    p.add_argument("--resident-session", type=Path,
+                   help="Experimental native DynamicCache session bundle")
+    p.add_argument("--verify-resident-cache", action="store_true",
+                   help="Compare DSP cache snapshots with native cache outputs")
+    p.add_argument("--resident-parameter-check", choices=("every-forward", "owned-request"),
+                   default="every-forward",
+                   help="Reuse parameter checks within a request on the CLI's private immutable model")
+    p.add_argument("--resident-aot-cache", action="store_true",
+                   help="Reuse verified AOT graphs across processes using --cache-dir")
     p = sub.add_parser("compare", help="Check a moved installation against a completed reference run")
     p.add_argument("--reference", type=Path, required=True)
     p.add_argument("--candidate", type=Path, required=True)
@@ -247,6 +287,11 @@ def main(argv=None):
         else:
             if not 1 <= args.chunk_size <= 32 or args.max_new_tokens < 1:
                 raise ValueError("chunk-size must be 1..32 and max-new-tokens must be positive")
+            if args.batch_size is not None and (
+                    args.resident_session is None or args.resident_execution != 'compiled'
+                    or not args.chunk_size <= args.batch_size <= 1024):
+                raise ValueError('batch-size requires compiled resident execution and '
+                                 'ubatch-size <= batch-size <= 1024')
             if args.chat_template and args.requests_json is not None:
                 raise ValueError("Chat templates require text input")
             generate(args)

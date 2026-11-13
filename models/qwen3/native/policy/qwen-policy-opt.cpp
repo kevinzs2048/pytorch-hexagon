@@ -9,6 +9,7 @@
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 #include "mlir/Transforms/Passes.h"
 
@@ -18,7 +19,7 @@ int main(int argc, char **argv) {
                   mlir::cf::ControlFlowDialect, mlir::func::FuncDialect,
                   mlir::linalg::LinalgDialect, mlir::math::MathDialect,
                   mlir::scf::SCFDialect, mlir::tensor::TensorDialect,
-                  mlir::tm_tensor::TmTensorDialect>();
+                  mlir::tm_tensor::TmTensorDialect, mlir::vector::VectorDialect>();
   mlir::registerTransformsPasses();
   mlir::hexagon::registerStabilizeFP32SumPass();
   return mlir::asMainReturnCode(

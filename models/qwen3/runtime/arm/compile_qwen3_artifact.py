@@ -36,6 +36,20 @@ def file_identity(path):
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
+def configure_compiler_stack():
+    """Large model SCEV/SLP analysis needs more than the usual 8 MiB stack."""
+    import resource
+    soft, hard = resource.getrlimit(resource.RLIMIT_STACK)
+    required = 64 * 1024 * 1024
+    if soft != resource.RLIM_INFINITY and soft < required:
+        if hard != resource.RLIM_INFINITY and hard < required:
+            raise RuntimeError("Hexagon model compilation requires a stack hard limit of at least 64 MiB")
+        resource.setrlimit(resource.RLIMIT_STACK, (required, hard))
+    return {"previous_soft_bytes": soft,
+            "effective_soft_bytes": resource.getrlimit(resource.RLIMIT_STACK)[0],
+            "hard_bytes": hard}
+
+
 def resolve_options(defaults, reference, overrides):
     """Replay a complete recorded option set; never inherit missing baseline keys."""
     options = {key: str(value) for key, value in defaults.items()}
@@ -110,6 +124,15 @@ def main():
     destination_path = args.output if args.output is not None else args.output_bundle
     if destination_path.exists() or (metadata_path is not None and metadata_path.exists()):
         parser.error("Choose a new output path; existing artifacts are preserved")
+    # Resolve the writer before code generation; support both -m and script entry.
+    if args.output_bundle is not None:
+        if __package__:
+            from .qwen3_object_bundle import write_bundle
+        else:
+            from qwen3_object_bundle import write_bundle
+    compiler_stack = configure_compiler_stack()
+    # Fail on an unusable destination before expensive model compilation.
+    destination_path.parent.mkdir(parents=True, exist_ok=True)
     if args.backend_source and (not args.libtriton or args.triton_python):
         parser.error("backend-source requires libtriton and cannot use triton-python")
     if args.triton_python:
@@ -168,10 +191,13 @@ def main():
         "options_from": option_source,
         "emit": args.emit,
         "scope": "Python backend AOT compilation only; not device validation",
+        "compiler_stack": compiler_stack,
     }
     print(json.dumps(metadata, indent=2), flush=True)
     context = ir.context()
-    if options.get("lowerConstantsInSeparateSharedObjects") == "True":
+    if (options.get("lowerConstantsInSeparateSharedObjects") == "True"
+            or options.get("enableLWP") == "True"):
+        # LWP uses shared module symbols, IDs and a global location dump.
         context.disable_multithreading()
     backend.load_dialects(context)
     parse_started = time.monotonic()
@@ -194,7 +220,6 @@ def main():
     else:
         objects = backend.translate_linalg_to_obj(module, effective_options)
         if args.output_bundle is not None:
-            from qwen3_object_bundle import write_bundle
             metadata["compile_seconds"] = time.monotonic() - started
             metadata = write_bundle(args.output_bundle, objects, metadata)
             print(f"Wrote {args.output_bundle}: {len(objects)} modules, {metadata['output_bytes']} bytes", flush=True)

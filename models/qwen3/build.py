@@ -41,8 +41,9 @@ def llvm_identity(config):
 
 def native_identity():
     """Seal the application-owned inputs independently of the compiler checkout."""
-    root = native_root()
-    files = {str(p.relative_to(ROOT)): sha(p) for p in sorted(root.rglob('*')) if p.is_file()}
+    roots = (native_root(), ROOT/'hexagon_runtime/native')
+    files = {str(p.relative_to(ROOT)): sha(p) for root in roots
+             for p in sorted(root.rglob('*')) if p.is_file()}
     if not files:
         raise ValueError('Application native extension sources are missing')
     files['dependencies/toolchain.lock.json'] = sha(ROOT/'dependencies/toolchain.lock.json')
@@ -52,14 +53,15 @@ def native_identity():
 def product_paths(output):
     paths = [output/'compiler/libtriton.so',
              output/'compiler/third_party/qcom_hexagon_backend/bin/linalg-hexagon-opt']
-    paths += [output/'compiler/profiles'/p/'libtriton.so' for p in ('q1', 'q2')]
+    paths += [output/'compiler/profiles'/p/'libtriton.so' for p in ('q1', 'q2', 'dynamic-kv')]
     paths += [output/'policy'/name for name in ('qwen-policy-first-opt', 'qwen-policy-sums-opt',
-                                              'qwen-packed-i8-opt', 'qwen-silu-effects-opt')]
+                                              'qwen-packed-i8-opt', 'qwen-silu-effects-opt',
+                                              'qwen-resident-kv-opt', 'qwen-fused-attention-opt')]
     paths += [output/'runtime'/(name+'.o') for name in (
         'packed-int8-runtime', 'packed-multi-i8-runtime', 'guarded-copy-runtime',
         'fixed512-memcpy', 'preserved-memcpy', 'caller-byte-copy', 'global-hvx-copy',
         'q1-pv-guard', 'q1-qk-guard', 'q2-qk-guard', 'q2-zero-guard',
-        'trig_lane', 'rempitab', 'trig_runtime')]
+        'trig_lane', 'rempitab', 'trig_runtime', 'resident-kv-cache')]
     return paths
 
 
@@ -248,7 +250,7 @@ def main():
         if not args.configure_only:
             run('compiler', [config.get('cmake', 'cmake'), '--build', str(build),
                              '--target', 'triton', 'linalg-hexagon-opt',
-                             'qwen-compiler-q1', 'qwen-compiler-q2',
+                             'qwen-compiler-q1', 'qwen-compiler-q2', 'qwen-compiler-dynamic-kv',
                              '--parallel', str(args.jobs), '--', '-k', '0'])
             policy = output / 'policy'
             run('policy-configure', [config.get('cmake', 'cmake'),
@@ -260,6 +262,8 @@ def main():
                 '-DMLIR_DIR='+str(llvm/'lib/cmake/mlir'),
                 '-DLLVM_DIR='+str(llvm/'lib/cmake/llvm'),
                 '-DQWEN_BUILD_PACKED_INT8_EXPERIMENT=ON',
+                '-DQWEN_BUILD_RESIDENT_KV=ON',
+                '-DQWEN_BUILD_FUSED_ATTENTION=ON',
                 '-DQWEN_BUILD_SILU_EFFECTS_EXPERIMENT=ON'])
             run('policy', [config.get('cmake', 'cmake'), '--build', str(policy),
                            '--parallel', str(args.jobs), '--', '-k', '0'])
