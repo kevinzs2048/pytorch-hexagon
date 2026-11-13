@@ -74,6 +74,23 @@ def test_forward_without_logits_is_a_q8_0_session_mode(tmp_path):
             load_session(session(tmp_path, libraries, record, modes=modes), BASE)
 
 
+def test_paired_chunks_belong_to_the_batched_forward_mode(tmp_path):
+    constants = shared(2) + [Q8_0_LIBRARY]
+
+    def bundle(modes, paired):
+        directory = session(tmp_path, constants, q8(2), modes=modes)
+        manifest = json.loads((directory / 'session.json').read_text())
+        manifest['resident_paired_chunks'] = paired
+        (directory / 'session.json').write_text(json.dumps(manifest))
+        return directory
+
+    assert load_session(bundle([1, 3, 4, 5], True), BASE)
+    assert load_session(bundle([1, 3, 4], False), BASE)
+    for modes, paired in (([1, 3, 4], True), ([1, 3, 4, 5], 1)):
+        with pytest.raises(ValueError, match='Paired chunks'):
+            load_session(bundle(modes, paired), BASE)
+
+
 def test_q8_0_shared_libraries_must_be_numbered(tmp_path):
     constants = ['libqwen_dynamic_kv_prefill_const_2.so', 'libqwen_dynamic_kv_prefill_const_1.so', Q8_0_LIBRARY]
     with pytest.raises(ValueError, match='constant inventory'):

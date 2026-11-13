@@ -66,6 +66,9 @@ def load_session(directory, base_manifest):
             # mode 5 (a logical batch in one call) is a sequence of modes 4 and 3.
             or (4 in modes and manifest.get('q8_0_projections') is None)):
         raise ValueError('Unsupported resident forward modes')
+    paired = manifest.get('resident_paired_chunks', False)
+    if type(paired) is not bool or (paired and 5 not in modes):
+        raise ValueError('Paired chunks require the batched forward mode')
     if manifest['checkpoint_sha256'] != base_manifest['files']['hf/model.safetensors']['sha256']:
         raise ValueError('Resident code and base checkpoint differ')
     for name, row in manifest['files'].items():

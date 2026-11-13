@@ -22,7 +22,7 @@ class Stream:
         self.output_sizes.append(size)
         length = position + query if mode in (1, 3, 4, 5) else 0
         if mode == 5:
-            self.batch_chunks = struct.unpack_from('<I', packet, 20)[0]
+            self.batch_chunks, self.batch_flags = struct.unpack_from('<II', packet, 20)
             assert len(packet) == 64 + query * 8
         response = b'QWMS001\0' + struct.pack('<6Q', length, 1024, 0, 0, 0, 1) + bytes(8)
         if mode in (1, 3, 5):
@@ -225,6 +225,7 @@ def test_a_logical_batch_is_one_call_on_a_session_with_batched_forwards(diagnost
                                   else [(5, 0, 70)])
     if not diagnostics:
         assert b.stream.batch_chunks == 32 and b.stream.output_sizes[1] == 64 + protocol.VOCAB * 4
+        assert b.stream.batch_flags == 0  # paired chunks where the session supports them
         assert b.calls[-1]['query'] == 70 and b.calls[-1]['ubatch'] == 32
     assert out.logits.shape == (1, 1, protocol.VOCAB) and int(out.logits.argmax()) == 3
     assert cache.get_seq_length() == b.position == 70
@@ -239,6 +240,9 @@ def test_batched_forwards_require_skipped_logits():
         protocol.forward_batch(Stream(), torch.zeros((1, 40), dtype=torch.int64), 1000, 32)
     with pytest.raises(ValueError, match='extent'):
         protocol.forward_batch(Stream(), torch.zeros((1, 40), dtype=torch.int64), 0, 33)
+    stream = Stream()
+    protocol.forward_batch(stream, torch.zeros((1, 40), dtype=torch.int64), 0, 32, sequential=True)
+    assert stream.calls == [(5, 0, 40)] and stream.batch_flags == 1
 
 
 def test_skipping_logits_requires_a_resident_only_session():

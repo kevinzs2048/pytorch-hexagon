@@ -84,23 +84,45 @@ struct Call {
   bool serial;  // no pool workers: dequantize on the HMX thread
   std::atomic<unsigned> packed{0};  // pool jobs done packing their activation tiles
   Producer producers[Producers];
+  // Second row set of a paired call (x2 null: none): the same weight applied
+  // to another caller's rows from the same dequantized tiles. Its activation
+  // tiles of chunk j are the chunk buffer after the `buffers` weight buffers
+  // of producer j's slot.
+  const float *x2 = nullptr; int64_t x2_stride = 0;
+  const float *side2 = nullptr; int64_t side2_stride = 0;
+  float *out2 = nullptr; int64_t out2_stride = 0;
+  unsigned m2 = 0;
+  std::atomic<bool> consumed_all{false};  // the HMX thread read its last activation tile
 };
 
 inline void spin() { __asm__ __volatile__("pause(#32)" ::: "memory"); }
 
 constexpr unsigned Jobs = Producers + 1;
 
+// One activation tile: K columns [32 kt, 32 kt + 32) of m rows of x.
+inline void pack_tile(const float *x, int64_t stride, unsigned m, unsigned kt, uint8_t *target) {
+  auto *tile = reinterpret_cast<HVX_Vector *>(target);
+  for (unsigned p = 0; p < 16; ++p) {
+    unsigned r0 = 2 * p, r1 = r0 + 1;
+    HVX_Vector a = r0 < m ? *reinterpret_cast<const HVX_UVector *>(x + r0 * stride + kt * 32) : Q6_V_vzero();
+    HVX_Vector b = r1 < m ? *reinterpret_cast<const HVX_UVector *>(x + r1 * stride + kt * 32) : Q6_V_vzero();
+    tile[p] = Q6_Vhf_vcvt_VsfVsf(a, b);  // row-pair interleave of rows r0, r1
+  }
+}
 // Activation tiles kt = part (mod Jobs).
 void pack_activation(const Call &c, unsigned part) {
+  for (unsigned kt = part; kt < c.tiles; kt += Jobs) pack_tile(c.x, c.x_stride, c.m, kt, c.activation + kt * Tile);
+}
+// The same share of the second row set. Every producer has published its slot.
+void pack_second(const Call &c, unsigned part) {
   for (unsigned kt = part; kt < c.tiles; kt += Jobs) {
-    auto *tile = reinterpret_cast<HVX_Vector *>(c.activation + kt * Tile);
-    for (unsigned p = 0; p < 16; ++p) {
-      unsigned r0 = 2 * p, r1 = r0 + 1;
-      HVX_Vector a = r0 < c.m ? *reinterpret_cast<const HVX_UVector *>(c.x + r0 * c.x_stride + kt * 32) : Q6_V_vzero();
-      HVX_Vector b = r1 < c.m ? *reinterpret_cast<const HVX_UVector *>(c.x + r1 * c.x_stride + kt * 32) : Q6_V_vzero();
-      tile[p] = Q6_Vhf_vcvt_VsfVsf(a, b);  // row-pair interleave of rows r0, r1
-    }
+    uint8_t *slot = c.producers[kt / c.chunk].slot.load(std::memory_order_acquire);
+    pack_tile(c.x2, c.x2_stride, c.m2, kt, slot + (c.buffers * c.chunk + kt % c.chunk) * Tile);
   }
+}
+inline void await_slots(const Call &c) {
+  for (auto &w : c.producers)
+    while (!w.slot.load(std::memory_order_acquire)) spin();
 }
 
 inline void prefetch_tiles(const uint8_t *panel, unsigned tiles) {
@@ -152,8 +174,28 @@ void consume(void *opaque) {
   if (hexkl_micro_hmx_setup_acc_read_f16(low, cfg)) std::abort();
   const size_t chunk_stride = size_t(c.chunk) * PackedTile;
   const uint64_t side_rows = c.side ? (uint64_t(c.side_stride * 4) << 32) | (128ull << 16) | c.m : 0;
+  const uint64_t side2_rows = c.side2 ? (uint64_t(c.side2_stride * 4) << 32) | (128ull << 16) | c.m2 : 0;
+  // Accumulator rows -> FP32 output rows, with the fused residual or product.
+  auto store = [&](float *out, int64_t out_stride, const float *side, int64_t side_stride, unsigned m, unsigned column) {
+    auto *result = reinterpret_cast<const HVX_Vector *>(accumulator);
+    for (unsigned q = 0; q < 16; ++q) {
+      HVX_VectorPair rows = Q6_Wsf_vcvt_Vhf(result[q]);  // even lanes row 2q, odd 2q+1
+      for (unsigned r = 0; r < 2; ++r) {
+        unsigned row = 2 * q + r;
+        if (row >= m) break;
+        HVX_Vector y = r ? Q6_V_hi_W(rows) : Q6_V_lo_W(rows);
+        if (side) {
+          HVX_Vector s = *reinterpret_cast<const HVX_UVector *>(side + row * side_stride + column);
+          y = c.product ? Q6_Vsf_vmpy_VsfVsf(s, y) : Q6_Vsf_vadd_VsfVsf(s, y);
+        }
+        *reinterpret_cast<HVX_UVector *>(out + row * out_stride + column) = y;
+      }
+    }
+  };
   for (unsigned p = 0, g = 0; p < c.panels; ++p) {
     if (c.side && p + 1 < c.panels) Q6_l2fetch_AP(const_cast<float *>(c.side + (p + 1) * 32), side_rows);
+    if (c.side2 && p + 1 < c.panels) Q6_l2fetch_AP(const_cast<float *>(c.side2 + (p + 1) * 32), side2_rows);
+    uint32_t chunk_weights[Producers];
     hexkl_micro_hmx_acc_clear_f16();
     for (unsigned j = 0; j < c.chunks; ++j, ++g) {
       uint32_t weights;
@@ -166,42 +208,49 @@ void consume(void *opaque) {
         while (w.produced.load(std::memory_order_acquire) <= index) spin();
         weights = uint32_t(slots[g % Producers] + (index % c.buffers) * chunk_bytes - low);
       }
+      chunk_weights[j] = weights;
       uint32_t x = a + j * chunk_bytes;
       for (unsigned kt = 0; kt < c.chunk; ++kt)
         if (hexkl_micro_hmx_mm_f16(low, x + kt * Tile, weights + kt * Tile)) std::abort();
     }
-    // The accumulator read completes every HMX weight read of this panel (as
-    // llama.cpp releases its buffers after the job's output store).
+    // The accumulator read completes every HMX weight read of this pass (as
+    // llama.cpp releases its buffers after the job's output store). The
+    // producers may refill these buffers only after the last pass.
+    auto release_weights = [&] {
+      if (!c.serial)
+        for (unsigned j = g - c.chunks; j < g; ++j)
+          c.producers[j % Producers].consumed.store(j / Producers + 1, std::memory_order_release);
+    };
     if (hexkl_micro_hmx_acc_read_f16(low, cfg, acc)) std::abort();
-    if (!c.serial)
-      for (unsigned j = g - c.chunks; j < g; ++j)
-        c.producers[j % Producers].consumed.store(j / Producers + 1, std::memory_order_release);
-    auto *result = reinterpret_cast<const HVX_Vector *>(accumulator);
-    const unsigned column = p * 32;
-    for (unsigned q = 0; q < 16; ++q) {
-      HVX_VectorPair rows = Q6_Wsf_vcvt_Vhf(result[q]);  // even lanes row 2q, odd 2q+1
-      for (unsigned r = 0; r < 2; ++r) {
-        unsigned row = 2 * q + r;
-        if (row >= c.m) break;
-        HVX_Vector y = r ? Q6_V_hi_W(rows) : Q6_V_lo_W(rows);
-        if (c.side) {
-          HVX_Vector s = *reinterpret_cast<const HVX_UVector *>(c.side + row * c.side_stride + column);
-          y = c.product ? Q6_Vsf_vmpy_VsfVsf(s, y) : Q6_Vsf_vadd_VsfVsf(s, y);
-        }
-        *reinterpret_cast<HVX_UVector *>(c.out + row * c.out_stride + column) = y;
+    if (!c.x2) release_weights();
+    store(c.out, c.out_stride, c.side, c.side_stride, c.m, p * 32);
+    if (c.x2) {  // the same weight tiles against the second row set
+      hexkl_micro_hmx_acc_clear_f16();
+      for (unsigned j = 0; j < c.chunks; ++j) {
+        uint32_t x = uint32_t(slots[j] + c.buffers * chunk_bytes - low);
+        for (unsigned kt = 0; kt < c.chunk; ++kt)
+          if (hexkl_micro_hmx_mm_f16(low, x + kt * Tile, chunk_weights[j] + kt * Tile)) std::abort();
       }
+      if (hexkl_micro_hmx_acc_read_f16(low, cfg, acc)) std::abort();
+      release_weights();
+      store(c.out2, c.out2_stride, c.side2, c.side2_stride, c.m2, p * 32);
     }
   }
+  c.consumed_all.store(true, std::memory_order_release);
   hexagon_runtime_release_hmx_workspace_dsp(scratch);
 }
 
 void produce(Call &c, unsigned w) {
   auto *slot = static_cast<uint8_t *>(
-      hexagon_runtime_acquire_prepared_hmx_workspace_dsp(c.buffers * c.chunk * Tile, 2048, true));
+      hexagon_runtime_acquire_prepared_hmx_workspace_dsp((c.buffers + (c.x2 ? 1 : 0)) * c.chunk * Tile, 2048, true));
   if (!slot) std::abort();
   Producer &self = c.producers[w];
   self.slot.store(slot, std::memory_order_release);
   pack_activation(c, w + 1);
+  if (c.x2) {
+    await_slots(c);
+    pack_second(c, w + 1);
+  }
   c.packed.fetch_add(1, std::memory_order_release);
   // Chunk g = panel g / chunks, K tiles [(g % chunks) * chunk, +chunk); panels
   // are contiguous, so chunk g starts at g * chunk packed tiles.
@@ -215,6 +264,9 @@ void produce(Call &c, unsigned w) {
     self.produced.store(index + 1, std::memory_order_release);
   }
   while (self.consumed.load(std::memory_order_acquire) < index) spin();
+  // A paired call's second-set activation in this slot is read up to the last panel.
+  if (c.x2)
+    while (!c.consumed_all.load(std::memory_order_acquire)) spin();
   hexagon_runtime_release_prepared_hmx_workspace_dsp(slot);
 }
 
@@ -223,8 +275,17 @@ void job(void *opaque, uint64_t start, uint64_t rows) {
   if (start == 0 && rows == 64) {  // serial fallback: the only job, on the caller
     if (qurt_thread_get_id() != c.owner) std::abort();
     c.serial = true;
+    const bool paired = c.x2 != nullptr;
+    const float *x2 = c.x2;
+    c.x2 = nullptr;  // no producer slots: the row sets run one after the other
     for (unsigned part = 0; part < Jobs; ++part) pack_activation(c, part);
     hexagon_runtime_dispatch_hmx_dsp(consume, &c);
+    if (paired) {
+      c.x = x2; c.x_stride = c.x2_stride; c.side = c.side2; c.side_stride = c.side2_stride;
+      c.out = c.out2; c.out_stride = c.out2_stride; c.m = c.m2;
+      for (unsigned part = 0; part < Jobs; ++part) pack_activation(c, part);
+      hexagon_runtime_dispatch_hmx_dsp(consume, &c);
+    }
     return;
   }
   if (rows != 16 || start % 16) std::abort();  // four jobs of 16 rows
@@ -235,9 +296,9 @@ void job(void *opaque, uint64_t start, uint64_t rows) {
     // Producers may resize their slots through the HMX owner: start the
     // consumer only after all three hold their leases.
     pack_activation(c, 0);
+    await_slots(c);
+    if (c.x2) pack_second(c, 0);
     c.packed.fetch_add(1, std::memory_order_release);
-    for (auto &w : c.producers)
-      while (!w.slot.load(std::memory_order_acquire)) spin();
     while (c.packed.load(std::memory_order_acquire) < Jobs) spin();
     hexagon_runtime_dispatch_hmx_dsp(consume, &c);
     return;
@@ -246,14 +307,29 @@ void job(void *opaque, uint64_t start, uint64_t rows) {
   produce(c, unsigned(start / 16) - 1);
 }
 
-void matmul(MemF32 *x, int64_t id, MemF32 *side, bool product, MemF32 *out) {
+// One caller's operands: m rows of x, the optional residual/factor, the output.
+struct Rows {
+  MemF32 *x, *side, *out;
+};
+void check_rows(const Rows &r, uint32_t n, uint32_t k) {
+  int64_t m = r.x ? r.x->sizes[0] : 0;
+  if (!r.x || !r.out || m < 1 || m > 32 || r.x->sizes[1] != k || r.x->strides[1] != 1 ||
+      r.out->sizes[0] != m || r.out->sizes[1] != n || r.out->strides[1] != 1 ||
+      (r.side && (r.side->sizes[0] != m || r.side->sizes[1] != n || r.side->strides[1] != 1)))
+    std::abort();
+}
+
+// `second` (optional) is another row set for the same weight: every panel is
+// dequantized once and accumulated twice. Each row's arithmetic is that of a
+// separate call.
+void matmul_rows(int64_t id, bool product, const Rows &first, const Rows *second) {
   uint32_t n = 0, k = 0;
   const uint8_t *weight = qwen_q8_0_weight(id, &n, &k);
-  int64_t m = x ? x->sizes[0] : 0;
-  if (!weight || !x || !out || m < 1 || m > 32 || x->sizes[1] != k || x->strides[1] != 1 ||
-      k % 32 || k > MaxK || n % 32 || out->sizes[0] != m || out->sizes[1] != n || out->strides[1] != 1 ||
-      (side && (side->sizes[0] != m || side->sizes[1] != n || side->strides[1] != 1)))
-    std::abort();
+  if (!weight || k % 32 || k > MaxK || n % 32) std::abort();
+  check_rows(first, n, k);
+  if (second) check_rows(*second, n, k);
+  MemF32 *x = first.x, *side = first.side, *out = first.out;
+  int64_t m = x->sizes[0];
   if (hexagon_runtime_configure_hmx_performance_dsp(1) ||
       hexagon_runtime_configure_vtcm_pool_dsp(2 * 1024 * 1024))
     std::abort();
@@ -270,11 +346,23 @@ void matmul(MemF32 *x, int64_t id, MemF32 *side, bool product, MemF32 *out) {
   if (c.chunk * c.chunks != c.tiles) std::abort();  // K in {1024, 2048, 3072}: 32-tile chunks
   c.buffers = SlotBytes / (c.chunk * Tile);
   if (c.buffers > 4) c.buffers = 4;
+  if (second) {
+    // One chunk buffer of every producer slot holds second-set activation.
+    if (c.buffers < 2 || c.chunks > Producers) std::abort();
+    --c.buffers;
+    c.x2 = second->x->aligned + second->x->offset; c.x2_stride = second->x->strides[0];
+    c.side2 = second->side ? second->side->aligned + second->side->offset : nullptr;
+    c.side2_stride = second->side ? second->side->strides[0] : 0;
+    c.out2 = second->out->aligned + second->out->offset; c.out2_stride = second->out->strides[0];
+    c.m2 = unsigned(second->x->sizes[0]);
+  }
   c.activation = static_cast<uint8_t *>(
       hexagon_runtime_acquire_prepared_hmx_workspace_dsp(c.tiles * Tile, 2048, true));
   if (!c.activation) std::abort();
   // l2fetch control: stride << 32 | width << 16 | rows (rows of k FP32).
   Q6_l2fetch_AP(const_cast<float *>(c.x), (uint64_t(c.x_stride * 4) << 32) | (uint64_t(k * 4) << 16) | uint64_t(m));
+  if (c.x2)
+    Q6_l2fetch_AP(const_cast<float *>(c.x2), (uint64_t(c.x2_stride * 4) << 32) | (uint64_t(k * 4) << 16) | uint64_t(c.m2));
   c.owner = qurt_thread_get_id();
   // 64 rows -> four pool jobs of 16 (fewer than 16 rows would run serially).
 #ifdef Q8_0_TEST_SERIAL  // diagnostic builds only: exercise the pool-less path
@@ -283,6 +371,39 @@ void matmul(MemF32 *x, int64_t id, MemF32 *side, bool product, MemF32 *out) {
   __hexagon_parallel_for_v1(job, &c, 64);
 #endif
   hexagon_runtime_release_prepared_hmx_workspace_dsp(c.activation);
+}
+
+// Paired forwards (resident session): two graphs of consecutive prompt chunks
+// run as coroutines on one thread and meet at every projection. The first to
+// arrive parks its operands and yields; the second runs both row sets against
+// one dequantization of the weight and yields back, so the first graph always
+// advances first (its K/V rows precede the second graph's attention).
+struct Pair {
+  void (*yield)(void *) = nullptr;
+  void *opaque = nullptr;
+  bool pending = false;
+  Rows rows{};
+  int64_t id = 0;
+  bool product = false;
+} pair;
+
+void matmul(MemF32 *x, int64_t id, MemF32 *side, bool product, MemF32 *out) {
+  Rows rows{x, side, out};
+  if (!pair.yield) {
+    matmul_rows(id, product, rows, nullptr);
+    return;
+  }
+  if (!pair.pending) {
+    pair.rows = rows; pair.id = id; pair.product = product; pair.pending = true;
+    pair.yield(pair.opaque);
+    if (pair.pending) std::abort();  // resumed without its result
+    return;
+  }
+  // Both graphs are the same compiled function: same projection, same form.
+  if (pair.id != id || pair.product != product || !pair.rows.side != !side) std::abort();
+  matmul_rows(id, product, pair.rows, &rows);
+  pair.pending = false;
+  pair.yield(pair.opaque);
 }
 // ---- Q8_0 x Q8_0 rows: LM head and single-row (decode) projections ----
 // llama.cpp CPU semantics (ggml_vec_dot_q8_0_q8_0): the FP32 row is quantized
@@ -468,6 +589,19 @@ void matvec_q8(MemF32 *x, int64_t id, MemF32 *side, bool product, MemF32 *out) {
 } // namespace
 
 extern "C" void qwen_q8_0_skip_vocabulary(int skip) { skip_vocabulary = skip != 0; }
+
+// `yield` switches to the other graph of the pair and returns when this one is
+// resumed. Returns from end: whether no projection was left parked.
+extern "C" void qwen_q8_0_pair_begin(void (*yield)(void *), void *opaque) {
+  if (pair.yield || !yield) std::abort();
+  pair = Pair{};
+  pair.yield = yield; pair.opaque = opaque;
+}
+extern "C" int qwen_q8_0_pair_end() {
+  const bool clean = pair.yield && !pair.pending;
+  pair = Pair{};
+  return clean;
+}
 
 extern "C" void _mlir_ciface___hexagon_q8_0_matvec_q8(MemF32 *x, int64_t id, MemF32 *out) {
   matvec_q8(x, id, nullptr, false, out);

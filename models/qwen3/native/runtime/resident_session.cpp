@@ -114,10 +114,18 @@ static void copy_delta_plane(Destination *target, const MemRefDescriptor<float, 
 using TemporaryBuffers = pytorch_hexagon::TemporaryBufferPool;
 // Keep short decode allocations out of the larger prefill free lists. Both
 // pools share the configured retention budget; neither owns persistent KV.
+// A paired forward (mode 5) keeps the temporaries of two prefill graphs alive
+// at once, so sessions with that mode allow the prefill pool twice its share.
+// The pool retains only what forwards actually used.
 static constexpr size_t decode_temporary_bytes = QWEN_TEMPORARY_BUFFER_BYTES / 16;
+#ifdef QWEN_RESIDENT_NO_LOGITS
+static constexpr size_t prefill_graphs = 2;
+#else
+static constexpr size_t prefill_graphs = 1;
+#endif
 static TemporaryBuffers decode_temporary_buffers(decode_temporary_bytes);
 static TemporaryBuffers prefill_temporary_buffers(
-    QWEN_TEMPORARY_BUFFER_BYTES - decode_temporary_bytes);
+    prefill_graphs * (QWEN_TEMPORARY_BUFFER_BYTES - decode_temporary_bytes));
 static TemporaryBuffers *temporary_buffers = &prefill_temporary_buffers;
 extern "C" __attribute__((visibility("hidden"))) void *qwen_graph_malloc(size_t n) {
   return temporary_buffers->allocate(n);
@@ -400,31 +408,316 @@ static int forward_packet(const unsigned char *input, int input_len,
   }
 }
 #ifdef QWEN_RESIDENT_NO_LOGITS
+// ---- Paired chunks ----
+// Two consecutive prompt chunks of a mode 5 batch run as two instances of the
+// prefill graph on this thread: the earlier chunk on its own stack, the later
+// one on the caller's. The Q8_0 runtime makes them meet at every projection
+// (qwen_q8_0_pair_begin), so each weight is read and dequantized once for both
+// chunks. The earlier chunk always advances first: its K/V rows of a layer are
+// in the cache before the later chunk's attention of that layer reads them.
+// Every row's arithmetic is that of separate forwards.
+extern "C" void qwen_q8_0_pair_begin(void (*)(void *), void *);
+extern "C" int qwen_q8_0_pair_end();
+// Callee-saved registers of a suspended context: r16..r27, r29:28, r31:30 and
+// the stack limit checked by allocframe.
+struct Context {
+  uint64_t r[8];
+  uint32_t framelimit, reserved;
+};
+extern "C" void qwen_context_switch(Context *from, Context *to);
+asm(R"(
+    .text
+    .p2align 4
+    .globl qwen_context_switch
+    .type qwen_context_switch, @function
+qwen_context_switch:
+    memd(r0+#0) = r17:16
+    memd(r0+#8) = r19:18
+    memd(r0+#16) = r21:20
+    memd(r0+#24) = r23:22
+    memd(r0+#32) = r25:24
+    memd(r0+#40) = r27:26
+    memd(r0+#48) = r29:28
+    memd(r0+#56) = r31:30
+    r2 = framelimit
+    memw(r0+#64) = r2
+    r17:16 = memd(r1+#0)
+    r19:18 = memd(r1+#8)
+    r21:20 = memd(r1+#16)
+    r23:22 = memd(r1+#24)
+    r25:24 = memd(r1+#32)
+    r27:26 = memd(r1+#40)
+    r2 = memw(r1+#64)
+    framelimit = r2
+    r29:28 = memd(r1+#48)
+    r31:30 = memd(r1+#56)
+    jumpr r31
+    .size qwen_context_switch, .-qwen_context_switch
+)");
+// The inputs and results of one graph of a pair.
+struct GraphRun {
+  int64_t tokens[32], pos[32], ones[1025];
+  MemRefDescriptor<float, 4> kv[56];
+  MemRefDescriptor<int64_t, 2> ids, positions, mask;
+  MemRefDescriptor<int64_t, 1> cache_position;
+  Results results;
+  uint32_t query, position;
+  // False for a token outside the vocabulary or a missing cache layer.
+  bool prepare(const unsigned char *raw, uint32_t count, uint32_t at) {
+    query = count; position = at;
+    std::memcpy(tokens, raw, count * 8);
+    for (unsigned i = 0; i < count; ++i) {
+      if (tokens[i] < 0 || tokens[i] >= 151936) return false;
+      pos[i] = at + i;
+    }
+    for (unsigned i = 0; i < at + count; ++i) ones[i] = 1;
+    for (unsigned l = 0; l < 28; ++l) {
+      CacheView v{};
+      if (!cache.history(l, v)) return false;
+      // The planes hold this graph's history: for the later chunk that
+      // includes the rows the earlier chunk appends layer by layer.
+      kv[2 * l] = {plane_pointer(v.keys), plane_pointer(v.keys), 0, {1, 8, at, 128}, {at * 1024, 128, 1024, 1}};
+      kv[2 * l + 1] = {plane_pointer(v.values), plane_pointer(v.values), 0, {1, 8, at, 128}, {at * 1024, 128, 1024, 1}};
+    }
+    ids = {tokens, tokens, 0, {1, count}, {count, 1}};
+    cache_position = {pos, pos, 0, {count}, {1}};
+    positions = {pos, pos, 0, {1, count}, {count, 1}};
+    mask = {ones, ones, 0, {1, at + count}, {at + count, 1}};
+    results = Results{};
+    return true;
+  }
+  void run() {
+    qwen_resident_forward(&results, query, position, cache.capacity(), ids, cache_position, positions, mask, kv);
+  }
+  bool valid() const {
+    const auto &logits = results.logits;
+    if (!logits.aligned || logits.sizes[0] != 1 || logits.sizes[1] != 1 || logits.sizes[2] != 151936) return false;
+    for (const auto &v : results.delta)
+      if (!v.aligned || v.sizes[0] != 1 || v.sizes[1] != 8 || v.sizes[2] != query || v.sizes[3] != 128) return false;
+    return true;
+  }
+};
+// Stack of the earlier chunk's graph (the compiled graph and the runtime
+// kernels it calls; measured use on QCS9075: 30 KB).
+#ifndef QWEN_PAIR_STACK_BYTES
+#define QWEN_PAIR_STACK_BYTES (1u << 20)
+#endif
+extern "C" void *memalign(size_t, size_t);
+constexpr size_t PairStackBytes = QWEN_PAIR_STACK_BYTES;
+struct PairState {
+  Context caller, earlier;
+  GraphRun runs[2];  // earlier chunk (own stack), later chunk (caller's stack)
+  unsigned char *stack;
+  bool on_earlier, earlier_done, earlier_failed, skip_later_logits;
+};
+static PairState pair_state;
+struct PairFailure {};
+// Called by the Q8_0 runtime from whichever graph is running.
+static void pair_yield(void *) {
+  PairState &s = pair_state;
+  if (s.on_earlier) {
+    s.on_earlier = false;
+    qwen_q8_0_skip_vocabulary(s.skip_later_logits);
+    qwen_context_switch(&s.earlier, &s.caller);
+  } else {
+    // The earlier graph failed: unwind the later one into forward_pair.
+    if (s.earlier_failed) throw PairFailure{};
+    if (s.earlier_done) std::abort();  // the graphs did not reach the same projection
+    s.on_earlier = true;
+    qwen_q8_0_skip_vocabulary(1);  // the earlier chunk's prediction is never used
+    qwen_context_switch(&s.caller, &s.earlier);
+  }
+}
+// Entry of the earlier chunk's context; it never returns.
+static void pair_earlier_entry() {
+  PairState &s = pair_state;
+  try {
+    s.runs[0].run();
+  } catch (...) {
+    s.earlier_failed = true;
+  }
+  s.earlier_done = true;
+  s.on_earlier = false;
+  qwen_q8_0_skip_vocabulary(s.skip_later_logits);
+  qwen_context_switch(&s.earlier, &s.caller);
+  std::abort();
+}
+// Two prefill forwards at `position`: counts[0] tokens, then counts[1]. The
+// response is the 64-byte header, followed by the later chunk's logits when
+// `logits`. Status codes as forward_packet.
+static int forward_pair(uint32_t position, const unsigned char *tokens, const uint32_t counts[2], bool logits,
+                        unsigned char *output, uint64_t *kernel_us) {
+  PairState &s = pair_state;
+  const uint32_t total = counts[0] + counts[1];
+  if (position != cache.length() || !position || counts[0] < 2 || counts[0] > 32 || counts[1] < 2 ||
+      counts[1] > 32 || total > 1024 - position)
+    return 2;
+#ifdef QWEN_BENCHMARK_MAX_PERFORMANCE
+  if (!pytorch_hexagon_request_benchmark_performance())
+    return 7;
+#endif
+  if (!s.stack && !(s.stack = static_cast<unsigned char *>(memalign(4096, PairStackBytes))))
+    return 3;
+  std::memset(output, 0, 64);
+  std::memcpy(output, "QWMS001\0", 8);
+  *kernel_us = 0;
+  uint64_t update_us = 0, model_us = 0;
+  try {
+    bool ok = false;
+    update_us = benchmark_time_us(1, [&] { ok = cache.begin(position, total); });
+    if (!ok)
+      return 3;
+    if (!s.runs[0].prepare(tokens, counts[0], position) ||
+        !s.runs[1].prepare(tokens + counts[0] * 8, counts[1], position + counts[0])) {
+      cache.cancel();
+      return 2;
+    }
+#ifdef QWEN_TEMPORARY_BUFFER_BYTES
+    temporary_buffers = &prefill_temporary_buffers;
+    if (!temporary_buffers->begin()) {
+      cache.cancel();
+      return 3;
+    }
+    // As forward_packet: owners first, then every remaining temporary of
+    // either graph (also of an abandoned one) returns to the pool.
+    struct PoolScope {
+      TemporaryBuffers &pool;
+      ~PoolScope() { pool.cancel(); }
+    } pool_scope{*temporary_buffers};
+    OwnedReturnedMemrefs<57> owners[2]{OwnedReturnedMemrefs<57>(qwen_graph_free),
+                                       OwnedReturnedMemrefs<57>(qwen_graph_free)};
+#else
+    OwnedReturnedMemrefs<57> owners[2];
+#endif
+    bool met = false;
+    model_us = benchmark_time_us(1, [&] {
+#ifdef QWEN_PREPACKED_FORWARD_SCOPE
+      qwen_prepacked_forward_begin();
+      struct ForwardResources {
+        ~ForwardResources() { qwen_prepacked_forward_end(); }
+      } resources;
+#endif
+#ifdef QWEN_ATTENTION_FORWARD_SCOPE
+      qwen_attention_forward_begin();
+      struct AttentionResources {
+        ~AttentionResources() { qwen_attention_forward_end(); }
+      } attention_resources;
+#endif
+      struct Meeting {
+        bool &met;
+        explicit Meeting(bool &result) : met(result) { qwen_q8_0_pair_begin(pair_yield, nullptr); }
+        ~Meeting() {
+          met = qwen_q8_0_pair_end();
+          qwen_q8_0_skip_vocabulary(0);
+        }
+      } meeting(met);
+      s.earlier_done = s.earlier_failed = false;
+      s.skip_later_logits = !logits;
+      s.earlier = Context{};
+      const uint32_t top = uint32_t(uintptr_t(s.stack + PairStackBytes - 64)) & ~15u;
+      s.earlier.r[6] = uint64_t(top) << 32;                                           // r29 (sp)
+      s.earlier.r[7] = uint64_t(uint32_t(uintptr_t(&pair_earlier_entry))) << 32;      // r31 (lr)
+      s.earlier.framelimit = uint32_t(uintptr_t(s.stack));
+      s.on_earlier = true;
+      qwen_q8_0_skip_vocabulary(1);
+      qwen_context_switch(&s.caller, &s.earlier);  // until its first projection
+      if (!s.earlier_failed)
+        s.runs[1].run();
+    });
+    // The earlier graph must have finished, and no projection may be parked.
+    if (!met || !s.earlier_done || s.earlier_failed) {
+      cache.cancel();
+      return 4;
+    }
+    for (unsigned g = 0; g < 2; ++g) {
+      GraphRun &run = s.runs[g];
+      if (!qwen_adopt_results(owners[g], run.results, run.kv, run.ids, run.cache_position, run.positions,
+                              run.mask) ||
+          !run.valid()) {
+        cache.cancel();
+        return 4;
+      }
+    }
+    if (logits) {
+      const auto &v = s.runs[1].results.logits;
+      float *out = reinterpret_cast<float *>(output + 64);
+      if (v.strides[2] == 1)
+        std::memcpy(out, v.aligned + v.offset, 151936 * sizeof(float));
+      else
+        for (unsigned i = 0; i < 151936; ++i)
+          out[i] = v.aligned[v.offset + i * v.strides[2]];
+    }
+    // Both graphs appended their rows in place (position > 0).
+    update_us += benchmark_time_us(1, [&] {
+      for (unsigned l = 0; ok && l < 28; ++l)
+        ok = cache.finish_layer(l);
+      if (ok)
+        ok = cache.commit();
+    });
+    if (!ok) {
+      cache.cancel();
+      return 4;
+    }
+    uint64_t metadata[] = {
+        cache.length(),          cache.capacity(), cache.appended_bytes(),
+        cache.relocated_bytes(), update_us,        model_us};
+    std::memcpy(output + 8, metadata, sizeof(metadata));
+    *kernel_us = update_us + model_us;
+    return 0;
+  } catch (...) {
+#ifdef QWEN_TEMPORARY_BUFFER_BYTES
+    if (temporary_buffers->active()) temporary_buffers->cancel();
+#endif
+    cache.cancel();
+    return 5;
+  }
+}
 // Mode 5: a whole logical batch in one call. Header word 3 (offset 20) is the
 // chunk size. The batch runs as the same forwards a caller would send one by
 // one: mode 4 for every chunk but the last, mode 3 for the last, whose logits
 // are the response. Chunks commit one by one; after a failure the cache holds
-// the chunks that completed, as it would for separate calls.
+// the chunks that completed, as it would for separate calls (a pair commits
+// or fails as one). Two consecutive
+// chunks that both run the prefill graph (position > 0, two or more tokens)
+// are executed as a pair unless header word 4 (offset 24) is 1.
 static int forward_batch(const unsigned char *input, int input_len,
                          unsigned char *output, int output_len,
                          uint64_t *kernel_us) {
-  uint32_t position, query, chunk;
+  uint32_t position, query, chunk, sequential;
   std::memcpy(&position, input + 12, 4);
   std::memcpy(&query, input + 16, 4);
   std::memcpy(&chunk, input + 20, 4);
+  std::memcpy(&sequential, input + 24, 4);
   if (position > 1024 || query < 1 || query > 1024 - position || chunk < 1 ||
-      chunk > 32 || input_len != int(64 + query * 8) ||
+      chunk > 32 || sequential > 1 || input_len != int(64 + query * 8) ||
       output_len != 64 + 151936 * 4)
     return 2;
-  for (int i = 24; i < 64; ++i)
+  for (int i = 28; i < 64; ++i)
     if (input[i])
       return 2;
   uint64_t update_us = 0, model_us = 0;
-  for (uint32_t offset = 0; offset < query; offset += chunk) {
-    const uint32_t count = query - offset < chunk ? query - offset : chunk;
+  for (uint32_t offset = 0, count; offset < query; offset += count) {
+    count = query - offset < chunk ? query - offset : chunk;
+    const uint32_t at = position + offset;
+    const uint32_t next = query - offset - count < chunk ? query - offset - count : chunk;
+    unsigned char header[64];
+    if (!sequential && at && count >= 2 && next >= 2) {
+      const uint32_t counts[2] = {count, next};
+      const bool last = offset + count + next == query;
+      unsigned char *response = last ? output : header;
+      uint64_t pair_us = 0;
+      if (int status = forward_pair(at, input + 64 + offset * 8, counts, last, response, &pair_us))
+        return status;
+      uint64_t times[2];
+      std::memcpy(times, response + 8 + 4 * 8, sizeof(times));
+      update_us += times[0];
+      model_us += times[1];
+      count += next;
+      continue;
+    }
     const bool last = offset + count == query;
-    const uint32_t mode = last ? 3 : 4, at = position + offset;
-    unsigned char packet[64 + 32 * 8]{}, header[64];
+    const uint32_t mode = last ? 3 : 4;
+    unsigned char packet[64 + 32 * 8]{};
     std::memcpy(packet, "QWMS001\0", 8);
     std::memcpy(packet + 8, &mode, 4);
     std::memcpy(packet + 12, &at, 4);
