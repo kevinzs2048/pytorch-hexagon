@@ -7,8 +7,7 @@ KV remains FP32. Nonadjacent head layouts use the original one-group algorithm.
 """
 import triton
 import triton.language as tl
-from models.qwen3.kernels.attention import _attention_tile
-# exp2 path: log2(e) pre-baked into QK scale; _softmax_exp replaced by tl.exp2
+from models.qwen3.kernels.attention import _softmax_exp, _attention_tile
 
 
 @triton.jit
@@ -45,7 +44,7 @@ def _attention_two_groups(
                     + positions[:, None] * v_token_stride + dims[None, :],
                     positions[:, None] < kv_length, other=0).to(tl.float16)
         scores = tl.dot(q, tl.trans(k), input_precision='ieee', out_dtype=tl.float16)
-        scores = scores.to(tl.float32) * 0.12751743082459868
+        scores = scores.to(tl.float32) * 0.08838834764831845
         scores = tl.where(positions[None, :] < kv_length, scores, -float('inf'))
         maxima = scores
         for level in tl.static_range(7):
@@ -53,8 +52,8 @@ def _attention_two_groups(
                 tl.reshape(maxima, (4, 2, 64 >> level)), (0, 2, 1)))
             maxima = tl.maximum(low, high)
         next_maximum = tl.maximum(maximum, tl.reshape(maxima, (4,)))
-        probability = tl.exp2(scores - next_maximum[:, None])
-        correction = tl.exp2(maximum - next_maximum)
+        probability = _softmax_exp(scores - next_maximum[:, None])
+        correction = _softmax_exp(maximum - next_maximum)
         sums = probability
         for level in tl.static_range(7):
             low, high = tl.split(tl.permute(
