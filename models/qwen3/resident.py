@@ -134,6 +134,7 @@ def generate(args):
 
     import torch
     from transformers import DynamicCache
+    from hexagon_runtime.cpu_wake_latency import CpuWakeLatencyHold
     from hexagon_runtime.hexagon_shared_packet_transport import HexagonSharedPacketStream
     from run_qwen_arm_dynamic_warm_generate import tokenize_prompts, validate_requests
 
@@ -225,7 +226,11 @@ def generate(args):
         argv = ['flock', '-n', '/tmp/qwen3-qcs9075-probe.lock', str(work / 'buffer_stream'),
                 str(work / 'model.so'), str(input_cap), str(output_cap)]
         os.chdir(work)
-        with cache_scope as cache_info, torch.inference_mode(), HexagonSharedPacketStream(
+        # Keep the ARM cores out of deep idle for the life of the DSP stream: each
+        # FastRPC return otherwise waits for a core to wake up. Best effort.
+        wake_hold = CpuWakeLatencyHold()
+        result['cpu_wake_latency_hold'] = wake_hold.record()
+        with wake_hold, cache_scope as cache_info, torch.inference_mode(), HexagonSharedPacketStream(
                 argv, env, output, input_bytes=input_cap, output_bytes=output_cap,
                 library_path_prefix='/dev/shm/qwen3-', initial_library=str(work / 'model.so'),
                 timeout=240) as stream:
