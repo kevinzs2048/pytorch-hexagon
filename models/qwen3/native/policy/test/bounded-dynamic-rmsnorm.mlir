@@ -5,6 +5,12 @@
 // CHECK-LABEL: func.func @bounded
 // CHECK: cf.assert
 // CHECK: scf.for
+// CHECK: vector.transfer_read
+// CHECK: vector.shuffle
+// CHECK: arith.mulf {{.*}} : vector<32xf32>
+// CHECK: arith.addf {{.*}} : vector<32xf32>
+// CHECK: arith.cmpi ugt
+// CHECK: vector.extract_strided_slice
 // CHECK: hexagon.fp32_sum_cascade_partial
 // CHECK: hexagon.fp32_arm_rmsnorm_sum
 func.func @bounded(%x : tensor<1x?x1024xf32>) -> tensor<1x?x1xf32>

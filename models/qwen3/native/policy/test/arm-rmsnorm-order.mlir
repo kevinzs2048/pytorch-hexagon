@@ -1,4 +1,5 @@
 // RUN: qwen-policy-sums-opt %s --verify-each --pass-pipeline='builtin.module(func.func(stabilize-fp32-sum))' | FileCheck %s
+// RUN: qwen-policy-sums-opt %s --verify-each --pass-pipeline='builtin.module(func.func(stabilize-fp32-sum))' | qwen-policy-first-opt | qwen-resident-kv-opt | qwen-fused-attention-opt | FileCheck %s
 
 // CHECK-LABEL: func.func @static_hidden
 // CHECK: hexagon.fp32_arm_static_rmsnorm_sum

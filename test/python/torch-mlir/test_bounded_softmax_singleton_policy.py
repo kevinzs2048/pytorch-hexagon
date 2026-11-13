@@ -79,3 +79,52 @@ def test_singleton_requires_actual_softmax_chain(change):
     else:
         text = text.replace('arith.constant 0.0 : f32', 'arith.constant 1.0 : f32')
     assert 'hexagon.fp32_arm_softmax_' not in optimize(text)
+
+
+@pytest.mark.parametrize('singleton', [False, True])
+def test_effective_length_keeps_runtime_tail_and_rejects_unrelated_sum(singleton):
+    text = source(singleton).replace('hexagon.fp32_dynamic_softmax_max_q',
+                                     'hexagon.fp32_effective_softmax_max_q')
+    text += '\nfunc.func private @__hexagon_softmax_exp_compat(f32) -> f32\n'
+    correct, wrong = optimize(text).split('func.func @wrong_chain')
+    assert 'hexagon.fp32_effective_softmax' in correct
+    # Keep the expensive row sum outside elementwise broadcast fusion. A
+    # parallel linalg.generic here previously repeated the reduction per key.
+    assert 'tensor.generate' in correct
+    assert 'tensor.yield' in correct
+    assert 'scf.if' in correct and 'scf.for' in correct
+    assert 'effective Softmax query/KV extent outside admitted bounds' in correct
+    assert 'requires 1024 KV slots' not in correct
+    assert 'tensor<16x256x4xf32>' not in correct
+    assert 'hexagon.fp32_softmax_exp_compat' in correct
+    assert 'hexagon.fp32_arm_softmax_normalization' in correct
+    assert 'hexagon.fp32_arm_softmax_' not in wrong
+    assert 'scf.for' not in wrong
+
+
+def test_effective_length_requires_its_scalar_runtime_declaration():
+    text = source(True).replace('hexagon.fp32_dynamic_softmax_max_q',
+                                'hexagon.fp32_effective_softmax_max_q')
+    result = subprocess.run([OPT, '-', '--verify-each',
+        '--pass-pipeline=builtin.module(func.func(stabilize-fp32-sum))'],
+        input=text, capture_output=True, text=True, timeout=60)
+    assert result.returncode != 0
+    assert 'effective Softmax requires external' in result.stderr
+
+
+def test_effective_single_key_accepts_importer_identity_broadcast():
+    text = (source(True).replace('1x16x1x?', '1x16x1x1')
+            .replace('tensor.empty(%k)', 'tensor.empty()')
+            .replace('hexagon.fp32_dynamic_softmax_max_q',
+                     'hexagon.fp32_effective_softmax_max_q'))
+    for name in ('shift', 'normalized'):
+        begin = text.index(f'  %{name} = linalg.generic')
+        end = text.index('      iterator_types', begin)
+        text = (text[:begin] + text[begin:end].replace(
+            '->(d0,d1,d2,0)', '->(d0,d1,d2,d3)') + text[end:])
+    text += '\nfunc.func private @__hexagon_softmax_exp_compat(f32) -> f32\n'
+    correct, wrong = optimize(text).split('func.func @wrong_chain')
+    assert correct.count('hexagon.fp32_effective_softmax') == 2  # opt-in and rewrite
+    assert 'hexagon.fp32_arm_softmax_normalization' in correct
+    assert 'hexagon.fp32_softmax_exp_compat' in correct
+    assert 'hexagon.fp32_arm_softmax_normalization' not in wrong

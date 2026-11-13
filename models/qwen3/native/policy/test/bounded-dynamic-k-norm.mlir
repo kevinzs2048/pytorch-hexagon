@@ -6,6 +6,12 @@
 // CHECK: scf.for
 // ARM uses 16 interleaved accumulators followed by a four-lane fold.
 // CHECK: tensor<8x1x8x16xf32>
+// CHECK: vector.transfer_read
+// CHECK: vector.shuffle
+// CHECK: arith.mulf {{.*}} : vector<32xf32>
+// CHECK: arith.addf {{.*}} : vector<32xf32>
+// CHECK: arith.cmpi ugt
+// CHECK: vector.extract_strided_slice
 // CHECK: hexagon.fp32_sum_cascade_partial
 // CHECK: hexagon.fp32_arm_k_norm_sum
 // CHECK: return

@@ -6,3 +6,28 @@ float __hexagon_arm_sin4_lane(float a,float b,float c,float d,int lane) {vfloat 
 float __hexagon_arm_cos4_lane(float a,float b,float c,float d,int lane) {vfloat x; x.f[0]=a;x.f[1]=b;x.f[2]=c;x.f[3]=d;return xcosf_u1(x).f[lane];}
 float _mlir_ciface___hexagon_arm_sin4_lane(float a,float b,float c,float d,int lane) {return __hexagon_arm_sin4_lane(a,b,c,d,lane);}
 float _mlir_ciface___hexagon_arm_cos4_lane(float a,float b,float c,float d,int lane) {return __hexagon_arm_cos4_lane(a,b,c,d,lane);}
+
+// Destination-style MLIR C interface. Keep the original four-lane range
+// reduction, including decisions shared by lanes with different magnitudes.
+typedef struct {
+  float *allocated, *aligned;
+  int64_t offset, size, stride;
+} RopeGroupMemRef;
+
+void _mlir_ciface___hexagon_arm_sin4(RopeGroupMemRef *out,
+                                    float a, float b, float c, float d) {
+  vfloat x;
+  x.f[0] = a; x.f[1] = b; x.f[2] = c; x.f[3] = d;
+  vfloat y = xsinf_u1(x);
+  for (int i = 0; i < 4; ++i)
+    out->aligned[out->offset + i * out->stride] = y.f[i];
+}
+
+void _mlir_ciface___hexagon_arm_cos4(RopeGroupMemRef *out,
+                                    float a, float b, float c, float d) {
+  vfloat x;
+  x.f[0] = a; x.f[1] = b; x.f[2] = c; x.f[3] = d;
+  vfloat y = xcosf_u1(x);
+  for (int i = 0; i < 4; ++i)
+    out->aligned[out->offset + i * out->stride] = y.f[i];
+}

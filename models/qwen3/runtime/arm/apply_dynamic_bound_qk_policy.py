@@ -8,6 +8,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -27,7 +28,19 @@ SOFTMAX_DECLARATION = b'  func.func private @__hexagon_softmax_exp_compat(f32) -
 
 class FunctionPolicyPatch:
     def __init__(self, emit, *, silu=False, softmax_exp=False,
-                 bounded_rmsnorm=False, bounded_softmax=False, arm_rope_trig=False):
+                 bounded_rmsnorm=False, bounded_softmax=False, arm_rope_trig=False,
+                 function_name='Qwen3DynamicBoundProbe', effective_attention=None,
+                 resident_planes=None):
+        if (not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*', function_name)
+                or effective_attention not in (None, 'decode', 'prefill')):
+            raise ValueError('Invalid function or effective attention domain')
+        self.function = b'  func.func @' + function_name.encode() + b'('
+        self.effective_attention = effective_attention
+        self.resident_planes = resident_planes
+        if resident_planes is not None and (effective_attention is None
+                or sorted(resident_planes.values()) != list(range(56))
+                or any(type(i) is not int or i < 0 for i in resident_planes)):
+            raise ValueError('Resident inputs must identify all 56 KV planes')
         self.emit = emit
         self.silu = silu
         self.softmax_exp = softmax_exp
@@ -42,7 +55,7 @@ class FunctionPolicyPatch:
             self.emit(data)
             return
         self.pending += data
-        start = self.pending.find(FUNCTION)
+        start = self.pending.find(self.function)
         if start < 0:
             if len(self.pending) > 256 * 1024:
                 raise ValueError('Qwen function signature exceeded bounded prefix')
@@ -56,6 +69,22 @@ class FunctionPolicyPatch:
         if not line.endswith(b') {\n') or line.count(b') {\n') != 1:
             raise ValueError('Unexpected Qwen function signature boundary')
         policy = POLICY
+        if self.effective_attention:
+            policy = (b') attributes {hexagon.fp32_native_silu = true, '
+                      b'hexagon.fp32_effective_' + self.effective_attention.encode() +
+                      b'_attention = true, hexagon.fp32_effective_softmax_max_q = 32 : i64} {\n')
+        if self.resident_planes is not None:
+            seen = set()
+            def annotate(match):
+                index = int(match[1])
+                if index not in self.resident_planes:
+                    raise ValueError('Unmapped KV input in captured function')
+                seen.add(index)
+                return match[0] + (' {hexagon.kv_plane = %d : i64}' % self.resident_planes[index]).encode()
+            line = re.sub(rb'%arg(\d+): tensor<1x8x\?x128xf32>', annotate, line)
+            if seen != set(self.resident_planes):
+                raise ValueError('Captured KV argument types/order differ')
+            policy = policy.replace(b' attributes {', b' attributes {hexagon.resident_kv, ', 1)
         extra = []
         if self.arm_rope_trig:
             extra.append(b"hexagon.fp32_arm_rope_trig4 = true")
@@ -73,6 +102,10 @@ class FunctionPolicyPatch:
             module = b'module {\n'
             declarations = ((SILU_DECLARATION if self.silu else b'') +
                             (SOFTMAX_DECLARATION if self.softmax_exp else b''))
+            if (self.effective_attention == 'decode' and self.resident_planes is not None
+                    and self.silu and self.softmax_exp):
+                # Preserve the admitted decoder's external symbol order.
+                declarations = SOFTMAX_DECLARATION + SILU_DECLARATION
             if self.arm_rope_trig:
                 declarations += b"  func.func private @__hexagon_arm_sin4_lane(f32,f32,f32,f32,i32) -> f32\n  func.func private @__hexagon_arm_cos4_lane(f32,f32,f32,f32,i32) -> f32\n"
             if (changed.count(module) != 1 or

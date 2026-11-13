@@ -15,6 +15,7 @@
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -26,6 +27,7 @@ using namespace mlir::hexagon;
 #include "hexagon/Transforms/Passes.h.inc"
 
 namespace {
+#include "../sums/VectorizeARMPartial.h"
 // Recognize the existing unfused SiLU division; do not infer SiLU merely from
 // a negated exponent. Exclusively-used intermediates prevent affecting another
 // consumer. This opt-in compatibility boundary changes only exp evaluation,
@@ -732,9 +734,11 @@ void stabilize(IRRewriter &rw, linalg::GenericOp op, bool reciprocalNormalizatio
         linalg::YieldOp::create(builder,loc,sum);
       });
   partial->setAttr("hexagon.fp32_sum_cascade_partial",rw.getUnitAttr());
-  Value lanes=slice(rw,loc,partial.getResult(0),{0,0,0},{rows,1,cascadeLanes},{rows,cascadeLanes});
+  Value partialResult = cascadeLanes == 16 ? vectorizeARMPartial(rw, partial)
+                                          : partial.getResult(0);
+  Value lanes=slice(rw,loc,partialResult,{0,0,0},{rows,1,cascadeLanes},{rows,cascadeLanes});
   for (int64_t chunk = 1; chunk < chunks; ++chunk)
-    lanes=addTensor(rw,loc,lanes,slice(rw,loc,partial.getResult(0),{0,chunk,0},{rows,1,cascadeLanes},{rows,cascadeLanes}));
+    lanes=addTensor(rw,loc,lanes,slice(rw,loc,partialResult,{0,chunk,0},{rows,1,cascadeLanes},{rows,cascadeLanes}));
   Value eight=slice(rw,loc,lanes,{0,0},{rows,vectorLanes},{rows,vectorLanes});
   for (int64_t offset = vectorLanes; offset < cascadeLanes; offset += vectorLanes)
     eight=addTensor(rw,loc,eight,slice(rw,loc,lanes,{0,offset},{rows,vectorLanes},{rows,vectorLanes}));
@@ -768,9 +772,31 @@ struct StabilizeFP32SumPass : ::impl::StabilizeFP32SumBase<StabilizeFP32SumPass>
   void getDependentDialects(DialectRegistry &registry) const override {
     registry.insert<arith::ArithDialect,cf::ControlFlowDialect,scf::SCFDialect,
                     linalg::LinalgDialect,tensor::TensorDialect,math::MathDialect,
-                    func::FuncDialect>();
+                    func::FuncDialect,vector::VectorDialect>();
   }
   void runOnOperation() override {
+    bool effectiveDecodeAttention = false;
+    if (auto attr = getOperation()->getAttr("hexagon.fp32_effective_decode_attention")) {
+      auto enabled = dyn_cast<BoolAttr>(attr);
+      if (!enabled || !enabled.getValue() ||
+          getOperation()->hasAttr("hexagon.fp32_prefill_order") ||
+          getOperation()->hasAttr("hexagon.fp32_decode_capacity")) {
+        getOperation()->emitError("effective decode attention requires true without a legacy capacity policy");
+        signalPassFailure(); return;
+      }
+      effectiveDecodeAttention = true;
+    }
+    bool effectivePrefillAttention = false;
+    if (auto attr = getOperation()->getAttr("hexagon.fp32_effective_prefill_attention")) {
+      auto enabled = dyn_cast<BoolAttr>(attr);
+      if (!enabled || !enabled.getValue() || effectiveDecodeAttention ||
+          getOperation()->hasAttr("hexagon.fp32_prefill_order") ||
+          getOperation()->hasAttr("hexagon.fp32_decode_capacity")) {
+        getOperation()->emitError("effective prefill attention requires true without another attention order policy");
+        signalPassFailure(); return;
+      }
+      effectivePrefillAttention = true;
+    }
     // Explicit shape-scoped candidate annotation. Absence preserves all prior
     // policies; this is not admission of a decodeCapacity model or runtime.
     int64_t decodeCapacity = 0;
@@ -879,10 +905,22 @@ struct StabilizeFP32SumPass : ::impl::StabilizeFP32SumBase<StabilizeFP32SumPass>
     });
     IRRewriter rw(&getContext());
     if (fp32SiluExpCompat) {
+      // Native SiLU does not depend on the attention cache capacity. DynamicCache
+      // callers opt into the same checked [1,1..32,3072] matcher without claiming
+      // the legacy 1024-position QK/PV contract.
+      int64_t siluQuery = variablePrefill ? prefillQuery : 0;
+      if (auto attr = getOperation()->getAttr("hexagon.fp32_native_silu")) {
+        auto enabled = dyn_cast<BoolAttr>(attr);
+        if (!enabled || !enabled.getValue()) {
+          getOperation()->emitError("native SiLU requires true boolean opt-in");
+          signalPassFailure(); return;
+        }
+        siluQuery = 32;
+      }
       SmallVector<math::ExpOp> siluExponents;
       getOperation().walk([&](linalg::GenericOp op) {
-        if (auto exponent = siluExponent(op, variablePrefill ? prefillQuery : 0)) siluExponents.push_back(exponent);
-        if (auto exponent = siluExponentInline(op, variablePrefill ? prefillQuery : 0)) siluExponents.push_back(exponent);
+        if (auto exponent = siluExponent(op, siluQuery)) siluExponents.push_back(exponent);
+        if (auto exponent = siluExponentInline(op, siluQuery)) siluExponents.push_back(exponent);
       });
       for (auto exponent : siluExponents) {
         rw.setInsertionPoint(exponent);
@@ -916,6 +954,88 @@ struct StabilizeFP32SumPass : ::impl::StabilizeFP32SumBase<StabilizeFP32SumPass>
           TypeRange{rw.getF32Type()},ValueRange{exponent.getOperand()});
       call->setAttr("hexagon.fp32_softmax_exp_compat",rw.getUnitAttr());
       rw.replaceOp(exponent,call.getResults());
+    }
+    if (effectiveDecodeAttention) {
+      SmallVector<linalg::BatchMatmulOp> dots;
+      getOperation().walk([&](linalg::BatchMatmulOp op) {
+        // Reuse the canonical FP32, zero-init and indexing-map checks. The
+        // additional query-one gate excludes the native GEMM block policy.
+        if (isFP32AttentionDotCandidate(op,false,false,false,false,false,0,0,17,true,true) &&
+            cast<RankedTensorType>(op.getDpsInputs()[0].getType()).getDimSize(1) == 1)
+          dots.push_back(op);
+      });
+      for (auto op : dots) {
+        rw.setInsertionPoint(op);
+        auto aType = cast<RankedTensorType>(op.getDpsInputs()[0].getType());
+        auto buildFMA = [&]() -> Value {
+          auto *ctx = rw.getContext();
+          auto h = getAffineDimExpr(0,ctx), m = getAffineDimExpr(1,ctx);
+          auto k = getAffineDimExpr(2,ctx), n = getAffineDimExpr(3,ctx);
+          SmallVector<AffineMap> maps{AffineMap::get(4,0,{h,m,k},ctx),
+              AffineMap::get(4,0,{h,k,n},ctx), AffineMap::get(4,0,{h,m,n},ctx)};
+          SmallVector<utils::IteratorType> iters{utils::IteratorType::parallel,
+              utils::IteratorType::parallel, utils::IteratorType::reduction,
+              utils::IteratorType::parallel};
+          auto ordered = linalg::GenericOp::create(rw, op.getLoc(), op.getResultTypes(),
+              op.getDpsInputs(), op.getDpsInits(), maps, iters,
+              [](OpBuilder &b, Location l, ValueRange args) {
+                Value sum = math::FmaOp::create(b,l,args[0],args[1],args[2]);
+                linalg::YieldOp::create(b,l,sum);
+              });
+          ordered->setAttr("hexagon.fp32_effective_decode_fma",rw.getUnitAttr());
+          return ordered.getResult(0);
+        };
+        Value result;
+        if (aType.getDimSize(2) == 128) {
+          // Native bmm switches at M*N*K=400. For QK with query=1,
+          // KV lengths 1..3 use unfused products; longer rows use GEMV FMA.
+          Value length = tensor::DimOp::create(rw, op.getLoc(), op.getDpsInputs()[1], 2);
+          Value four = arith::ConstantIndexOp::create(rw, op.getLoc(), 4);
+          Value small = arith::CmpIOp::create(rw, op.getLoc(), arith::CmpIPredicate::ult, length, four);
+          auto select = scf::IfOp::create(rw, op.getLoc(), op.getResultTypes(), small, true);
+          {
+            OpBuilder::InsertionGuard guard(rw);
+            rw.setInsertionPointToStart(&select.getThenRegion().front());
+            Operation *unfused = rw.clone(*op.getOperation());
+            scf::YieldOp::create(rw, op.getLoc(), unfused->getResults());
+            rw.setInsertionPointToStart(&select.getElseRegion().front());
+            Value ordered = buildFMA();
+            scf::YieldOp::create(rw, op.getLoc(), ordered);
+          }
+          result = select.getResult(0);
+        } else result = buildFMA();
+        result.getDefiningOp()->setAttr("hexagon.fp32_effective_decode_order",rw.getUnitAttr());
+        rw.replaceOp(op,result);
+      }
+    }
+    if (effectivePrefillAttention) {
+      SmallVector<linalg::BatchMatmulOp> dots;
+      getOperation().walk([&](linalg::BatchMatmulOp op) {
+        if (isFP32AttentionDotCandidate(op,false,false,false,false,false,0,0,17,true,true) &&
+            cast<RankedTensorType>(op.getDpsInputs()[0].getType()).getDimSize(1) != 1)
+          dots.push_back(op);
+      });
+      for (auto op : dots) {
+        rw.setInsertionPoint(op);
+        Location loc = op.getLoc();
+        Value lhs = op.getDpsInputs()[0], rhs = op.getDpsInputs()[1];
+        bool qk = cast<RankedTensorType>(lhs.getType()).getDimSize(2) == 128;
+        Value query = tensor::DimOp::create(rw,loc,lhs,1);
+        Value length = tensor::DimOp::create(rw,loc,qk ? rhs : lhs,2);
+        Value two = arith::ConstantIndexOp::create(rw,loc,2);
+        Value maxQuery = arith::ConstantIndexOp::create(rw,loc,32);
+        Value maxLength = arith::ConstantIndexOp::create(rw,loc,1024);
+        Value lower = arith::CmpIOp::create(rw,loc,arith::CmpIPredicate::sge,query,two);
+        Value upper = arith::CmpIOp::create(rw,loc,arith::CmpIPredicate::sle,query,maxQuery);
+        Value enough = arith::CmpIOp::create(rw,loc,arith::CmpIPredicate::sge,length,query);
+        Value bounded = arith::CmpIOp::create(rw,loc,arith::CmpIPredicate::sle,length,maxLength);
+        Value validQuery = arith::AndIOp::create(rw,loc,lower,upper);
+        Value validLength = arith::AndIOp::create(rw,loc,enough,bounded);
+        Value valid = arith::AndIOp::create(rw,loc,validQuery,validLength);
+        cf::AssertOp::create(rw,loc,valid,"effective prefill requires query2..32 and query<=KV<=1024");
+        if (qk) applyFP32PrefillAttentionOrder(rw,op);
+        else applyFP32EffectivePVBlockOrder(rw,op);
+      }
     }
     if (fp32AttentionDotOrder && prefillQuery) {
       SmallVector<linalg::BatchMatmulOp> prefillDots;

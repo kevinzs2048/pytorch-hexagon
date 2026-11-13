@@ -15,6 +15,7 @@
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -26,6 +27,7 @@ using namespace mlir::hexagon;
 #include "hexagon/Transforms/Passes.h.inc"
 
 namespace {
+#include "../sums/VectorizeARMPartial.h"
 // Recognize the existing unfused SiLU division; do not infer SiLU merely from
 // a negated exponent. Exclusively-used intermediates prevent affecting another
 // consumer. This opt-in compatibility boundary changes only exp evaluation,
@@ -283,8 +285,13 @@ bool hasStableSoftmaxShift(linalg::GenericOp sum, bool dynamicShape = false) {
     return false;
   auto broadcastMap = reducedMap(broadcastType);
   auto shiftMaps = shift.getIndexingMapsArray();
+  // The importer uses an identity map for an already-singleton last axis.
+  // Index d_last and index 0 are identical only for this static extent.
+  bool singletonBroadcast = type.getDimSize(rank - 1) == 1 &&
+      broadcastType == type && shiftMaps[1] == identity;
   if (!broadcastMap || shiftMaps[0] != identity ||
-      shiftMaps[1] != broadcastMap || shiftMaps[2] != identity ||
+      (shiftMaps[1] != broadcastMap && !singletonBroadcast) ||
+      shiftMaps[2] != identity ||
       !llvm::all_of(shift.getIteratorTypesArray(), [](auto it) {
         return it == utils::IteratorType::parallel;
       })) return false;
@@ -585,9 +592,11 @@ Value stabilize(IRRewriter &rw, linalg::GenericOp op, bool reciprocalNormalizati
         linalg::YieldOp::create(builder,loc,sum);
       });
   partial->setAttr("hexagon.fp32_sum_cascade_partial",rw.getUnitAttr());
-  Value lanes=slice(rw,loc,partial.getResult(0),{0,0,0},{rows,1,cascadeLanes},{rows,cascadeLanes});
+  Value partialResult = cascadeLanes == 16 ? vectorizeARMPartial(rw, partial)
+                                          : partial.getResult(0);
+  Value lanes=slice(rw,loc,partialResult,{0,0,0},{rows,1,cascadeLanes},{rows,cascadeLanes});
   for (int64_t chunk = 1; chunk < chunks; ++chunk)
-    lanes=addTensor(rw,loc,lanes,slice(rw,loc,partial.getResult(0),{0,chunk,0},{rows,1,cascadeLanes},{rows,cascadeLanes}));
+    lanes=addTensor(rw,loc,lanes,slice(rw,loc,partialResult,{0,chunk,0},{rows,1,cascadeLanes},{rows,cascadeLanes}));
   Value eight=slice(rw,loc,lanes,{0,0},{rows,vectorLanes},{rows,vectorLanes});
   for (int64_t offset = vectorLanes; offset < cascadeLanes; offset += vectorLanes)
     eight=addTensor(rw,loc,eight,slice(rw,loc,lanes,{0,offset},{rows,vectorLanes},{rows,vectorLanes}));
@@ -770,7 +779,8 @@ void stabilizeBoundedDynamicRMSNormSum(IRRewriter &rw, linalg::GenericOp op,
 // The old q17 path statically cast the entire query axis; this candidate
 // retains that axis as a runtime loop and specializes only the KV reduction
 // width after an explicit 1024-slot assertion.
-bool boundedDynamicSoftmaxSum(linalg::GenericOp sum, int64_t maxQuery) {
+bool boundedDynamicSoftmaxSum(linalg::GenericOp sum, int64_t maxQuery,
+                             bool effectiveLength = false) {
   if (!sum || !sum.hasPureTensorSemantics() || sum->hasAttr("library_call") ||
       sum.getNumDpsInputs() != 1 || sum.getNumDpsInits() != 1 ||
       sum.getNumResults() != 1 || !sum.getResult(0).hasOneUse()) return false;
@@ -780,7 +790,9 @@ bool boundedDynamicSoftmaxSum(linalg::GenericOp sum, int64_t maxQuery) {
   bool boundedQueryShape = input && output && input.getRank() == 4 &&
       output.getRank() == 4 && input.getDimSize(0) == 1 &&
       input.getDimSize(1) == 16 &&
-      (input.isDynamicDim(3) || input.getDimSize(3) == 1024) &&
+      (input.isDynamicDim(3) || (effectiveLength
+          ? input.getDimSize(3) >= 1 && input.getDimSize(3) <= 1024
+          : input.getDimSize(3) == 1024)) &&
       (input.isDynamicDim(2) ||
        (input.getDimSize(2) >= 1 && input.getDimSize(2) <= maxQuery)) &&
       output.getShape() == ArrayRef<int64_t>({1, 16, input.getDimSize(2), 1});
@@ -850,7 +862,9 @@ bool boundedDynamicSoftmaxSum(linalg::GenericOp sum, int64_t maxQuery) {
         norm.getDpsInits()[0].getType() != input ||
         norm.getIndexingMapsArray().size() != 3 ||
         !norm.getIndexingMapsArray()[0].isIdentity() ||
-        norm.getIndexingMapsArray()[1] != reduced ||
+        (norm.getIndexingMapsArray()[1] != reduced &&
+         !(effectiveLength && input.getDimSize(3) == 1 &&
+           norm.getIndexingMapsArray()[1].isIdentity())) ||
         !norm.getIndexingMapsArray()[2].isIdentity() ||
         !llvm::all_of(norm.getIteratorTypesArray(), [](auto iterator) {
           return iterator == utils::IteratorType::parallel;
@@ -904,9 +918,142 @@ Value stabilizeARMSoftmaxRow(IRRewriter &rw, linalg::GenericOp op) {
   return result;
 }
 
+void replaceSoftmaxNormalization(IRRewriter &rw, linalg::GenericOp sum,
+                                 Value ordered) {
+  auto normalization = cast<linalg::GenericOp>(*sum.getResult(0).getUsers().begin());
+  rw.setInsertionPoint(normalization);
+  Location loc = sum.getLoc();
+  auto sumType = cast<RankedTensorType>(sum.getResult(0).getType());
+  SmallVector<AffineMap> maps(2, rw.getMultiDimIdentityMap(4));
+  SmallVector<utils::IteratorType> parallel(4, utils::IteratorType::parallel);
+  auto reciprocal = linalg::GenericOp::create(rw, loc, TypeRange{sumType},
+      ValueRange{ordered}, sum.getDpsInits(), maps, parallel,
+      [](OpBuilder &b, Location l, ValueRange args) {
+        Value one = arith::ConstantOp::create(b, l, b.getF32FloatAttr(1.0));
+        Value inverse = arith::DivFOp::create(b, l, one, args[0]);
+        linalg::YieldOp::create(b, l, inverse);
+      });
+  reciprocal->setAttr("hexagon.fp32_arm_softmax_reciprocal", rw.getUnitAttr());
+  auto normalized = linalg::GenericOp::create(rw, loc, normalization.getResultTypes(),
+      ValueRange{sum.getDpsInputs()[0], reciprocal.getResult(0)},
+      normalization.getDpsInits(), normalization.getIndexingMapsArray(), parallel,
+      [](OpBuilder &b, Location l, ValueRange args) {
+        Value value = arith::MulFOp::create(b, l, args[0], args[1]);
+        linalg::YieldOp::create(b, l, value);
+      });
+  normalized->setAttr("hexagon.fp32_arm_softmax_normalization", rw.getUnitAttr());
+  rw.replaceOp(normalization, normalized.getResults());
+  rw.replaceOp(sum, ordered);
+}
+
+// Pinned ARM PyTorch reduce_all: accumulate four lanes, add a partial tail
+// only to occupied lanes, then (lane0 + lane2) + (lane1 + lane3). Lengths
+// below four use a scalar left fold. This consumes the logical KV extent;
+// storage capacity is neither an operand nor a reduction bound.
+void stabilizeEffectiveSoftmaxSum(IRRewriter &rw, linalg::GenericOp sum,
+                                 int64_t maxQuery) {
+  Location loc = sum.getLoc();
+  Value input = sum.getDpsInputs()[0];
+  auto exponent = input.getDefiningOp<linalg::GenericOp>();
+  if (auto exp = dyn_cast<math::ExpOp>(exponent.getBody()->front())) {
+    rw.setInsertionPoint(exp);
+    auto call = func::CallOp::create(rw, loc, "__hexagon_softmax_exp_compat",
+        TypeRange{rw.getF32Type()}, ValueRange{exp.getOperand()});
+    call->setAttr("hexagon.fp32_softmax_exp_compat", rw.getUnitAttr());
+    rw.replaceOp(exp, call.getResults());
+  }
+  rw.setInsertionPoint(sum);
+  Value zero = arith::ConstantIndexOp::create(rw, loc, 0);
+  Value one = arith::ConstantIndexOp::create(rw, loc, 1);
+  Value four = arith::ConstantIndexOp::create(rw, loc, 4);
+  Value query = tensor::DimOp::create(rw, loc, input, 2);
+  Value length = tensor::DimOp::create(rw, loc, input, 3);
+  for (auto pair : {std::pair<Value, int64_t>{query, maxQuery}, {length, 1024}}) {
+    Value limit = arith::ConstantIndexOp::create(rw, loc, pair.second);
+    Value positive = arith::CmpIOp::create(rw, loc, arith::CmpIPredicate::sge, pair.first, one);
+    Value bounded = arith::CmpIOp::create(rw, loc, arith::CmpIPredicate::sle, pair.first, limit);
+    Value valid = arith::AndIOp::create(rw, loc, positive, bounded);
+    cf::AssertOp::create(rw, loc, valid, "effective Softmax query/KV extent outside admitted bounds");
+  }
+  Value groups = arith::DivUIOp::create(rw, loc, length, four);
+  Value end = arith::MulIOp::create(rw, loc, groups, four);
+  auto sumType = cast<RankedTensorType>(sum.getResult(0).getType());
+  SmallVector<Value> extents;
+  for (int64_t axis = 0; axis < sumType.getRank(); ++axis)
+    if (sumType.isDynamicDim(axis))
+      extents.push_back(tensor::DimOp::create(rw, loc, sum.getDpsInits()[0], axis));
+  // This is a row reduction, not cheap elementwise work. A parallel generic
+  // hides its nested reduction from elementwise fusion, which can duplicate
+  // the entire sum at every broadcast normalization column (quadratic in KV).
+  // Materialize one sum per row while preserving its exact four-lane order.
+  auto ordered = tensor::GenerateOp::create(rw, loc, sumType, extents,
+      [&](OpBuilder &b, Location l, ValueRange indices) {
+        Value head = indices[1];
+        Value row = indices[2];
+        Value fzero = arith::ConstantOp::create(b, l, b.getF32FloatAttr(0.0));
+        auto read = [&](Value column) -> Value {
+          return tensor::ExtractOp::create(b, l, input, ValueRange{zero, head, row, column});
+        };
+        auto lanes = scf::ForOp::create(b, l, zero, end, four,
+                                       ValueRange{fzero, fzero, fzero, fzero});
+        {
+          OpBuilder::InsertionGuard guard(b);
+          b.setInsertionPointToStart(lanes.getBody());
+          SmallVector<Value> values;
+          for (int64_t lane = 0; lane < 4; ++lane) {
+            Value offset = arith::ConstantIndexOp::create(b, l, lane);
+            Value index = arith::AddIOp::create(b, l, lanes.getInductionVar(), offset);
+            Value value = read(index);
+            values.push_back(arith::AddFOp::create(b, l, lanes.getRegionIterArgs()[lane], value));
+          }
+          scf::YieldOp::create(b, l, values);
+        }
+        SmallVector<Value> tails;
+        for (int64_t lane = 0; lane < 4; ++lane) {
+          Value offset = arith::ConstantIndexOp::create(b, l, lane);
+          Value index = arith::AddIOp::create(b, l, end, offset);
+          Value present = arith::CmpIOp::create(b, l, arith::CmpIPredicate::ult, index, length);
+          auto tail = scf::IfOp::create(b, l, TypeRange{b.getF32Type()}, present, true);
+          {
+            OpBuilder::InsertionGuard guard(b);
+            b.setInsertionPointToStart(&tail.getThenRegion().front());
+            Value value = read(index);
+            Value added = arith::AddFOp::create(b, l, lanes.getResult(lane), value);
+            scf::YieldOp::create(b, l, added);
+            b.setInsertionPointToStart(&tail.getElseRegion().front());
+            scf::YieldOp::create(b, l, lanes.getResult(lane));
+          }
+          tails.push_back(tail.getResult(0));
+        }
+        Value a = arith::AddFOp::create(b, l, tails[0], tails[2]);
+        Value c = arith::AddFOp::create(b, l, tails[1], tails[3]);
+        Value total = arith::AddFOp::create(b, l, a, c);
+        Value shortRow = arith::CmpIOp::create(b, l, arith::CmpIPredicate::ult, length, four);
+        auto select = scf::IfOp::create(b, l, TypeRange{b.getF32Type()}, shortRow, true);
+        {
+          OpBuilder::InsertionGuard guard(b);
+          b.setInsertionPointToStart(&select.getThenRegion().front());
+          auto fold = scf::ForOp::create(b, l, zero, length, one, ValueRange{fzero});
+          {
+            OpBuilder::InsertionGuard loopGuard(b);
+            b.setInsertionPointToStart(fold.getBody());
+            Value value = read(fold.getInductionVar());
+            Value added = arith::AddFOp::create(b, l, fold.getRegionIterArgs()[0], value);
+            scf::YieldOp::create(b, l, added);
+          }
+          scf::YieldOp::create(b, l, fold.getResult(0));
+          b.setInsertionPointToStart(&select.getElseRegion().front());
+          scf::YieldOp::create(b, l, total);
+        }
+        tensor::YieldOp::create(b, l, select.getResult(0));
+      });
+  ordered->setAttr("hexagon.fp32_arm_softmax_sum", rw.getUnitAttr());
+  ordered->setAttr("hexagon.fp32_effective_softmax", rw.getUnitAttr());
+  replaceSoftmaxNormalization(rw, sum, ordered.getResult());
+}
+
 void stabilizeBoundedDynamicSoftmaxSum(IRRewriter &rw, linalg::GenericOp sum,
                                        int64_t maxQuery) {
-  auto normalization = cast<linalg::GenericOp>(*sum.getResult(0).getUsers().begin());
   rw.setInsertionPoint(sum);
   Location loc = sum.getLoc();
   Value input = sum.getDpsInputs()[0], init = sum.getDpsInits()[0];
@@ -957,28 +1104,7 @@ void stabilizeBoundedDynamicSoftmaxSum(IRRewriter &rw, linalg::GenericOp sum,
   Value updated = tensor::InsertSliceOp::create(
       rw, loc, ordered, carried, offsets, outputSizes, strides);
   scf::YieldOp::create(rw, loc, updated);
-  rw.setInsertionPoint(normalization);
-  auto sumType = cast<RankedTensorType>(sum.getResult(0).getType());
-  SmallVector<AffineMap> reciprocalMaps(2,rw.getMultiDimIdentityMap(4));
-  SmallVector<utils::IteratorType> parallel(4,utils::IteratorType::parallel);
-  auto reciprocal = linalg::GenericOp::create(rw,loc,TypeRange{sumType},
-      ValueRange{loop.getResult(0)},ValueRange{init},reciprocalMaps,parallel,
-      [](OpBuilder &b,Location l,ValueRange args) {
-        Value one = arith::ConstantOp::create(b,l,b.getF32FloatAttr(1.0));
-        Value inverse = arith::DivFOp::create(b,l,one,args[0]);
-        linalg::YieldOp::create(b,l,inverse);
-      });
-  reciprocal->setAttr("hexagon.fp32_arm_softmax_reciprocal",rw.getUnitAttr());
-  auto normalized = linalg::GenericOp::create(rw,loc,normalization.getResultTypes(),
-      ValueRange{input,reciprocal.getResult(0)},normalization.getDpsInits(),
-      normalization.getIndexingMapsArray(),normalization.getIteratorTypesArray(),
-      [](OpBuilder &b,Location l,ValueRange args) {
-        Value value = arith::MulFOp::create(b,l,args[0],args[1]);
-        linalg::YieldOp::create(b,l,value);
-      });
-  normalized->setAttr("hexagon.fp32_arm_softmax_normalization",rw.getUnitAttr());
-  rw.replaceOp(normalization,normalized.getResults());
-  rw.replaceOp(sum,loop.getResults());
+  replaceSoftmaxNormalization(rw, sum, loop.getResult(0));
 }
 
 
@@ -1028,11 +1154,12 @@ struct StabilizeFP32SumPass : ::impl::StabilizeFP32SumBase<StabilizeFP32SumPass>
   void getDependentDialects(DialectRegistry &registry) const override {
     registry.insert<arith::ArithDialect,cf::ControlFlowDialect,scf::SCFDialect,
                     linalg::LinalgDialect,tensor::TensorDialect,math::MathDialect,
-                    func::FuncDialect>();
+                    func::FuncDialect,vector::VectorDialect>();
   }
   void runOnOperation() override {
     int64_t dynamicRMSNormMaxQuery = 0;
     int64_t dynamicSoftmaxMaxQuery = 0;
+    int64_t effectiveSoftmaxMaxQuery = 0;
     if (auto attr = getOperation()->getAttr("hexagon.fp32_dynamic_rmsnorm_max_q")) {
       auto maximum = dyn_cast<IntegerAttr>(attr);
       if (!maximum || !maximum.getType().isInteger(64) ||
@@ -1054,6 +1181,23 @@ struct StabilizeFP32SumPass : ::impl::StabilizeFP32SumBase<StabilizeFP32SumPass>
         return;
       }
       dynamicSoftmaxMaxQuery = maximum.getInt();
+    }
+    if (auto attr = getOperation()->getAttr("hexagon.fp32_effective_softmax_max_q")) {
+      auto maximum = dyn_cast<IntegerAttr>(attr);
+      if (!maximum || !maximum.getType().isInteger(64) ||
+          maximum.getInt() < 1 || maximum.getInt() > 32 || dynamicSoftmaxMaxQuery) {
+        getOperation()->emitError("effective Softmax requires 1..32 : i64 without a fixed-capacity policy");
+        signalPassFailure(); return;
+      }
+      auto module = getOperation()->getParentOfType<ModuleOp>();
+      auto callee = module.lookupSymbol<func::FuncOp>("__hexagon_softmax_exp_compat");
+      auto expected = FunctionType::get(&getContext(), {Float32Type::get(&getContext())},
+                                       {Float32Type::get(&getContext())});
+      if (!callee || !callee.isExternal() || callee.getFunctionType() != expected) {
+        getOperation()->emitError("effective Softmax requires external __hexagon_softmax_exp_compat(f32) -> f32");
+        signalPassFailure(); return;
+      }
+      effectiveSoftmaxMaxQuery = maximum.getInt();
     }
     // Explicit shape-scoped candidate annotation. Absence preserves all prior
     // policies; this is not admission of a capacity256 model or runtime.
@@ -1112,6 +1256,7 @@ struct StabilizeFP32SumPass : ::impl::StabilizeFP32SumBase<StabilizeFP32SumPass>
     SmallVector<linalg::GenericOp> candidates;
     SmallVector<linalg::GenericOp> dynamicRMSNormSums;
     SmallVector<linalg::GenericOp> dynamicSoftmaxSums;
+    SmallVector<linalg::GenericOp> effectiveSoftmaxSums;
     SmallVector<math::ExpOp> softmaxExponents;
     getOperation().walk([&](linalg::GenericOp op) {
       if (dynamicRMSNormMaxQuery && armNormSquaredSum(op) &&
@@ -1120,6 +1265,10 @@ struct StabilizeFP32SumPass : ::impl::StabilizeFP32SumBase<StabilizeFP32SumPass>
       if (dynamicSoftmaxMaxQuery && boundedDynamicSoftmaxSum(op, dynamicSoftmaxMaxQuery)) {
         dynamicSoftmaxSums.push_back(op);
         return; // The generic static sum path must not rewrite the same op.
+      }
+      if (effectiveSoftmaxMaxQuery && boundedDynamicSoftmaxSum(op, effectiveSoftmaxMaxQuery, true)) {
+        effectiveSoftmaxSums.push_back(op);
+        return;
       }
       if (candidate(op, shortExpSumTree, capacity256)) {
         candidates.push_back(op);
@@ -1177,6 +1326,8 @@ struct StabilizeFP32SumPass : ::impl::StabilizeFP32SumBase<StabilizeFP32SumPass>
       stabilizeBoundedDynamicRMSNormSum(rw, op, dynamicRMSNormMaxQuery);
     for (auto op : dynamicSoftmaxSums)
       stabilizeBoundedDynamicSoftmaxSum(rw, op, dynamicSoftmaxMaxQuery);
+    for (auto op : effectiveSoftmaxSums)
+      stabilizeEffectiveSoftmaxSum(rw, op, effectiveSoftmaxMaxQuery);
     if (dynamicRMSNormMaxQuery > 0) {
       SmallVector<linalg::GenericOp> products;
       getOperation().walk([&](linalg::GenericOp op) { products.push_back(op); });
