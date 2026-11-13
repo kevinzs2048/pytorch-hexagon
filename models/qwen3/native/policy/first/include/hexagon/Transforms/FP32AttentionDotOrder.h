@@ -22,7 +22,8 @@ inline bool isBoundedQwenQueryDimension(int64_t extent) {
 }
 inline bool isFP32AttentionDotCandidate(linalg::BatchMatmulOp op,bool decodeQK=false,bool decodePV=false,
                                       bool pairQK=false,bool pairPV=false,bool squareDecode=false,int64_t decodeCapacity=0,
-                                      int64_t pairCapacity=0,int64_t prefillQuery=0,bool variablePrefill=false) {
+                                      int64_t pairCapacity=0,int64_t prefillQuery=0,bool variablePrefill=false,
+                                      bool effectiveLength=false) {
   if (!op.hasPureTensorSemantics() || op->hasAttr("library_call") ||
       op.getNumDpsInputs()!=2 || op.getNumDpsInits()!=1 || op.getNumResults()!=1)
     return false;
@@ -37,12 +38,14 @@ inline bool isFP32AttentionDotCandidate(linalg::BatchMatmulOp op,bool decodeQK=f
       a.getRank() == 3 && b.getRank() == 3 && c.getRank() == 3 &&
       a.getDimSize(0) == 16 && isBoundedQwenQueryDimension(a.getDimSize(1)) &&
       a.getDimSize(2) == 128 && b.getDimSize(0) == 16 && b.getDimSize(1) == 128 &&
-      (b.isDynamicDim(2) || b.getDimSize(2) == 1024) &&
+      (b.isDynamicDim(2) || b.getDimSize(2) == 1024 ||
+       (effectiveLength && b.getDimSize(2)>=1 && b.getDimSize(2)<=1024)) &&
       c.getShape() == ArrayRef<int64_t>({16,a.getDimSize(1),b.getDimSize(2)});
   bool dynamicPrefillPV = variablePrefill && prefillQuery == 17 &&
       a.getRank() == 3 && b.getRank() == 3 && c.getRank() == 3 &&
       a.getDimSize(0) == 16 && isBoundedQwenQueryDimension(a.getDimSize(1)) &&
-      (a.isDynamicDim(2) || a.getDimSize(2) == 1024) &&
+      (a.isDynamicDim(2) || a.getDimSize(2) == 1024 ||
+       (effectiveLength && a.getDimSize(2)>=1 && a.getDimSize(2)<=1024)) &&
       b.getShape() == ArrayRef<int64_t>({16,a.getDimSize(2),128}) &&
       c.getShape() == ArrayRef<int64_t>({16,a.getDimSize(1),128});
   for (auto type : {a,b,c})

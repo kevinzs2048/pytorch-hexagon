@@ -36,7 +36,7 @@
 // Compile with -ffp-contract=off. Only the explicit fmaf calls may fuse.
 // This is an opt-in compatibility candidate, not correctly-rounded exp for
 // every FP32 value and not a claim of device validation or model acceptance.
-inline float qwen3_sleef_exp_candidate(float d) {
+__attribute__((always_inline)) inline float qwen3_sleef_exp_candidate(float d) {
   std::uint32_t bits;
   std::memcpy(&bits, &d, sizeof(bits));
   if ((bits & 0x7fffffffU) > 0x7f800000U) {
