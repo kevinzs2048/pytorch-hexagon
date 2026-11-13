@@ -12,7 +12,9 @@
 #endif
 struct m2 {void *allocated,*aligned;int64_t offset,sizes[2],strides[2];};
 struct m5 {void *allocated,*aligned;int64_t offset,sizes[5],strides[5];};
-static uint32_t word(const unsigned char *p){uint32_t v;memcpy(&v,__builtin_assume_aligned(p,4),4);return v;}
+/* Keep this alias-safe bit load inline even in the -fno-builtin DSP build.
+   Calling the external memcpy here adds a call for every scalar guard word. */
+static uint32_t word(const unsigned char *p){uint32_t v;__builtin_memcpy(&v,__builtin_assume_aligned(p,4),4);return v;}
 bool qwen_zero_words(const void *data,size_t bytes){
   const unsigned char *p=data;
   if(!p || bytes%4 || ((uintptr_t)p&3))return false;

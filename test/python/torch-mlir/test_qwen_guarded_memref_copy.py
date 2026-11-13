@@ -100,3 +100,39 @@ def test_copy_preserves_all_addressed_bits_and_unwritten_bytes(libraries,sizes,s
 def test_test_hooks_reject_outside_positive_precondition(libraries,name,a,b):
     check=getattr(libraries[1][0],name)
     assert not check(a,b,None)
+
+
+@pytest.mark.parametrize('sizes,source_strides,destination_strides', [
+    ([2, 3, 64], [384, 128, 1], [384, 128, 1]),
+    ([2, 3, 64], [192, 64, 1], [384, 128, 1]),
+    ([2, 3, 64], [384, 128, 1], [192, 64, 1]),
+    ([2, 1, 3, 64], [384, 199, 128, 1], [384, 99, 128, 1]),
+    ([2, 3, 64], [400, 128, 1], [384, 128, 1]),
+])
+@pytest.mark.parametrize('misalignment', [0, 4])
+def test_aligned_row_copy_and_fallback_preserve_padding(
+        libraries, sizes, source_strides, destination_strides, misalignment):
+    # Exercise the 256-byte aligned row path as well as irregular/misaligned
+    # fallbacks; the Python byte oracle also checks all destination padding.
+    amount = 4096
+    source_storage = ctypes.create_string_buffer(amount + 256)
+    source_address = ((ctypes.addressof(source_storage) + 127) // 128 * 128
+                      + misalignment)
+    source = (ctypes.c_ubyte * amount).from_address(source_address)
+    source[:] = bytes((i * 37 + 19) % 256 for i in range(amount))
+    expected = bytearray([0xa5] * amount)
+    for index in itertools.product(*(range(size) for size in sizes)):
+        read = sum(i * stride for i, stride in zip(index, source_strides)) * 4
+        write = sum(i * stride for i, stride in zip(index, destination_strides)) * 4
+        expected[write:write + 4] = bytes(source[read:read + 4])
+    for _, copy in libraries:
+        destination_storage = ctypes.create_string_buffer(amount + 256)
+        destination_address = (
+            (ctypes.addressof(destination_storage) + 127) // 128 * 128
+            + misalignment)
+        destination = (ctypes.c_ubyte * amount).from_address(destination_address)
+        destination[:] = bytes([0xa5] * amount)
+        ranked_src, src = descriptor(source, 0, sizes, source_strides)
+        ranked_dst, dst = descriptor(destination, 0, sizes, destination_strides)
+        copy(4, ctypes.byref(src), ctypes.byref(dst))
+        assert bytes(destination) == expected

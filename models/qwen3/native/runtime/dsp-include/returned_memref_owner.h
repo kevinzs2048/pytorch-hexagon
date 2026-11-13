@@ -19,9 +19,11 @@ template <std::size_t Count> class OwnedReturnedMemrefs {
   void *owned[Count ? Count : 1] = {};
   std::size_t count = 0;
   bool adopted = false;
+  void (*release_)(void *);
 
 public:
-  OwnedReturnedMemrefs() = default;
+  explicit OwnedReturnedMemrefs(void (*release)(void *) = std::free)
+      : release_(release) {}
   OwnedReturnedMemrefs(const OwnedReturnedMemrefs &) = delete;
   OwnedReturnedMemrefs &operator=(const OwnedReturnedMemrefs &) = delete;
 
@@ -50,7 +52,7 @@ public:
   std::size_t unique_buffers() const { return count; }
 
   ~OwnedReturnedMemrefs() {
-    for (std::size_t i = 0; i < count; ++i) std::free(owned[i]);
+    for (std::size_t i = 0; i < count; ++i) release_(owned[i]);
   }
 };
 #endif
