@@ -61,7 +61,11 @@ def captured_identity(graph):
 
     rows = []
     for node in graph.graph.nodes:
-        row = dict(op=node.op, target=str(node.target))
+        # Python function repr includes its process address. DynamicCache decode
+        # graphs contain this pinned symbolic shape helper, so str(target) would
+        # reject the same graph after a fresh-process GraphPickler reload.
+        target = 'torch.sym_sum' if node.target is torch.sym_sum else str(node.target)
+        row = dict(op=node.op, target=target)
         if node.op == 'get_attr':
             value = graph
             for name in node.target.split('.'):
