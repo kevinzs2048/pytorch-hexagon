@@ -2,9 +2,9 @@
   "schema": 1,
   "repository": "https://github.com/llvm/llvm-project.git",
   "base_revision": "064f02dac0c81c19350a74415b3245f42fed09dc",
-  "source_tree": "456e349beda58550a1b111b20eb0cf0cca9236d8",
+  "source_tree": "107a7d956b1b8f26ac0773225965ea3f28b04d3d",
   "patch": "qualified.patch",
-  "patch_sha256": "01184a777ced1efc7a833069b4993c6ec7792a3095464cb1420c8254291bf5d4",
+  "patch_sha256": "eabf35016815d46a7b90bc7affe10e68e90befcb5b92528222fa03d56683e981",
   "cmake": {
     "CMAKE_BUILD_TYPE": "RelWithDebInfo",
     "CMAKE_C_FLAGS_RELWITHDEBINFO": "-O2 -g0 -DNDEBUG",

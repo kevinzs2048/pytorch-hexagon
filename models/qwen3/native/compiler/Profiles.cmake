@@ -1,4 +1,4 @@
-# Source-built versions of the two qualified Qwen compiler configurations.
+# The two qualified legacy configurations and the dynamic-KV compiler.
 # These targets share the Triton/MLIR libraries with the ordinary compiler.
 # Link-time wrappers preserve the qualified pass order while eliminating the
 # old recipe's dependency on object files from unrelated build directories.
@@ -9,7 +9,7 @@ function(qwen_add_compiler_profiles)
   endif()
   get_property(qwen_sources GLOBAL PROPERTY QWEN_PROFILE_SOURCE_DIR)
   get_target_property(binding_sources triton SOURCES)
-  foreach(profile IN ITEMS q1 q2)
+  foreach(profile IN ITEMS q1 q2 dynamic-kv)
     set(target qwen-compiler-${profile})
     add_library(${target} SHARED ${binding_sources})
     foreach(property IN ITEMS INCLUDE_DIRECTORIES COMPILE_DEFINITIONS
@@ -24,6 +24,11 @@ function(qwen_add_compiler_profiles)
     target_link_options(${target} PRIVATE
       "-Wl,--wrap=_ZN4mlir13bufferization32createEmptyTensorEliminationPassEv")
   endforeach()
+
+  # DynamicCache has runtime KV extents. Keep the general bufferization fix,
+  # without the legacy attention rewrites that require exactly 1024 positions.
+  target_sources(qwen-compiler-dynamic-kv PRIVATE
+    ${qwen_sources}/EmptyTensorCSE.cpp)
 
   target_sources(qwen-compiler-q1 PRIVATE
     ${qwen_sources}/ZeroTailPVRegister.cpp

@@ -1,11 +1,17 @@
 # Reproduce and identify the LLVM dependency
 
 `recipe.json` pins the upstream commit, complete patched Git tree, patch hash,
-build options and targets. `qualified.patch` restores the 29 source/test changes
+build options and targets. `qualified.patch` restores the 39 source/test changes
 present in the qualified local LLVM checkout. It is a compatibility snapshot,
-not a claim that all 29 changes are necessary for Qwen or ready for upstream.
+not a claim that all 39 changes are necessary for Qwen or ready for upstream.
 The separately reviewed four correctness patches remain an upstream proposal;
 they do not yet replace this complete toolchain baseline.
+
+The 2026-11-08 snapshot also includes the reviewed IEEE comparison/min-max,
+integer-to-FP32, FP16 lane-order and predicate packing/truncation fixes used by
+the latest device-verified kernels. It also enables full-width HVX memory operations
+for constant copies, sets and moves, with scalar tails. This updates source identity; it does not
+relabel earlier binaries or receipts. Rebuild before using the new recipe.
 
 The snapshot includes correctness fixes, old-baseline backports, compile-time
 scalability changes, per-function controls and the existing BF16 source changes.

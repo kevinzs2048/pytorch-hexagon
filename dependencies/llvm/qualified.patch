@@ -1,5 +1,5 @@
 diff --git a/lld/ELF/Arch/Hexagon.cpp b/lld/ELF/Arch/Hexagon.cpp
-index 9b33e78731c973e9aba851048b526fa1ee58caf9..ff519ab1dfa9d4b9eea8174aa5b97cf430ddb615 100644
+index 9b33e78731c9..ff519ab1dfa9 100644
 --- a/lld/ELF/Arch/Hexagon.cpp
 +++ b/lld/ELF/Arch/Hexagon.cpp
 @@ -299,7 +299,10 @@ bool Hexagon::needsThunk(RelExpr expr, RelType type, const InputFile *file,
@@ -16,7 +16,7 @@ index 9b33e78731c973e9aba851048b526fa1ee58caf9..ff519ab1dfa9d4b9eea8174aa5b97cf4
    }
 diff --git a/lld/test/ELF/hexagon-thunk-preemptible-defined.s b/lld/test/ELF/hexagon-thunk-preemptible-defined.s
 new file mode 100644
-index 0000000000000000000000000000000000000000..45adc0906c3f4bad8c9b6e996d234840a5c22956
+index 000000000000..45adc0906c3f
 --- /dev/null
 +++ b/lld/test/ELF/hexagon-thunk-preemptible-defined.s
 @@ -0,0 +1,25 @@
@@ -46,7 +46,7 @@ index 0000000000000000000000000000000000000000..45adc0906c3f4bad8c9b6e996d234840
 +.section .text.padding,"ax",@progbits
 +.space 9000000
 diff --git a/llvm/lib/Analysis/ScalarEvolution.cpp b/llvm/lib/Analysis/ScalarEvolution.cpp
-index d2c445f1ffaa0bebbd46384c69d5f4ed22cd370c..0017edf03718002c86fa962ad49beb234cc7e014 100644
+index d2c445f1ffaa..0017edf03718 100644
 --- a/llvm/lib/Analysis/ScalarEvolution.cpp
 +++ b/llvm/lib/Analysis/ScalarEvolution.cpp
 @@ -14053,6 +14053,10 @@ void ScalarEvolution::print(raw_ostream &OS) const {
@@ -72,7 +72,7 @@ index d2c445f1ffaa0bebbd46384c69d5f4ed22cd370c..0017edf03718002c86fa962ad49beb23
    for (auto &V : Values) {
      if (V.getPointer() == BB)
 diff --git a/llvm/lib/Target/Hexagon/BitTracker.cpp b/llvm/lib/Target/Hexagon/BitTracker.cpp
-index 80eedabb0d038077084e3fa428b57485f8f46b2b..ec8f9111ab7cd0b31fdb193f3d67c22cd18a7df4 100644
+index 80eedabb0d03..ec8f9111ab7c 100644
 --- a/llvm/lib/Target/Hexagon/BitTracker.cpp
 +++ b/llvm/lib/Target/Hexagon/BitTracker.cpp
 @@ -757,6 +757,15 @@ bool BT::MachineEvaluator::evaluate(const MachineInstr &MI,
@@ -100,7 +100,7 @@ index 80eedabb0d038077084e3fa428b57485f8f46b2b..ec8f9111ab7cd0b31fdb193f3d67c22c
    using MachineFlowGraphTraits = GraphTraits<const MachineFunction*>;
    const MachineBasicBlock *Entry = MachineFlowGraphTraits::getEntryNode(&MF);
 diff --git a/llvm/lib/Target/Hexagon/BitTracker.h b/llvm/lib/Target/Hexagon/BitTracker.h
-index 67ae29b21085d406d495b17fa89055bba4db26d7..162801156ddffdb1d5eea2080cd84a63b0c6c705 100644
+index 67ae29b21085..162801156ddf 100644
 --- a/llvm/lib/Target/Hexagon/BitTracker.h
 +++ b/llvm/lib/Target/Hexagon/BitTracker.h
 @@ -91,6 +91,10 @@ private:
@@ -115,7 +115,7 @@ index 67ae29b21085d406d495b17fa89055bba4db26d7..162801156ddffdb1d5eea2080cd84a63
      struct Cmp {
        Cmp(DenseMap<const MachineInstr*,unsigned> &Map) : Dist(Map) {}
 diff --git a/llvm/lib/Target/Hexagon/HexagonBitSimplify.cpp b/llvm/lib/Target/Hexagon/HexagonBitSimplify.cpp
-index 3b7bd1cd1ba94057a3f318b6491cfdb16c974046..bd40b6661d65f049b029ec385a9589263e1bad7b 100644
+index 3b7bd1cd1ba9..bd40b6661d65 100644
 --- a/llvm/lib/Target/Hexagon/HexagonBitSimplify.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonBitSimplify.cpp
 @@ -47,10 +47,38 @@ static unsigned CountExtract = 0;
@@ -348,7 +348,7 @@ index 3b7bd1cd1ba94057a3f318b6491cfdb16c974046..bd40b6661d65f049b029ec385a958926
    Changed = DeadCodeElimination(MF, *MDT).run() || Changed;
  
 diff --git a/llvm/lib/Target/Hexagon/HexagonBlockRanges.cpp b/llvm/lib/Target/Hexagon/HexagonBlockRanges.cpp
-index eca5ac140f3c3cb42a1bfd4e1599de92613871ea..bb8461e0ba1153af7384207e7a08ae62751b8568 100644
+index eca5ac140f3c..bb8461e0ba11 100644
 --- a/llvm/lib/Target/Hexagon/HexagonBlockRanges.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonBlockRanges.cpp
 @@ -162,6 +162,7 @@ HexagonBlockRanges::InstrIndexMap::InstrIndexMap(MachineBasicBlock &B)
@@ -401,7 +401,7 @@ index eca5ac140f3c3cb42a1bfd4e1599de92613871ea..bb8461e0ba1153af7384207e7a08ae62
  }
  
 diff --git a/llvm/lib/Target/Hexagon/HexagonBlockRanges.h b/llvm/lib/Target/Hexagon/HexagonBlockRanges.h
-index e152dbf764c97672496883c179f0a5dfe76b8ddb..a61452a0801776f8e4fda448771e5da1da2937ac 100644
+index e152dbf764c9..a61452a08017 100644
 --- a/llvm/lib/Target/Hexagon/HexagonBlockRanges.h
 +++ b/llvm/lib/Target/Hexagon/HexagonBlockRanges.h
 @@ -10,6 +10,8 @@
@@ -425,7 +425,7 @@ index e152dbf764c97672496883c179f0a5dfe76b8ddb..a61452a0801776f8e4fda448771e5da1
  
    using RegToRangeMap = std::map<RegisterRef, RangeList>;
 diff --git a/llvm/lib/Target/Hexagon/HexagonCommonGEP.cpp b/llvm/lib/Target/Hexagon/HexagonCommonGEP.cpp
-index 14b6bb318e3b27aa840e47fe584d0988993d2733..1401769ea68b62445807243fefef59d1a12c6ce5 100644
+index 14b6bb318e3b..1401769ea68b 100644
 --- a/llvm/lib/Target/Hexagon/HexagonCommonGEP.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonCommonGEP.cpp
 @@ -42,6 +42,7 @@
@@ -448,7 +448,7 @@ index 14b6bb318e3b27aa840e47fe584d0988993d2733..1401769ea68b62445807243fefef59d1
      (void)Ins;
      assert(Ins.second && "Cannot add minimal element");
 diff --git a/llvm/lib/Target/Hexagon/HexagonFrameLowering.cpp b/llvm/lib/Target/Hexagon/HexagonFrameLowering.cpp
-index b3c61e1829bf9c069183f78683e8a796f8c9c106..60ee5fae5569011ca55ab033838594bd5b93a79c 100644
+index b3c61e1829bf..60ee5fae5569 100644
 --- a/llvm/lib/Target/Hexagon/HexagonFrameLowering.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonFrameLowering.cpp
 @@ -1394,6 +1394,15 @@ bool HexagonFrameLowering::insertCSRSpillsInBlock(MachineBasicBlock &MBB,
@@ -504,7 +504,7 @@ index b3c61e1829bf9c069183f78683e8a796f8c9c106..60ee5fae5569011ca55ab033838594bd
    assert(!AP.isValid() || AP.isPhysical());
    HMFI.setStackAlignBaseReg(AP);
 diff --git a/llvm/lib/Target/Hexagon/HexagonGenExtract.cpp b/llvm/lib/Target/Hexagon/HexagonGenExtract.cpp
-index 1322c627ecfb7dfa719c01b4843fbd76c8478a51..90d808b7bd1e9087a7f934b84e1a35d4beb946a4 100644
+index 1322c627ecfb..90d808b7bd1e 100644
 --- a/llvm/lib/Target/Hexagon/HexagonGenExtract.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonGenExtract.cpp
 @@ -9,6 +9,7 @@
@@ -590,7 +590,7 @@ index 1322c627ecfb7dfa719c01b4843fbd76c8478a51..90d808b7bd1e9087a7f934b84e1a35d4
    return Changed;
  }
 diff --git a/llvm/lib/Target/Hexagon/HexagonGenInsert.cpp b/llvm/lib/Target/Hexagon/HexagonGenInsert.cpp
-index b2218abcaaa3c9939b0c630a209b2b2aaeb456d4..a8e356a07e6f40d54954fb4dd55c9bea4e2b0150 100644
+index b2218abcaaa3..a8e356a07e6f 100644
 --- a/llvm/lib/Target/Hexagon/HexagonGenInsert.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonGenInsert.cpp
 @@ -775,6 +775,11 @@ unsigned HexagonGenInsert::distance(MachineBasicBlock::const_iterator FromI,
@@ -616,7 +616,7 @@ index b2218abcaaa3c9939b0c630a209b2b2aaeb456d4..a8e356a07e6f40d54954fb4dd55c9bea
  
    bool Timing = OptTiming, TimingDetail = Timing && OptTimingDetail;
 diff --git a/llvm/lib/Target/Hexagon/HexagonISelLowering.cpp b/llvm/lib/Target/Hexagon/HexagonISelLowering.cpp
-index facea646d4b68411283709ce9aa6148f011114d6..062a7af30eefa5e676ece93e3ce02d3e24c79a35 100644
+index facea646d4b6..b80b51fab534 100644
 --- a/llvm/lib/Target/Hexagon/HexagonISelLowering.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonISelLowering.cpp
 @@ -738,6 +738,38 @@ SDValue HexagonTargetLowering::LowerFDIV(SDValue Op, SelectionDAG &DAG) const {
@@ -681,7 +681,15 @@ index facea646d4b68411283709ce9aa6148f011114d6..062a7af30eefa5e676ece93e3ce02d3e
  
    // Handling of indexed loads/stores: default is "expand".
    //
-@@ -3395,6 +3439,8 @@ HexagonTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
+@@ -1926,6 +1970,7 @@ HexagonTargetLowering::HexagonTargetLowering(const TargetMachine &TM,
+   }
+ 
+   setTargetDAGCombine(ISD::OR);
++  setTargetDAGCombine(ISD::BITCAST);
+   setTargetDAGCombine(ISD::TRUNCATE);
+   setTargetDAGCombine(ISD::VSELECT);
+ 
+@@ -3395,6 +3440,8 @@ HexagonTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
  
      case ISD::FDIV:
        return LowerFDIV(Op, DAG);
@@ -690,8 +698,49 @@ index facea646d4b68411283709ce9aa6148f011114d6..062a7af30eefa5e676ece93e3ce02d3e
      case ISD::CONCAT_VECTORS:       return LowerCONCAT_VECTORS(Op, DAG);
      case ISD::INSERT_SUBVECTOR:     return LowerINSERT_SUBVECTOR(Op, DAG);
      case ISD::INSERT_VECTOR_ELT:    return LowerINSERT_VECTOR_ELT(Op, DAG);
+@@ -3503,6 +3550,29 @@ HexagonTargetLowering::ReplaceNodeResults(SDNode *N,
+ SDValue
+ HexagonTargetLowering::PerformDAGCombine(SDNode *N,
+                                          DAGCombinerInfo &DCI) const {
++  // Native predicate registers replicate each logical bit. Pack those bits
++  // before generic legalization widens an i2/i4 result through an HVX vector.
++  if (N->getOpcode() == ISD::BITCAST) {
++    SDValue Input = N->getOperand(0);
++    EVT InputTy = Input.getValueType(), OutputTy = N->getValueType(0);
++    if ((InputTy == MVT::v2i1 || InputTy == MVT::v4i1) &&
++        OutputTy.isScalarInteger() &&
++        OutputTy.getSizeInBits() == InputTy.getVectorNumElements()) {
++      SelectionDAG &DAG = DCI.DAG;
++      SDLoc DL(N);
++      unsigned Count = InputTy.getVectorNumElements();
++      SDValue Raw = getInstr(Hexagon::C2_tfrpr, DL, MVT::i32, Input, DAG);
++      SDValue Packed = DAG.getConstant(0, DL, MVT::i32);
++      for (unsigned I = 0; I != Count; ++I) {
++        SDValue Shift = DAG.getConstant(I * (8 / Count - 1), DL, MVT::i32);
++        SDValue Bit = DAG.getNode(ISD::SRL, DL, MVT::i32, Raw, Shift);
++        Bit = DAG.getNode(ISD::AND, DL, MVT::i32, Bit,
++                          DAG.getConstant(1u << I, DL, MVT::i32));
++        Packed = DAG.getNode(ISD::OR, DL, MVT::i32, Packed, Bit);
++      }
++      return DAG.getZExtOrTrunc(Packed, DL, OutputTy);
++    }
++  }
+   if (isHvxOperation(N, DCI.DAG)) {
+     if (SDValue V = PerformHvxDAGCombine(N, DCI))
+       return V;
+@@ -3831,6 +3901,10 @@ bool HexagonTargetLowering::IsEligibleForTailCallOptimization(
+ EVT HexagonTargetLowering::getOptimalMemOpType(
+     LLVMContext &Context, const MemOp &Op,
+     const AttributeList &FuncAttributes) const {
++  // Prefer a full HVX memory operation when it fits the range. Unaligned
++  // accesses are handled by VMEMU; smaller tails use the scalar fallback.
++  if (Subtarget.useHVXOps() && Op.size() >= Subtarget.getVectorLength())
++    return Subtarget.getVectorLength() == 128 ? MVT::v32i32 : MVT::v16i32;
+   if (Op.size() >= 8 && Op.isAligned(Align(8)))
+     return MVT::i64;
+   if (Op.size() >= 4 && Op.isAligned(Align(4)))
 diff --git a/llvm/lib/Target/Hexagon/HexagonISelLowering.h b/llvm/lib/Target/Hexagon/HexagonISelLowering.h
-index 9ebbbc6399b4262bae6bee35ce913958009cbd26..60409b47429481e863fd294042e92cb195dadfa1 100644
+index 9ebbbc6399b4..60409b474294 100644
 --- a/llvm/lib/Target/Hexagon/HexagonISelLowering.h
 +++ b/llvm/lib/Target/Hexagon/HexagonISelLowering.h
 @@ -212,6 +212,7 @@ public:
@@ -702,8 +751,232 @@ index 9ebbbc6399b4262bae6bee35ce913958009cbd26..60409b47429481e863fd294042e92cb1
    SDValue LowerPREFETCH(SDValue Op, SelectionDAG &DAG) const;
    SDValue LowerREADCYCLECOUNTER(SDValue Op, SelectionDAG &DAG) const;
    SDValue LowerREADSTEADYCOUNTER(SDValue Op, SelectionDAG &DAG) const;
+diff --git a/llvm/lib/Target/Hexagon/HexagonISelLoweringHVX.cpp b/llvm/lib/Target/Hexagon/HexagonISelLoweringHVX.cpp
+index f1fa40c1b903..40d133400b1b 100644
+--- a/llvm/lib/Target/Hexagon/HexagonISelLoweringHVX.cpp
++++ b/llvm/lib/Target/Hexagon/HexagonISelLoweringHVX.cpp
+@@ -131,6 +131,14 @@ HexagonTargetLowering::initializeHVXLowering() {
+       setOperationAction(ISD::FMUL,              T, Legal);
+       setOperationAction(ISD::FMINIMUMNUM, T, Legal);
+       setOperationAction(ISD::FMAXIMUMNUM, T, Legal);
++      if (Subtarget.useHVXIEEEFPOps()) {
++        setOperationAction(ISD::FMINNUM, T, Custom);
++        setOperationAction(ISD::FMAXNUM, T, Custom);
++        setOperationAction(ISD::FMINIMUMNUM, T, Custom);
++        setOperationAction(ISD::FMAXIMUMNUM, T, Custom);
++        setOperationAction(ISD::FMINIMUM, T, Legal);
++        setOperationAction(ISD::FMAXIMUM, T, Legal);
++      }
+ 
+       setOperationAction(ISD::INSERT_SUBVECTOR,  T, Custom);
+       setOperationAction(ISD::EXTRACT_SUBVECTOR, T, Custom);
+@@ -168,6 +176,12 @@ HexagonTargetLowering::initializeHVXLowering() {
+       setOperationAction(ISD::FMUL,           P, Custom);
+       setOperationAction(ISD::FMINIMUMNUM, P, Custom);
+       setOperationAction(ISD::FMAXIMUMNUM, P, Custom);
++      if (Subtarget.useHVXIEEEFPOps()) {
++        setOperationAction(ISD::FMINNUM, P, Custom);
++        setOperationAction(ISD::FMAXNUM, P, Custom);
++        setOperationAction(ISD::FMINIMUM, P, Custom);
++        setOperationAction(ISD::FMAXIMUM, P, Custom);
++      }
+       setOperationAction(ISD::SETCC,          P, Custom);
+       setOperationAction(ISD::VSELECT,        P, Custom);
+ 
+@@ -369,6 +383,19 @@ HexagonTargetLowering::initializeHVXLowering() {
+   setCondCodeAction(ISD::SETUGE, MVT::v32f32, Expand);
+   setCondCodeAction(ISD::SETULT, MVT::v32f32, Expand);
+ 
++  // IEEE predicates require explicit NaN and signed-zero handling. The HVX
++  // compare patterns also serve QFloat and cannot express every IEEE predicate.
++  if (Subtarget.useHVXIEEEFPOps()) {
++    for (MVT T : {MVT::v64f16, MVT::v32f32}) {
++      setOperationAction(ISD::SETCC, T, Custom);
++      for (ISD::CondCode CC : {ISD::SETOEQ, ISD::SETOGT, ISD::SETOGE,
++                              ISD::SETOLT, ISD::SETOLE, ISD::SETONE, ISD::SETO,
++                              ISD::SETUEQ, ISD::SETUGT, ISD::SETUGE,
++                              ISD::SETULT, ISD::SETULE, ISD::SETUNE, ISD::SETUO})
++        setCondCodeAction(CC, T, Legal);
++    }
++  }
++
+   // Boolean vectors.
+ 
+   for (MVT T : LegalW) {
+@@ -2866,6 +2893,35 @@ HexagonTargetLowering::ExpandHvxIntToFp(SDValue Op, SelectionDAG &DAG) const {
+   MVT ResTy = ty(Op);
+   assert(ResTy.changeTypeToInteger() == InpTy);
+ 
++  if (ResTy.getVectorElementType() == MVT::f32 &&
++      Subtarget.useHVXIEEEFPOps()) {
++    // Split the integer into two exactly representable 16-bit pieces. Encoding
++    // the high piece as 2^39 + hi16 * 2^16 and the low piece as 2^23 + lo16
++    // makes both bias subtractions exact (Sterbenz's lemma). Signed inputs
++    // additionally subtract 2^31 after flipping the sign bit. Only the final
++    // addition rounds, so this implements
++    // the full signed/unsigned i32 domain, including ties and INT_MIN, without
++    // the normalization and rounding sequence needed on integer-only HVX.
++    SDValue Hi = Op0;
++    bool Signed = Opc == ISD::SINT_TO_FP;
++    if (Signed)
++      Hi = DAG.getNode(ISD::XOR, dl, InpTy, Hi,
++                       DAG.getConstant(0x80000000u, dl, InpTy));
++    Hi = DAG.getNode(ISD::SRL, dl, InpTy, Hi,
++                     DAG.getConstant(16, dl, InpTy));
++    Hi = DAG.getNode(ISD::OR, dl, InpTy, Hi,
++                     DAG.getConstant(0x53000000u, dl, InpTy));
++    SDValue Lo = DAG.getNode(ISD::AND, dl, InpTy, Op0,
++                            DAG.getConstant(0xffff, dl, InpTy));
++    Lo = DAG.getNode(ISD::OR, dl, InpTy, Lo,
++                     DAG.getConstant(0x4b000000u, dl, InpTy));
++    Hi = DAG.getNode(ISD::FSUB, dl, ResTy, DAG.getBitcast(ResTy, Hi),
++                     DAG.getConstantFP(Signed ? 0x1.01p39 : 0x1p39, dl, ResTy));
++    Lo = DAG.getNode(ISD::FSUB, dl, ResTy, DAG.getBitcast(ResTy, Lo),
++                     DAG.getConstantFP(0x1p23, dl, ResTy));
++    return DAG.getNode(ISD::FADD, dl, ResTy, Hi, Lo);
++  }
++
+   // uint32_t vnoc1_rnd(int32_t w) {
+   //   int32_t iszero = w == 0;
+   //   int32_t isneg = w < 0;
+@@ -3201,6 +3257,10 @@ HexagonTargetLowering::LowerHvxOperation(SDValue Op, SelectionDAG &DAG) const {
+       case ISD::FMUL:
+       case ISD::FMINIMUMNUM:
+       case ISD::FMAXIMUMNUM:
++      case ISD::FMINNUM:
++      case ISD::FMAXNUM:
++      case ISD::FMINIMUM:
++      case ISD::FMAXIMUM:
+       case ISD::MULHS:
+       case ISD::MULHU:
+       case ISD::AND:
+@@ -3233,6 +3293,48 @@ HexagonTargetLowering::LowerHvxOperation(SDValue Op, SelectionDAG &DAG) const {
+   switch (Opc) {
+     default:
+       break;
++    case ISD::FMINIMUMNUM:
++    case ISD::FMAXIMUMNUM:
++    case ISD::FMINNUM:
++    case ISD::FMAXNUM: {
++      // HVX max/min propagate NaNs. LLVM maxNum/minNum instead select the
++      // numeric operand for a quiet NaN, but propagate a signaling NaN.
++      // Correct both cases with integer bits, avoiding per-lane libm calls.
++      SDLoc DL(Op);
++      EVT VT = Op.getValueType();
++      EVT IT = VT.changeVectorElementTypeToInteger();
++      EVT PT = getSetCCResultType(DAG.getDataLayout(), *DAG.getContext(), IT);
++      unsigned Bits = VT.getScalarSizeInBits();
++      uint64_t Infinity = Bits == 16 ? 0x7c00 : 0x7f800000;
++      uint64_t Quiet = Bits == 16 ? 0x0200 : 0x00400000;
++      uint64_t Magnitude = Bits == 16 ? 0x7fff : 0x7fffffff;
++      auto C = [&](uint64_t V) { return DAG.getConstant(V, DL, IT); };
++      auto IsNaN = [&](SDValue V) {
++        SDValue B = DAG.getBitcast(IT, V);
++        SDValue Abs = DAG.getNode(ISD::AND, DL, IT, B, C(Magnitude));
++        return DAG.getSetCC(DL, PT, Abs, C(Infinity), ISD::SETUGT);
++      };
++      auto IsSignaling = [&](SDValue V) {
++        SDValue B = DAG.getBitcast(IT, V);
++        SDValue Q = DAG.getNode(ISD::AND, DL, IT, B, C(Quiet));
++        SDValue IsQuietZero = DAG.getSetCC(DL, PT, Q, C(0), ISD::SETEQ);
++        return DAG.getNode(ISD::AND, DL, PT, IsNaN(V), IsQuietZero);
++      };
++      SDValue A = Op.getOperand(0), B = Op.getOperand(1);
++      SDValue SNaN = DAG.getNode(ISD::OR, DL, PT, IsSignaling(A), IsSignaling(B));
++      bool IsMaximum = Opc == ISD::FMAXNUM || Opc == ISD::FMAXIMUMNUM;
++      SDValue Result = DAG.getNode(IsMaximum ? ISD::FMAXIMUM : ISD::FMINIMUM,
++                                  DL, VT, A, B);
++      Result = DAG.getNode(ISD::VSELECT, DL, VT, IsNaN(A), B, Result);
++      Result = DAG.getNode(ISD::VSELECT, DL, VT, IsNaN(B), A, Result);
++      if (Opc == ISD::FMINNUM || Opc == ISD::FMAXNUM)
++        return DAG.getNode(ISD::VSELECT, DL, VT, SNaN,
++                           DAG.getBitcast(VT, C(Infinity | Quiet)), Result);
++      // For maximumNumber/minimumNumber, two signaling NaNs must also quiet.
++      SDValue BothNaN = DAG.getNode(ISD::AND, DL, PT, IsNaN(A), IsNaN(B));
++      return DAG.getNode(ISD::VSELECT, DL, VT, BothNaN,
++                         DAG.getBitcast(VT, C(Infinity | Quiet)), Result);
++    }
+     case ISD::BUILD_VECTOR:            return LowerHvxBuildVector(Op, DAG);
+     case ISD::SPLAT_VECTOR:            return LowerHvxSplatVector(Op, DAG);
+     case ISD::CONCAT_VECTORS:          return LowerHvxConcatVectors(Op, DAG);
+@@ -3256,7 +3358,74 @@ HexagonTargetLowering::LowerHvxOperation(SDValue Op, SelectionDAG &DAG) const {
+     case ISD::SMUL_LOHI:
+     case ISD::UMUL_LOHI:               return LowerHvxMulLoHi(Op, DAG);
+     case ISD::ANY_EXTEND_VECTOR_INREG: return LowerHvxExtend(Op, DAG);
+-    case ISD::SETCC:
++    case ISD::SETCC: {
++      SDValue A = Op.getOperand(0), B = Op.getOperand(1);
++      if (!Subtarget.useHVXIEEEFPOps() || !A.getValueType().isFloatingPoint())
++        return Op;
++      SDLoc DL(Op);
++      EVT IT = A.getValueType().changeVectorElementTypeToInteger();
++      EVT PT = Op.getValueType();
++      unsigned Bits = IT.getScalarSizeInBits();
++      if (Bits != 16 && Bits != 32)
++        return Op;
++      auto C = [&](uint64_t V) { return DAG.getConstant(V, DL, IT); };
++      auto Compare = [&](SDValue X, SDValue Y, ISD::CondCode CC) {
++        return DAG.getSetCC(DL, PT, X, Y, CC);
++      };
++      auto And = [&](SDValue X, SDValue Y) {
++        return DAG.getNode(ISD::AND, DL, PT, X, Y);
++      };
++      auto Or = [&](SDValue X, SDValue Y) {
++        return DAG.getNode(ISD::OR, DL, PT, X, Y);
++      };
++      auto Not = [&](SDValue X) { return DAG.getNOT(DL, X, PT); };
++      uint64_t Sign = uint64_t(1) << (Bits - 1);
++      SDValue AI = DAG.getBitcast(IT, A), BI = DAG.getBitcast(IT, B);
++      SDValue AA = DAG.getNode(ISD::AND, DL, IT, AI, C(Sign - 1));
++      SDValue BA = DAG.getNode(ISD::AND, DL, IT, BI, C(Sign - 1));
++      SDValue Infinity = C(Bits == 16 ? 0x7c00 : 0x7f800000);
++      SDValue Unordered = Or(Compare(AA, Infinity, ISD::SETUGT),
++                             Compare(BA, Infinity, ISD::SETUGT));
++      SDValue BothZero = Compare(DAG.getNode(ISD::OR, DL, IT, AA, BA),
++                                 C(0), ISD::SETEQ);
++      SDValue Equal = Or(Compare(AI, BI, ISD::SETEQ), BothZero);
++      // The native comparison orders finite operands, but also orders NaNs by
++      // sign/payload. Apply the ordered/unordered mask explicitly below.
++      auto Greater = [&](SDValue X, SDValue Y) {
++        return getInstr(Bits == 16 ? Hexagon::V6_vgthf : Hexagon::V6_vgtsf,
++                        DL, ty(Op), {X, Y}, DAG);
++      };
++      auto CC = cast<CondCodeSDNode>(Op.getOperand(2))->get();
++      SDValue Predicate;
++      bool AllowUnordered = false;
++      switch (CC) {
++      case ISD::SETO: return Not(Unordered);
++      case ISD::SETUO: return Unordered;
++      case ISD::SETUEQ: AllowUnordered = true; [[fallthrough]];
++      case ISD::SETOEQ: Predicate = Equal; break;
++      case ISD::SETUNE: AllowUnordered = true; [[fallthrough]];
++      case ISD::SETONE: Predicate = Not(Equal); break;
++      case ISD::SETUGT: AllowUnordered = true; [[fallthrough]];
++      case ISD::SETOGT:
++        Predicate = And(Greater(A, B),
++                        Not(BothZero)); break;
++      case ISD::SETULT: AllowUnordered = true; [[fallthrough]];
++      case ISD::SETOLT:
++        Predicate = And(Greater(B, A),
++                        Not(BothZero)); break;
++      case ISD::SETUGE: AllowUnordered = true; [[fallthrough]];
++      case ISD::SETOGE:
++        Predicate = Or(Greater(A, B),
++                       Equal); break;
++      case ISD::SETULE: AllowUnordered = true; [[fallthrough]];
++      case ISD::SETOLE:
++        Predicate = Or(Greater(B, A),
++                       Equal); break;
++      default: return Op;
++      }
++      return AllowUnordered ? Or(Unordered, Predicate)
++                            : And(Not(Unordered), Predicate);
++    }
+     case ISD::INTRINSIC_VOID:          return Op;
+     case ISD::INTRINSIC_WO_CHAIN:      return LowerHvxIntrinsic(Op, DAG);
+     case ISD::MLOAD:
 diff --git a/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp b/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp
-index 64bc5ca134c86a6e3688a6057eb2cfa070f04952..8a396d078bdf2a9f898d3567b1bfeb648fd6d4d1 100644
+index 64bc5ca134c8..8a396d078bdf 100644
 --- a/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonInstrInfo.cpp
 @@ -1739,8 +1739,9 @@ bool HexagonInstrInfo::ClobbersPredicate(MachineInstr &MI,
@@ -718,8 +991,54 @@ index 64bc5ca134c86a6e3688a6057eb2cfa070f04952..8a396d078bdf2a9f898d3567b1bfeb64
          Pred.push_back(MO);
          return true;
        }
+diff --git a/llvm/lib/Target/Hexagon/HexagonPatternsHVX.td b/llvm/lib/Target/Hexagon/HexagonPatternsHVX.td
+index fb2ef59d99ef..6901f8772639 100644
+--- a/llvm/lib/Target/Hexagon/HexagonPatternsHVX.td
++++ b/llvm/lib/Target/Hexagon/HexagonPatternsHVX.td
+@@ -487,7 +487,7 @@ let Predicates = [UseHVXV68, UseHVXIEEEFP] in {
+            (V6_vmpy_sf_sf HVF32:$Rs, HVF32:$Rt)>;
+ 
+   def: Pat<(VecF16 (pf1<fpround> HWF32:$Vuu)),
+-           (V6_vdealh (V6_vcvt_hf_sf (HiVec HvxWR:$Vuu), (LoVec HvxWR:$Vuu)))>;
++           (V6_vdealh (V6_vcvt_hf_sf (LoVec HvxWR:$Vuu), (HiVec HvxWR:$Vuu)))>;
+   def: Pat<(VecPF32 (pf1<fpextend> HVF16:$Vu)),
+            (V6_vcvt_sf_hf (V6_vshuffh HvxVR:$Vu))>;
+ 
+@@ -536,10 +536,10 @@ let Predicates = [UseHVXV68, UseHVX128B, UseHVXIEEEFP] in {
+     defm: MinMax_pats<V6_vfmin_sf, V6_vfmax_sf, vselect,  setgt, VecQ32, HVF32>;
+     defm: MinMax_pats<V6_vfmin_sf, V6_vfmax_sf, vselect, setogt, VecQ32, HVF32>;
+   }
+-  def: OpR_RR_pat<V6_vfmin_hf, pf2<fminimumnum>, VecF16, HVF16>;
+-  def: OpR_RR_pat<V6_vfmax_hf, pf2<fmaximumnum>, VecF16, HVF16>;
+-  def: OpR_RR_pat<V6_vfmin_sf, pf2<fminimumnum>, VecF32, HVF32>;
+-  def: OpR_RR_pat<V6_vfmax_sf, pf2<fmaximumnum>, VecF32, HVF32>;
++  def: OpR_RR_pat<V6_vfmin_hf, pf2<fminimum>, VecF16, HVF16>;
++  def: OpR_RR_pat<V6_vfmax_hf, pf2<fmaximum>, VecF16, HVF16>;
++  def: OpR_RR_pat<V6_vfmin_sf, pf2<fminimum>, VecF32, HVF32>;
++  def: OpR_RR_pat<V6_vfmax_sf, pf2<fmaximum>, VecF32, HVF32>;
+ }
+ 
+ let Predicates = [UseHVX] in {
+@@ -593,10 +593,15 @@ let Predicates = [UseHVX] in {
+ 
+   def: Pat<(VecQ8 (trunc HVI8:$Vs)),
+            (V6_vandvrt HvxVR:$Vs, (ToI32 0x01010101))>;
++  // A predicate bit is replicated across each byte of a logical lane. Testing
++  // every byte's low bit is only correct for i8; wider lanes must test bit zero
++  // of the whole element and replicate that result with a lane-width compare.
+   def: Pat<(VecQ16 (trunc HVI16:$Vs)),
+-           (V6_vandvrt HvxVR:$Vs, (ToI32 0x01010101))>;
++           (V6_veqh (V6_vand HvxVR:$Vs, (PS_vsplatih (i32 1))),
++                       (PS_vsplatih (i32 1)))>;
+   def: Pat<(VecQ32 (trunc HVI32:$Vs)),
+-           (V6_vandvrt HvxVR:$Vs, (ToI32 0x01010101))>;
++           (V6_veqw (V6_vand HvxVR:$Vs, (PS_vsplatiw (i32 1))),
++                       (PS_vsplatiw (i32 1)))>;
+ }
+ 
+ let Predicates = [UseHVX] in {
 diff --git a/llvm/lib/Target/Hexagon/HexagonVExtract.cpp b/llvm/lib/Target/Hexagon/HexagonVExtract.cpp
-index 3b3d25d4c22c5148c5bac873f11d5b4709325ff0..c2dcff98c7638712b16206893930b5b40a58cb25 100644
+index 3b3d25d4c22c..c2dcff98c763 100644
 --- a/llvm/lib/Target/Hexagon/HexagonVExtract.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonVExtract.cpp
 @@ -85,7 +85,9 @@ unsigned HexagonVExtract::genElemLoad(MachineInstr *ExtI, unsigned BaseR,
@@ -746,7 +1065,7 @@ index 3b3d25d4c22c5148c5bac873f11d5b4709325ff0..c2dcff98c7638712b16206893930b5b4
        unsigned ElemR = genElemLoad(ExtI, BaseR, MRI);
        Register ExtR = ExtI->getOperand(0).getReg();
 diff --git a/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp b/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp
-index bc486cd562bf404a2feb64a154a7114587a69744..344953eaec0b28a588911776a051cefe60de7bc6 100644
+index bc486cd562bf..344953eaec0b 100644
 --- a/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp
 +++ b/llvm/lib/Target/Hexagon/HexagonVLIWPacketizer.cpp
 @@ -1525,6 +1525,16 @@ bool HexagonPacketizerList::isLegalToPacketizeTogether(SUnit *SUI, SUnit *SUJ) {
@@ -767,7 +1086,7 @@ index bc486cd562bf404a2feb64a154a7114587a69744..344953eaec0b28a588911776a051cefe
        // occur if the first instruction must go in slot0.
        if (LoadJ && LoadI && HII->isPureSlot0(J)) {
 diff --git a/llvm/lib/Target/Hexagon/RDFCopy.cpp b/llvm/lib/Target/Hexagon/RDFCopy.cpp
-index fafdad08909ddc3938fa0d6774c628f671cf5126..d7c60df4267231cb1934f7fe10dd6313eae75186 100644
+index fafdad08909d..d7c60df42672 100644
 --- a/llvm/lib/Target/Hexagon/RDFCopy.cpp
 +++ b/llvm/lib/Target/Hexagon/RDFCopy.cpp
 @@ -191,12 +191,24 @@ bool CopyPropagation::run() {
@@ -798,7 +1117,7 @@ index fafdad08909ddc3938fa0d6774c628f671cf5126..d7c60df4267231cb1934f7fe10dd6313
            continue;
 diff --git a/llvm/test/CodeGen/Hexagon/bf16-conversions.ll b/llvm/test/CodeGen/Hexagon/bf16-conversions.ll
 new file mode 100644
-index 0000000000000000000000000000000000000000..c2c76f23b5e9596a1b8453a2da1d91f91c681843
+index 000000000000..c2c76f23b5e9
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/bf16-conversions.ll
 @@ -0,0 +1,39 @@
@@ -843,7 +1162,7 @@ index 0000000000000000000000000000000000000000..c2c76f23b5e9596a1b8453a2da1d91f9
 +}
 diff --git a/llvm/test/CodeGen/Hexagon/bit-copy-generation-control.mir b/llvm/test/CodeGen/Hexagon/bit-copy-generation-control.mir
 new file mode 100644
-index 0000000000000000000000000000000000000000..0ba13541055edb2f4ee442ef83a0f53f7e2f00e0
+index 000000000000..0ba13541055e
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/bit-copy-generation-control.mir
 @@ -0,0 +1,63 @@
@@ -912,7 +1231,7 @@ index 0000000000000000000000000000000000000000..0ba13541055edb2f4ee442ef83a0f53f
 +...
 diff --git a/llvm/test/CodeGen/Hexagon/geninsert-function-opt-out.mir b/llvm/test/CodeGen/Hexagon/geninsert-function-opt-out.mir
 new file mode 100644
-index 0000000000000000000000000000000000000000..6fd4ca98126d459f30f020ff64f1d2e7d9119c7d
+index 000000000000..6fd4ca98126d
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/geninsert-function-opt-out.mir
 @@ -0,0 +1,43 @@
@@ -959,9 +1278,408 @@ index 0000000000000000000000000000000000000000..6fd4ca98126d459f30f020ff64f1d2e7
 +# CHECK: S2_insert
 +# CHECK: PS_jmpret
 +...
+diff --git a/llvm/test/CodeGen/Hexagon/hvx-fp16-lane-order.ll b/llvm/test/CodeGen/Hexagon/hvx-fp16-lane-order.ll
+new file mode 100644
+index 000000000000..c821845bcaa5
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/hvx-fp16-lane-order.ll
+@@ -0,0 +1,15 @@
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -mattr=+hvxv73,+hvx-length128b,+hvx-ieee-fp,-hvx-qfloat < %s | FileCheck %s
++;
++; vcvt interleaves the low input before the high input. vdeal then places
++; the low 32 FP16 results before the high 32. Reversing these inputs swaps
++; each pair of 32-element blocks in memory.
++;
++; CHECK-LABEL: narrow:
++; CHECK: v0.hf = vcvt(v0.sf,v1.sf)
++; CHECK: v0.h = vdeal(v0.h)
++; CHECK: jumpr r31
++
++define <64 x half> @narrow(<64 x float> %x) {
++  %h = fptrunc <64 x float> %x to <64 x half>
++  ret <64 x half> %h
++}
+diff --git a/llvm/test/CodeGen/Hexagon/hvx-ieee-compare.ll b/llvm/test/CodeGen/Hexagon/hvx-ieee-compare.ll
+new file mode 100644
+index 000000000000..9672d97f5564
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/hvx-ieee-compare.ll
+@@ -0,0 +1,93 @@
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -mattr=+hvxv73,+hvx-length128b,+hvx-ieee-fp,-hvx-qfloat < %s | FileCheck %s
++;
++; IEEE comparisons classify NaNs using magnitude bits. The native signed
++; floating comparison alone orders NaNs by sign/payload; integer equality also
++; incorrectly distinguishes +0 from -0. Keep the correction in vector code.
++
++; CHECK-LABEL: oeq_f32:
++; CHECK-NOT: call
++; CHECK: vcmp.gt({{.*}}.uw,{{.*}}.uw)
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <32 x i32> @oeq_f32(<32 x float> %a, <32 x float> %b) {
++  %mask = fcmp oeq <32 x float> %a, %b
++  %result = sext <32 x i1> %mask to <32 x i32>
++  ret <32 x i32> %result
++}
++
++; CHECK-LABEL: ugt_f32:
++; CHECK-NOT: call
++; CHECK: vcmp.gt({{.*}}.uw,{{.*}}.uw)
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <32 x i32> @ugt_f32(<32 x float> %a, <32 x float> %b) {
++  %mask = fcmp ugt <32 x float> %a, %b
++  %result = sext <32 x i1> %mask to <32 x i32>
++  ret <32 x i32> %result
++}
++
++; CHECK-LABEL: ord_f32:
++; CHECK-NOT: call
++; CHECK: vcmp.gt({{.*}}.uw,{{.*}}.uw)
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <32 x i32> @ord_f32(<32 x float> %a, <32 x float> %b) {
++  %mask = fcmp ord <32 x float> %a, %b
++  %result = sext <32 x i1> %mask to <32 x i32>
++  ret <32 x i32> %result
++}
++
++; CHECK-LABEL: uno_f32:
++; CHECK-NOT: call
++; CHECK: vcmp.gt({{.*}}.uw,{{.*}}.uw)
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <32 x i32> @uno_f32(<32 x float> %a, <32 x float> %b) {
++  %mask = fcmp uno <32 x float> %a, %b
++  %result = sext <32 x i1> %mask to <32 x i32>
++  ret <32 x i32> %result
++}
++
++; CHECK-LABEL: oeq_f16:
++; CHECK-NOT: call
++; CHECK: vcmp.gt({{.*}}.uh,{{.*}}.uh)
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <64 x i16> @oeq_f16(<64 x half> %a, <64 x half> %b) {
++  %mask = fcmp oeq <64 x half> %a, %b
++  %result = sext <64 x i1> %mask to <64 x i16>
++  ret <64 x i16> %result
++}
++
++; CHECK-LABEL: ugt_f16:
++; CHECK-NOT: call
++; CHECK: vcmp.gt({{.*}}.uh,{{.*}}.uh)
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <64 x i16> @ugt_f16(<64 x half> %a, <64 x half> %b) {
++  %mask = fcmp ugt <64 x half> %a, %b
++  %result = sext <64 x i1> %mask to <64 x i16>
++  ret <64 x i16> %result
++}
++
++; CHECK-LABEL: ord_f16:
++; CHECK-NOT: call
++; CHECK: vcmp.gt({{.*}}.uh,{{.*}}.uh)
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <64 x i16> @ord_f16(<64 x half> %a, <64 x half> %b) {
++  %mask = fcmp ord <64 x half> %a, %b
++  %result = sext <64 x i1> %mask to <64 x i16>
++  ret <64 x i16> %result
++}
++
++; CHECK-LABEL: uno_f16:
++; CHECK-NOT: call
++; CHECK: vcmp.gt({{.*}}.uh,{{.*}}.uh)
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <64 x i16> @uno_f16(<64 x half> %a, <64 x half> %b) {
++  %mask = fcmp uno <64 x half> %a, %b
++  %result = sext <64 x i1> %mask to <64 x i16>
++  ret <64 x i16> %result
++}
+diff --git a/llvm/test/CodeGen/Hexagon/hvx-int-to-float-ieee.ll b/llvm/test/CodeGen/Hexagon/hvx-int-to-float-ieee.ll
+new file mode 100644
+index 000000000000..d2812db77480
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/hvx-int-to-float-ieee.ll
+@@ -0,0 +1,35 @@
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -mattr=+hvxv73,+hvx-length128b,-hvx-qfloat,+hvx-ieee-fp < %s | FileCheck %s --check-prefix=IEEE
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -mattr=+hvxv73,+hvx-length128b,-hvx-qfloat,+hvx-ieee-fp -enable-unsafe-fp-math -enable-no-signed-zeros-fp-math < %s | FileCheck %s --check-prefix=IEEE
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv68 -mattr=+hvxv68,+hvx-length128b,+hvx-qfloat,-hvx-ieee-fp < %s | FileCheck %s --check-prefix=INTEGER
++
++; IEEE HVX can convert two exact 16-bit pieces and round just once in the
++; final addition. HVX without IEEE FP32 arithmetic still needs normalization and rounding.
++; IEEE-LABEL: sitofp_v32i32:
++; IEEE-NOT: vcl0
++; IEEE: .sf = vadd(
++; IEEE: .sf = vadd(
++; IEEE: .sf = vadd(
++; IEEE-NOT: vcl0
++; INTEGER-LABEL: sitofp_v32i32:
++; INTEGER: vcl0
++define void @sitofp_v32i32(ptr %out, ptr %in) {
++  %x = load <32 x i32>, ptr %in, align 128
++  %y = sitofp <32 x i32> %x to <32 x float>
++  store <32 x float> %y, ptr %out, align 128
++  ret void
++}
++
++; IEEE-LABEL: uitofp_v32i32:
++; IEEE-NOT: vcl0
++; IEEE: .sf = vadd(
++; IEEE: .sf = vadd(
++; IEEE: .sf = vadd(
++; IEEE-NOT: vcl0
++; INTEGER-LABEL: uitofp_v32i32:
++; INTEGER: vcl0
++define void @uitofp_v32i32(ptr %out, ptr %in) {
++  %x = load <32 x i32>, ptr %in, align 128
++  %y = uitofp <32 x i32> %x to <32 x float>
++  store <32 x float> %y, ptr %out, align 128
++  ret void
++}
+diff --git a/llvm/test/CodeGen/Hexagon/hvx-memory-operations.ll b/llvm/test/CodeGen/Hexagon/hvx-memory-operations.ll
+new file mode 100644
+index 000000000000..708267164924
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/hvx-memory-operations.ll
+@@ -0,0 +1,64 @@
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -mattr=+hvxv73,+hvx-length128b < %s | FileCheck %s --check-prefix=HVX128
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv60 -mattr=+hvx,+hvx-length64b < %s | FileCheck %s --check-prefix=HVX64
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 < %s | FileCheck %s --check-prefix=SCALAR --implicit-check-not=vmem
++;
++; Full HVX memory operations must not become scalar libc calls. Unaligned
++; ranges are legal; tails stay in-bounds; memmove loads precede stores.
++;
++; HVX128-LABEL: copy128:
++; HVX128: v{{[0-9]+}} = vmemu(r1+#0)
++; HVX128-NOT: call
++; HVX128: vmemu(r0+#0) = v
++; HVX64-LABEL: copy128:
++; HVX64-COUNT-2: = vmem(r1+
++; HVX64: vmem(r0+
++; SCALAR-LABEL: copy128:
++; SCALAR: call __hexagon_memcpy_likely_aligned_min32bytes_mult8bytes
++;
++; HVX128-LABEL: copy129_unaligned:
++; HVX128: memub(r1+#128)
++; HVX128: memb(r0+#128)
++; HVX128: = vmemu(r1+#0)
++; HVX128: vmemu(r0+#0) = v
++;
++; HVX128-LABEL: copy64:
++; HVX128: call __hexagon_memcpy_likely_aligned_min32bytes_mult8bytes
++; HVX64-LABEL: copy64:
++; HVX64: = vmem(r1+#0)
++; HVX64-NOT: call
++; HVX64: vmem(r0+#0) = v
++;
++; HVX128-LABEL: set128:
++; HVX128: vsplat
++; HVX128-NOT: call
++; HVX128: vmemu(r0+#0) = v
++;
++; HVX128-LABEL: move256:
++; HVX128-COUNT-2: = vmemu(r1+
++; HVX128-COUNT-2: vmemu(r0+
++; HVX128-NOT: call
++; HVX128: .Lfunc_end
++target triple = "hexagon"
++define void @copy128(ptr %dst, ptr %src) {
++ call void @llvm.memcpy.p0.p0.i32(ptr align 64 %dst, ptr align 64 %src, i32 128, i1 false)
++ ret void
++}
++define void @copy129_unaligned(ptr %dst, ptr %src) {
++ call void @llvm.memcpy.p0.p0.i32(ptr align 1 %dst, ptr align 1 %src, i32 129, i1 false)
++ ret void
++}
++define void @copy64(ptr %dst, ptr %src) {
++ call void @llvm.memcpy.p0.p0.i32(ptr align 64 %dst, ptr align 64 %src, i32 64, i1 false)
++ ret void
++}
++define void @set128(ptr %dst, i8 %byte) {
++ call void @llvm.memset.p0.i32(ptr align 4 %dst, i8 %byte, i32 128, i1 false)
++ ret void
++}
++define void @move256(ptr %dst, ptr %src) {
++ call void @llvm.memmove.p0.p0.i32(ptr align 1 %dst, ptr align 1 %src, i32 256, i1 false)
++ ret void
++}
++declare void @llvm.memcpy.p0.p0.i32(ptr,ptr,i32,i1)
++declare void @llvm.memset.p0.i32(ptr,i8,i32,i1)
++declare void @llvm.memmove.p0.p0.i32(ptr,ptr,i32,i1)
+diff --git a/llvm/test/CodeGen/Hexagon/hvx-minmaxnum.ll b/llvm/test/CodeGen/Hexagon/hvx-minmaxnum.ll
+new file mode 100644
+index 000000000000..346d692c759c
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/hvx-minmaxnum.ll
+@@ -0,0 +1,64 @@
++; RUN: llc -mtriple=hexagon -mcpu=hexagonv73 -mattr=+hvxv73,+hvx-length128b,+hvx-ieee-fp,-hvx-qfloat < %s | FileCheck %s
++;
++; maxNum/minNum propagate sNaN, unlike maximumNumber/minimumNumber. Keep
++; the signaling-NaN correction in HVX, avoiding one libm call per lane.
++
++declare <32 x float> @llvm.maxnum.v32f32(<32 x float>, <32 x float>)
++declare <64 x half> @llvm.minnum.v64f16(<64 x half>, <64 x half>)
++declare <64 x float> @llvm.minnum.v64f32(<64 x float>, <64 x float>)
++
++; CHECK-LABEL: max_f32:
++; CHECK-NOT: call
++; CHECK: vfmax(
++; CHECK: vmux(
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <32 x float> @max_f32(<32 x float> %a, <32 x float> %b) {
++  %r = call <32 x float> @llvm.maxnum.v32f32(<32 x float> %a, <32 x float> %b)
++  ret <32 x float> %r
++}
++
++; CHECK-LABEL: min_f16:
++; CHECK-NOT: call
++; CHECK: vfmin(
++; CHECK: vmux(
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <64 x half> @min_f16(<64 x half> %a, <64 x half> %b) {
++  %r = call <64 x half> @llvm.minnum.v64f16(<64 x half> %a, <64 x half> %b)
++  ret <64 x half> %r
++}
++
++; CHECK-LABEL: min_pair_f32:
++; CHECK-NOT: call
++; CHECK: vfmin(
++; CHECK: vfmin(
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++define <64 x float> @min_pair_f32(<64 x float> %a, <64 x float> %b) {
++  %r = call <64 x float> @llvm.minnum.v64f32(<64 x float> %a, <64 x float> %b)
++  ret <64 x float> %r
++}
++
++; CHECK-LABEL: maximum_number:
++; CHECK-NOT: call
++; CHECK: vfmax(
++; CHECK: vmux(
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++declare <32 x float> @llvm.maximumnum.v32f32(<32 x float>, <32 x float>)
++define <32 x float> @maximum_number(<32 x float> %a, <32 x float> %b) {
++  %r = call <32 x float> @llvm.maximumnum.v32f32(<32 x float> %a, <32 x float> %b)
++  ret <32 x float> %r
++}
++
++; CHECK-LABEL: maximum:
++; CHECK-NOT: call
++; CHECK: vfmax(
++; CHECK-NOT: call
++; CHECK: {{jumpr r31|dealloc_return}}
++declare <32 x float> @llvm.maximum.v32f32(<32 x float>, <32 x float>)
++define <32 x float> @maximum(<32 x float> %a, <32 x float> %b) {
++  %r = call <32 x float> @llvm.maximum.v32f32(<32 x float> %a, <32 x float> %b)
++  ret <32 x float> %r
++}
+diff --git a/llvm/test/CodeGen/Hexagon/hvx-truncate-predicate-lanes.ll b/llvm/test/CodeGen/Hexagon/hvx-truncate-predicate-lanes.ll
+new file mode 100644
+index 000000000000..a10979ae4001
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/hvx-truncate-predicate-lanes.ll
+@@ -0,0 +1,92 @@
++; RUN: llc -mtriple=hexagon < %s | FileCheck %s
++; A word/halfword condition must select all bytes of its logical lane.
++; Values such as i32 -16 or 0x100 have clear bit zero but nonzero upper-byte
++; low bits; a byte-wise predicate test incorrectly mixes the two operands.
++
++target triple = "hexagon"
++
++; CHECK-LABEL: words_128:
++; CHECK: v{{[0-9]+}} = vand(v{{[0-9]+}},v{{[0-9]+}})
++; CHECK: q{{[0-3]}} = vcmp.eq(v{{[0-9]+}}.w,v{{[0-9]+}}.w)
++; CHECK: vmux(
++define void @words_128(ptr %a, ptr %x, ptr %y, ptr %out) #0 {
++ %v = load <32 x i32>, ptr %a, align 128
++ %p = trunc <32 x i32> %v to <32 x i1>
++ %left = load <32 x i32>, ptr %x, align 128
++ %right = load <32 x i32>, ptr %y, align 128
++ %selected = select <32 x i1> %p, <32 x i32> %left, <32 x i32> %right
++ store <32 x i32> %selected, ptr %out, align 128
++ ret void
++}
++
++; CHECK-LABEL: halves_128:
++; CHECK: v{{[0-9]+}} = vand(v{{[0-9]+}},v{{[0-9]+}})
++; CHECK: q{{[0-3]}} = vcmp.eq(v{{[0-9]+}}.h,v{{[0-9]+}}.h)
++; CHECK: vmux(
++define void @halves_128(ptr %a, ptr %x, ptr %y, ptr %out) #0 {
++ %v = load <64 x i16>, ptr %a, align 128
++ %p = trunc <64 x i16> %v to <64 x i1>
++ %left = load <64 x i16>, ptr %x, align 128
++ %right = load <64 x i16>, ptr %y, align 128
++ %selected = select <64 x i1> %p, <64 x i16> %left, <64 x i16> %right
++ store <64 x i16> %selected, ptr %out, align 128
++ ret void
++}
++
++; CHECK-LABEL: bytes_128:
++; CHECK: q{{[0-3]}} = vand(v{{[0-9]+}},r{{[0-9]+}})
++; CHECK: vmux(
++define void @bytes_128(ptr %a, ptr %x, ptr %y, ptr %out) #0 {
++ %v = load <128 x i8>, ptr %a, align 128
++ %p = trunc <128 x i8> %v to <128 x i1>
++ %left = load <128 x i8>, ptr %x, align 128
++ %right = load <128 x i8>, ptr %y, align 128
++ %selected = select <128 x i1> %p, <128 x i8> %left, <128 x i8> %right
++ store <128 x i8> %selected, ptr %out, align 128
++ ret void
++}
++
++; CHECK-LABEL: words_64:
++; CHECK: v{{[0-9]+}} = vand(v{{[0-9]+}},v{{[0-9]+}})
++; CHECK: q{{[0-3]}} = vcmp.eq(v{{[0-9]+}}.w,v{{[0-9]+}}.w)
++; CHECK: vmux(
++define void @words_64(ptr %a, ptr %x, ptr %y, ptr %out) #1 {
++ %v = load <16 x i32>, ptr %a, align 64
++ %p = trunc <16 x i32> %v to <16 x i1>
++ %left = load <16 x i32>, ptr %x, align 64
++ %right = load <16 x i32>, ptr %y, align 64
++ %selected = select <16 x i1> %p, <16 x i32> %left, <16 x i32> %right
++ store <16 x i32> %selected, ptr %out, align 64
++ ret void
++}
++
++; CHECK-LABEL: halves_64:
++; CHECK: v{{[0-9]+}} = vand(v{{[0-9]+}},v{{[0-9]+}})
++; CHECK: q{{[0-3]}} = vcmp.eq(v{{[0-9]+}}.h,v{{[0-9]+}}.h)
++; CHECK: vmux(
++define void @halves_64(ptr %a, ptr %x, ptr %y, ptr %out) #1 {
++ %v = load <32 x i16>, ptr %a, align 64
++ %p = trunc <32 x i16> %v to <32 x i1>
++ %left = load <32 x i16>, ptr %x, align 64
++ %right = load <32 x i16>, ptr %y, align 64
++ %selected = select <32 x i1> %p, <32 x i16> %left, <32 x i16> %right
++ store <32 x i16> %selected, ptr %out, align 64
++ ret void
++}
++
++; CHECK-LABEL: bytes_64:
++; CHECK: q{{[0-3]}} = vand(v{{[0-9]+}},r{{[0-9]+}})
++; CHECK: vmux(
++define void @bytes_64(ptr %a, ptr %x, ptr %y, ptr %out) #1 {
++ %v = load <64 x i8>, ptr %a, align 64
++ %p = trunc <64 x i8> %v to <64 x i1>
++ %left = load <64 x i8>, ptr %x, align 64
++ %right = load <64 x i8>, ptr %y, align 64
++ %selected = select <64 x i1> %p, <64 x i8> %left, <64 x i8> %right
++ store <64 x i8> %selected, ptr %out, align 64
++ ret void
++}
++
++attributes #0 = { "target-cpu"="hexagonv73" "target-features"="+hvxv73,+hvx-length128b" }
++
++attributes #1 = { "target-cpu"="hexagonv73" "target-features"="+hvxv73,+hvx-length64b" }
 diff --git a/llvm/test/CodeGen/Hexagon/ifcvt-hvx-fake-def.mir b/llvm/test/CodeGen/Hexagon/ifcvt-hvx-fake-def.mir
 new file mode 100644
-index 0000000000000000000000000000000000000000..d3f9675b658f55bfc399f94d8ea8f1e2103b1f58
+index 000000000000..d3f9675b658f
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/ifcvt-hvx-fake-def.mir
 @@ -0,0 +1,25 @@
@@ -990,9 +1708,105 @@ index 0000000000000000000000000000000000000000..d3f9675b658f55bfc399f94d8ea8f1e2
 +  bb.2:
 +    PS_jmpret $r31, implicit-def dead $pc
 +...
+diff --git a/llvm/test/CodeGen/Hexagon/native-predicate-bitcast-pack.ll b/llvm/test/CodeGen/Hexagon/native-predicate-bitcast-pack.ll
+new file mode 100644
+index 000000000000..998af01d9b97
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/native-predicate-bitcast-pack.ll
+@@ -0,0 +1,41 @@
++; RUN: llc -mtriple=hexagon -O3 -verify-machineinstrs < %s | FileCheck %s
++; RUN: llc -mtriple=hexagon -mattr=+hvxv73,+hvx-length128b -O3 -verify-machineinstrs < %s | FileCheck %s
++;
++; Native predicates replicate each logical lane four times (v2i1) or twice
++; (v4i1).
++; Bitcast must pack one bit per logical lane, not expose replicated bits or
++; widen the native predicate through an unrelated HVX boolean layout.
++
++; CHECK-LABEL: pack2:
++; CHECK: p[[P2:[0-3]]] = vcmpw.eq
++; CHECK: r[[R2:[0-9]+]] = p[[P2]]
++; CHECK-DAG: extractu(r[[R2]],#5,#3)
++; CHECK-DAG: and(r[[R2]],#1)
++; CHECK: or({{.*}},and({{.*}},#2))
++; CHECK: jumpr r31
++
++define i32 @pack2(<2 x i32> %a, <2 x i32> %b) {
++  %p = icmp eq <2 x i32> %a, %b
++  %bits = bitcast <2 x i1> %p to i2
++  %result = zext i2 %bits to i32
++  ret i32 %result
++}
++
++; CHECK-LABEL: pack4:
++; CHECK: p[[P4:[0-3]]] = vcmph.eq
++; CHECK: r[[R4:[0-9]+]] = p[[P4]]
++; CHECK-DAG: extractu(r[[R4]],#7,#1)
++; CHECK-DAG: extractu(r[[R4]],#6,#2)
++; CHECK-DAG: and(r[[R4]],#1)
++; CHECK-DAG: extractu(r[[R4]],#5,#3)
++; CHECK-DAG: or({{.*}},and({{.*}},#2))
++; CHECK: or({{.*}},and({{.*}},#4))
++; CHECK: or({{.*}},and({{.*}},#8))
++; CHECK: jumpr r31
++
++define i32 @pack4(<4 x i16> %a, <4 x i16> %b) {
++  %p = icmp eq <4 x i16> %a, %b
++  %bits = bitcast <4 x i1> %p to i4
++  %result = zext i4 %bits to i32
++  ret i32 %result
++}
+diff --git a/llvm/test/CodeGen/Hexagon/native-predicate-bitcast-pack.s b/llvm/test/CodeGen/Hexagon/native-predicate-bitcast-pack.s
+new file mode 100644
+index 000000000000..ac06d4e618a6
+--- /dev/null
++++ b/llvm/test/CodeGen/Hexagon/native-predicate-bitcast-pack.s
+@@ -0,0 +1,43 @@
++	.attribute	4, 68	// Tag_arch
++	.attribute	10, 1	// Tag_cabac
++	.file	"native-predicate-bitcast-pack.ll"
++	.text
++	.globl	pack2                           // -- Begin function pack2
++	.p2align	4
++	.type	pack2,@function
++pack2:                                  // @pack2
++	.cfi_startproc
++// %bb.0:
++	{
++		p0 = vcmpw.eq(r1:0,r3:2)
++		r29 = add(r29,#-8)
++	}
++	{
++		r0 = p0
++		jumpr r31
++		r29 = add(r29,#8)
++	}
++.Lfunc_end0:
++	.size	pack2, .Lfunc_end0-pack2
++	.cfi_endproc
++                                        // -- End function
++	.globl	pack4                           // -- Begin function pack4
++	.p2align	4
++	.type	pack4,@function
++pack4:                                  // @pack4
++	.cfi_startproc
++// %bb.0:
++	{
++		p0 = vcmph.eq(r1:0,r3:2)
++		r29 = add(r29,#-8)
++	}
++	{
++		r0 = p0
++		jumpr r31
++		r29 = add(r29,#8)
++	}
++.Lfunc_end1:
++	.size	pack4, .Lfunc_end1-pack4
++	.cfi_endproc
++                                        // -- End function
++	.section	".note.GNU-stack","",@progbits
 diff --git a/llvm/test/CodeGen/Hexagon/packetize-hvx-scalar-store-alias.mir b/llvm/test/CodeGen/Hexagon/packetize-hvx-scalar-store-alias.mir
 new file mode 100644
-index 0000000000000000000000000000000000000000..c440171325aa920abfe5f208ba7b2b13dfa9dcc6
+index 000000000000..c440171325aa
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/packetize-hvx-scalar-store-alias.mir
 @@ -0,0 +1,56 @@
@@ -1054,7 +1868,7 @@ index 0000000000000000000000000000000000000000..c440171325aa920abfe5f208ba7b2b13
 +...
 diff --git a/llvm/test/CodeGen/Hexagon/rdf-copy-partial-redef.mir b/llvm/test/CodeGen/Hexagon/rdf-copy-partial-redef.mir
 new file mode 100644
-index 0000000000000000000000000000000000000000..ca646ca0b3dc4517bdb4e003879e4ddd8fac241d
+index 000000000000..ca646ca0b3dc
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/rdf-copy-partial-redef.mir
 @@ -0,0 +1,76 @@
@@ -1136,7 +1950,7 @@ index 0000000000000000000000000000000000000000..ca646ca0b3dc4517bdb4e003879e4ddd
 +...
 diff --git a/llvm/test/CodeGen/Hexagon/stack-align-ap-entry-spill.ll b/llvm/test/CodeGen/Hexagon/stack-align-ap-entry-spill.ll
 new file mode 100644
-index 0000000000000000000000000000000000000000..3fbd8d118c0d5219c14e74e7775149320c835c41
+index 000000000000..3fbd8d118c0d
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/stack-align-ap-entry-spill.ll
 @@ -0,0 +1,87 @@
@@ -1229,7 +2043,7 @@ index 0000000000000000000000000000000000000000..3fbd8d118c0d5219c14e74e777514932
 +}
 diff --git a/llvm/test/CodeGen/Hexagon/stack-align-late-vector-spill.mir b/llvm/test/CodeGen/Hexagon/stack-align-late-vector-spill.mir
 new file mode 100644
-index 0000000000000000000000000000000000000000..9d325b2d41034b3c9234d28f23da9e89dc2dfd39
+index 000000000000..9d325b2d4103
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/stack-align-late-vector-spill.mir
 @@ -0,0 +1,19 @@
@@ -1253,7 +2067,7 @@ index 0000000000000000000000000000000000000000..9d325b2d41034b3c9234d28f23da9e89
 +    PS_vstorerq_ai %stack.1, 0, $q0
 +...
 diff --git a/llvm/test/CodeGen/Hexagon/vextract-basic.mir b/llvm/test/CodeGen/Hexagon/vextract-basic.mir
-index 9b1fd9da7e71edb16684bce94a58758aad712dc1..d657cc652bf8e3cbcb85ff1bde49c9e3aef4f380 100644
+index 9b1fd9da7e71..d657cc652bf8 100644
 --- a/llvm/test/CodeGen/Hexagon/vextract-basic.mir
 +++ b/llvm/test/CodeGen/Hexagon/vextract-basic.mir
 @@ -12,10 +12,10 @@ body: |
@@ -1276,7 +2090,7 @@ index 9b1fd9da7e71edb16684bce94a58758aad712dc1..d657cc652bf8e3cbcb85ff1bde49c9e3
 -
 diff --git a/llvm/test/CodeGen/Hexagon/vextract-pair-offset.mir b/llvm/test/CodeGen/Hexagon/vextract-pair-offset.mir
 new file mode 100644
-index 0000000000000000000000000000000000000000..79cfaf1a37910b439588350a21f8fc6fe1cb5de9
+index 000000000000..79cfaf1a3791
 --- /dev/null
 +++ b/llvm/test/CodeGen/Hexagon/vextract-pair-offset.mir
 @@ -0,0 +1,30 @@
@@ -1311,7 +2125,7 @@ index 0000000000000000000000000000000000000000..79cfaf1a37910b439588350a21f8fc6f
 +    J2_jumpr $r31, implicit-def $pc, implicit $r0
 +...
 diff --git a/mlir/lib/Interfaces/ValueBoundsOpInterface.cpp b/mlir/lib/Interfaces/ValueBoundsOpInterface.cpp
-index c9481fb5d9406e7d9c5bdae52d664cf265ad2919..0f8b5149a94d008290e880c9f8518d61252d40d1 100644
+index c9481fb5d940..0f8b5149a94d 100644
 --- a/mlir/lib/Interfaces/ValueBoundsOpInterface.cpp
 +++ b/mlir/lib/Interfaces/ValueBoundsOpInterface.cpp
 @@ -823,6 +823,12 @@ FailureOr<bool> ValueBoundsConstraintSet::strongCompare(const Variable &lhs,

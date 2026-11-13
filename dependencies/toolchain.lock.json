@@ -3,7 +3,7 @@
     "url": "https://github.com/llvm/llvm-project.git",
     "revision": "064f02dac0c81c19350a74415b3245f42fed09dc",
     "recipe": "llvm/recipe.json",
-    "recipe_sha256": "8f28a10603019c4de19f5039a715c1e8a457da8bc3958d0d74f0bec01e2e75d7"
+    "recipe_sha256": "4bcacfd72343034cddc6fe0393b09b62427a113a8a1f0799599650f02cdc27b6"
   },
   "triton": {
     "url": "https://github.com/triton-lang/triton.git",

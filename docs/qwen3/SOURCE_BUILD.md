@@ -271,3 +271,67 @@ The strided-copy reference now uses the compiler's maintained
 source-editing tests use a small independent wrapper fixture instead of a saved
 generated model wrapper. All 84 affected cases are retained. The complete caller
 continues to be generated from the actual captured ABI and checked on DSP.
+
+## Optional temporary-buffer reuse for resident sessions
+
+The resident plan also accepts root-level `"row_minmax": true` and
+`"batch_arm_rope": true`. Both default to false and apply consistently to
+`initial_single`, `initial`, `prefill` and `decode`. Row-minmax enables the
+compiler's IEEE minimum/maximum row reduction; it does not reorder FP32 sums.
+Batched ARM RoPE uses the existing four-result trigonometric helpers.
+Recompile all domains when changing these settings. The builder records the
+row-minmax compiler override and rejects bundles compiled with a different
+setting, including during relink; older bundles with no row-minmax field are
+treated as disabled. These switches do not select experimental FP16 attention
+or qualify a deployment. The assembled experimental measurements in
+[LWP evidence](LWP.md) remain separate from unified source-build acceptance.
+
+A resident build specification can set `"temporary_buffer_bytes": 134217728`
+(maximum 128 MiB). Omit it or use 0 to keep ordinary allocation. This is a build
+setting, not an environment variable. It redirects malloc/free references only
+in the four main graph objects and links the session-owned
+`hexagon_runtime/native/temporary_buffer_pool.cpp`; arithmetic/attention runtime
+objects keep their existing allocators. The bundle records the setting and each
+domain's symbol redirections. Rebuild native source receipts after changing these
+sources; do not edit an existing receipt to bypass source identity checks.
+
+The graph must use serial allocation: the builder requires both
+`enableMultiThreading` and `enableSCFThreading` to be false in the compiled object
+options. Concurrent external operator workers are unaffected. Like the existing
+resident KV session, one compiled library handles one synchronous forward at a
+time; the pool is not a general concurrent allocator.
+
+
+For compiler-proven independent conversion/scaling rows, an optional per-domain
+`compiler_options` entry can enable both `scheduleDequantLoops` and
+`parallelDequantLoops`. Both default to false; the latter requires the former.
+Use `--compile-resident` after changing these options and supply the pinned
+`--llama-source`. The builder links `hexagon_runtime/native/parallel_for.cpp`
+and records the domains, four-worker policy and runtime source hash.
+
+The compiler preserves each row's arithmetic and proves its memory bounds.
+Runtime guards require at least 16 rows and nonoverlapping input/output ranges;
+otherwise the original serial helper executes. The synchronous
+`__hexagon_parallel_for_v1(callback, context, rows)` ABI partitions rows without
+allocating inside numerical callbacks. A weak serial implementation remains in
+standalone compiler products; the application supplies the worker-pool override.
+This does not enable concurrent graph allocation. Model qualification and speed
+measurements remain separate from successful compilation.
+
+Released buffers can serve equal or smaller allocations. A byte/entry limit
+triggers eviction of unused buffers, then ordinary malloc fallback if live
+allocations prevent reuse. Returned logits and new KV rows remain live until the
+packet and resident KV copies complete. The returned-memref manager then releases
+each unique buffer through the graph pool before the synchronous pool scope ends,
+so those buffers can also be reused on the next forward. Its default release
+policy remains ordinary `free` for callers without a pool.
+The quota bounds pool-owned capacity, not total DSP memory or packet storage.
+A failed graph may return tracked live buffers to the pool before another forward;
+untracked fallback allocations remain subject to the graph's original cleanup.
+
+This option remains off by default. Qualify each rebuilt model separately:
+compare logits and KV with the accepted reference across initial prefill,
+subsequent chunks, decode, capacity boundaries and request reset. Run full-cache
+exports and numerical comparisons outside performance timers. Keep source-build
+receipts and board qualification records together; compilation alone does not
+qualify a model for release. See [LWP evidence](LWP.md) for allocation profiling.
