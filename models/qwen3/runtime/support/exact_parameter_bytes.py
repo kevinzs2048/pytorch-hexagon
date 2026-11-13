@@ -1,9 +1,12 @@
-"""Exact per-forward parameter checks against private immutable byte snapshots.
+"""Parameter checks against private immutable byte snapshots.
 
 Initial snapshots retain the existing compiler SHA identities. Later checks
 compare every logical byte, including .data mutations and NaN/signed-zero bits.
-No tensor-version shortcut, sampling, mutable reference, or numerical operation.
+Complete comparisons are the default. An explicit exclusive immutable-model
+scope may reuse checks within one request; versions alone never prove ownership.
 """
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 import copy
 import ctypes
 import hashlib
@@ -17,13 +20,19 @@ def raw_view(value):
 
 
 class ExactParameterBytePool:
-    """Share immutable snapshots across the two actual captured graphs."""
+    """Share immutable snapshots across captured inference graphs."""
 
-    def __init__(self):
+    def __init__(self, *, workers=1):
+        if type(workers) is not int or workers not in (1, 2, 4):
+            raise ValueError('Parameter comparison workers must be 1, 2 or 4')
+        self.workers = workers
+        self._executor = None
+        self._closed = False
         self._bytes={}
+        self._owned_request = None
         self._libc=ctypes.CDLL(None)
         self._memcmp=self._libc.memcmp
-        self._memcmp.argtypes=[ctypes.c_void_p,ctypes.c_char_p,ctypes.c_size_t]
+        self._memcmp.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_size_t]
         self._memcmp.restype=ctypes.c_int
 
     @property
@@ -33,21 +42,75 @@ class ExactParameterBytePool:
     def bind(self,binding):
         return ExactParameterByteGuard(self,binding)
 
-    def matches(self,key,raw):
-        if raw.nbytes!=key[1]:
-            raise ValueError('Exact comparison length differs from pinned parameter')
-        expected=self._bytes.get(key)
-        if expected is None:
-            # Hash immutable copied bytes, never a mutable reference. This
-            # preserves the original SHA pins even in metadata-only binding.
-            expected=raw.tobytes()
-            if hashlib.sha256(expected).hexdigest()!=key[0]:return False
-            self._bytes[key]=expected
-        if len(expected)!=raw.nbytes:
-            raise ValueError('Immutable parameter snapshot length changed')
-        # c_char_p passes the bytes buffer without a copy; memcmp's explicit
-        # length includes embedded NULs. raw owns the live tensor view.
-        return self._memcmp(raw.ctypes.data,expected,raw.nbytes)==0
+    @contextmanager
+    def owned_request(self):
+        """Reuse checks only while the caller exclusively owns an immutable model.
+
+        The caller must prevent all parameter writes and external aliases during
+        the scope, including writes through .data or NumPy. Version counters are
+        only an additional check, not a substitute for that ownership contract.
+        Every new scope rechecks complete bytes before admitting each parameter.
+        Ordinary callers that cannot guarantee ownership must not enter this scope.
+        """
+        if self._closed:
+            raise RuntimeError('Parameter comparison pool is closed')
+        if self._owned_request is not None:
+            raise RuntimeError('Owned parameter requests cannot overlap')
+        self._owned_request = {}
+        try:
+            yield
+        finally:
+            self._owned_request = None
+
+    def close(self):
+        if self._executor is not None:
+            self._executor.shutdown(wait=True)
+            self._executor = None
+        self._closed = True
+
+    def matches(self, key, raw):
+        return self.matches_many([(key, raw)])
+
+    def matches_many(self, values):
+        if self._closed:
+            raise RuntimeError('Parameter comparison pool is closed')
+        spans = []
+        for key, raw in values:
+            if raw.nbytes != key[1]:
+                raise ValueError('Exact comparison length differs from pinned parameter')
+            expected = self._bytes.get(key)
+            if expected is None:
+                # Copy and hash before publishing the immutable reference. A
+                # comparison below still detects changes during snapshot creation.
+                expected = raw.tobytes()
+                if hashlib.sha256(expected).hexdigest() != key[0]:
+                    return False
+                self._bytes[key] = expected
+            if len(expected) != raw.nbytes:
+                raise ValueError('Immutable parameter snapshot length changed')
+            address = ctypes.cast(ctypes.c_char_p(expected), ctypes.c_void_p).value
+            spans.append((raw.ctypes.data, address, raw.nbytes))
+
+        def compare(group):
+            return all(self._memcmp(a, b, n) == 0 for a, b, n in group)
+
+        # Keep small guards serial. Split large tensors as well as tensor lists,
+        # so one large embedding cannot leave the other workers idle. values and
+        # _bytes retain both buffers until EVERY submitted comparison completes.
+        if self.workers == 1 or sum(n for _, _, n in spans) < 4 * 1024 * 1024:
+            return compare(spans)
+        groups = [[] for _ in range(self.workers)]
+        ordinal = 0
+        for a, b, n in spans:
+            for offset in range(0, n, 4 * 1024 * 1024):
+                groups[ordinal % self.workers].append(
+                    (a + offset, b + offset, min(4 * 1024 * 1024, n - offset)))
+                ordinal += 1
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(max_workers=self.workers,
+                                                thread_name_prefix='qwen-parameter-check')
+        results = list(self._executor.map(compare, groups))
+        return all(results)
 
 
 class ExactParameterByteGuard:
@@ -68,11 +131,38 @@ class ExactParameterByteGuard:
         from hexagon_dynamo_parameters import spec
         if len(inputs)!=self._input_count:
             raise ValueError('Runtime parameter input arity differs')
+        if self._pool._closed:
+            raise RuntimeError('Parameter comparison pool is closed')
+        values = []
+        admitted = []
+        request = self._pool._owned_request
         for row in self._records:
             value=inputs[row['input_index']]
             if spec(value)!=row['spec']:
                 raise ValueError('Compiled parameter metadata changed; create a fresh compile session')
+            # Small dynamic module scalars still receive exact checks each time.
+            # Retain each parameter tensor to prevent its storage address being reused
+            # after destruction. Unversioned inference tensors stay on full checks.
+            identity = None
+            if (request is not None and row['spec']['shape']
+                    and row.get('kind', 'parameter') == 'parameter'):
+                try:
+                    version = value._version
+                except RuntimeError:
+                    version = None
+                if version is not None:
+                    identity = (row['sha256'], row['bytes'], value.data_ptr(),
+                                tuple(value.shape), tuple(value.stride()), version)
+                    if identity in request:
+                        continue
             raw=raw_view(value)
-            if raw.nbytes!=row['bytes'] or not self._pool.matches((row['sha256'],row['bytes']),raw):
-                raise ValueError('Compiled parameter changed; create a fresh compile session before DSP execution')
+            if raw.nbytes != row['bytes']:
+                raise ValueError('Compiled parameter byte length changed')
+            values.append(((row['sha256'], row['bytes']), raw))
+            if identity is not None:
+                admitted.append((identity, value))
+        if not self._pool.matches_many(values):
+            raise ValueError('Compiled parameter changed; create a fresh compile session before DSP execution')
+        if request is not None:
+            request.update(admitted)
         return [inputs[index] for index in self._retained]

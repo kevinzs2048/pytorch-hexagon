@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Isolated, opt-in integer contraction matcher; no floating point rewrites.
+// Opt-in integer lowering and activation reuse; preserve arithmetic semantics.
 #include "hexagon/Dialect/TmTensor/IR/TmTensorDialect.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -23,6 +23,9 @@
 #include "llvm/ADT/DenseSet.h"
 
 using namespace mlir;
+#include "PrepackInt8Weights.h"
+#include "../activation/ReuseActivation.h"
+#include "../activation/VectorizeActivation.h"
 
 namespace {
 struct PreservedOperation {
@@ -212,5 +215,8 @@ int main(int argc,char **argv) {
       vector::VectorDialect,tm_tensor::TmTensorDialect>();
   registerTransformsPasses();
   PassRegistration<ExactInt8MatmulPass>();
+  PassRegistration<PrepackInt8WeightsPass>();
+  PassRegistration<ReuseActivationPass>();
+  PassRegistration<VectorizeActivationPass>();
   return asMainReturnCode(MlirOptMain(argc,argv,"Isolated Qwen exact integer optimizer\n",registry));
 }

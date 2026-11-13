@@ -4,6 +4,7 @@ Uses FxImporterHooks; does not patch torch-mlir globals or enable a DSP backend.
 The importer/caller still decides which values are constants. Runtime parameter
 change checks remain required. No dtype conversion or reduced precision here.
 """
+import copy
 import hashlib
 import sys
 
@@ -74,12 +75,49 @@ class OwnedTensorLiteralHooks(FxImporterHooks):
             attributes={'value': mapping.value}).result
 
 
+def normalize_symbolic_sums(gm):
+    """Expand PyTorch's variadic shape sum for the pinned FX importer.
+
+    DynamicCache introduces past_length + query_length as torch.sym_sum.
+    The pinned torch-mlir understands aten.add.int but not this Python helper.
+    Keep all terms symbolic and leave the AOT-owned graph unmodified.
+    """
+    if not any(n.op == 'call_function' and n.target is torch.sym_sum
+               for n in gm.graph.nodes):
+        return gm
+    private = torch.fx.GraphModule(gm, copy.deepcopy(gm.graph))
+    for node in list(private.graph.nodes):
+        if node.op != 'call_function' or node.target is not torch.sym_sum:
+            continue
+        terms = node.args
+        if len(terms) == 1 and isinstance(terms[0], (list, tuple)):
+            terms = terms[0]
+        if node.kwargs:
+            raise ValueError('Unexpected keyword arguments to symbolic shape sum')
+        value, metadata = 0, 0
+        with private.graph.inserting_before(node):
+            # Include an addition for the empty case so FX can replace uses
+            # without converting a symbolic result into a concrete hint.
+            for term in terms or (0,):
+                item = term.meta['val'] if isinstance(term, torch.fx.Node) else term
+                if type(item) is not int and not isinstance(item, torch.SymInt):
+                    raise ValueError('Only integer shape sums are supported')
+                metadata = metadata + item
+                value = private.graph.call_function(torch.ops.aten.add.int, (value, term))
+                value.meta = dict(node.meta, val=metadata)
+        node.replace_all_uses_with(value)
+        private.graph.erase_node(node)
+    private.graph.lint()
+    private.recompile()
+    return private
+
+
 def import_graph_owned_constants(gm, name):
     context = ir.Context()
     torch_d.register_dialect(context)
     hooks = OwnedTensorLiteralHooks()
     importer = FxImporter(context=context, hooks=hooks)
-    importer.import_graph_module(gm, func_name=name)
+    importer.import_graph_module(normalize_symbolic_sums(gm), func_name=name)
     return importer, hooks
 
 

@@ -101,3 +101,112 @@ def test_empty_byte_comparison_with_explicitly_pinned_empty_metadata():
     bound=SimpleNamespace(input_count=2,retained=[1],records=[dict(input_index=0,
         spec=spec(value),sha256=hashlib.sha256(b'').hexdigest(),bytes=0)])
     guard=ExactParameterBytePool().bind(bound);assert guard.check([value,None])==[None]
+
+
+@pytest.mark.parametrize('workers', [2, 4])
+def test_parallel_full_byte_check_and_lifetime(workers):
+    value = torch.arange(9 * 1024 * 1024 + 17, dtype=torch.int32)
+    original = value.clone()
+    pool = ExactParameterBytePool(workers=workers)
+    guard = pool.bind(binding(value))
+    try:
+        assert guard.check([value, None]) == [None]
+        for where in (0, 1024 * 1024 - 1, 1024 * 1024, value.numel() - 1):
+            version = value._version
+            value.data[where] ^= 1
+            assert value._version == version
+            with pytest.raises(ValueError, match='Compiled parameter changed'):
+                guard.check([value, None])
+            value.data.copy_(original)
+            assert guard.check([value, None]) == [None]
+        assert pool.snapshot_bytes == value.numel() * 4
+    finally:
+        pool.close()
+    with pytest.raises(RuntimeError, match='closed'):
+        guard.check([value, None])
+
+
+@pytest.mark.parametrize('workers', [True, 0, 3, 8])
+def test_comparison_worker_count_is_explicit(workers):
+    with pytest.raises(ValueError, match='workers'):
+        ExactParameterBytePool(workers=workers)
+
+
+@pytest.mark.parametrize('size', [1024, 300000])
+def test_owned_request_reuses_checks_and_revalidates_next_request(monkeypatch, size):
+    value = torch.arange(size, dtype=torch.int32)
+    pool = ExactParameterBytePool()
+    guard = pool.bind(binding(value))
+    original = pool.matches_many
+    checked = []
+
+    def count(values):
+        checked.append(sum(raw.nbytes for _, raw in values))
+        return original(values)
+
+    monkeypatch.setattr(pool, 'matches_many', count)
+    with pool.owned_request():
+        guard.check([value, None])
+        guard.check([value, None])
+        pool.bind(binding(value)).check([value, None])
+    assert checked == [size * 4, 0, 0]
+    # Changes outside exclusive ownership, including .data, must be detected
+    # before a new request can execute. No claim of detecting unversioned writes
+    # during the owned scope: such writes violate its explicit contract.
+    value.data[-1] ^= 1
+    with pool.owned_request(), pytest.raises(ValueError, match='parameter changed'):
+        guard.check([value, None])
+    with pytest.raises(ValueError, match='parameter changed'):
+        guard.check([value, None])
+    pool.close()
+
+
+def test_owned_request_version_and_small_scalar_checks():
+    value = torch.arange(300000, dtype=torch.int32)
+    pool = ExactParameterBytePool()
+    guard = pool.bind(binding(value))
+    scalar = torch.tensor(1.0)
+    small = pool.bind(binding(scalar))
+    with pool.owned_request():
+        guard.check([value, None])
+        value[-1] ^= 1
+        with pytest.raises(ValueError, match='parameter changed'):
+            guard.check([value, None])
+        small.check([scalar, None])
+        scalar.data.fill_(2)
+        with pytest.raises(ValueError, match='parameter changed'):
+            small.check([scalar, None])
+    pool.close()
+
+
+def test_owned_request_storage_replacement_and_exception_cleanup():
+    value = torch.arange(300000, dtype=torch.int32)
+    pool = ExactParameterBytePool()
+    guard = pool.bind(binding(value))
+    with pytest.raises(ValueError, match='parameter changed'):
+        with pool.owned_request():
+            guard.check([value, None])
+            value.data = torch.zeros_like(value)
+            guard.check([value, None])
+    assert pool._owned_request is None
+    with pool.owned_request():
+        with pytest.raises(RuntimeError, match='overlap'):
+            with pool.owned_request():
+                pass
+    pool.close()
+    with pytest.raises(RuntimeError, match='closed'):
+        with pool.owned_request():
+            pass
+
+
+def test_owned_request_unversioned_inference_tensor_is_still_fully_checked():
+    with torch.inference_mode():
+        value = torch.arange(300000, dtype=torch.int32)
+        pool = ExactParameterBytePool()
+        guard = pool.bind(binding(value))
+        with pool.owned_request():
+            guard.check([value, None])
+            value.data[-1] ^= 1
+            with pytest.raises(ValueError, match='parameter changed'):
+                guard.check([value, None])
+        pool.close()
